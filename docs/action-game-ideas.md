@@ -40,15 +40,23 @@ One big boss fight like the old games, using the platformer from level 3.
 - **What it teaches:** attack patterns, the boss "telegraphing" a move before it happens,
   health bars, phases where the fight changes as the boss weakens.
 
-### 5. ??? (forgotten, to be remembered)
-Candidates if it doesn't come back:
-- A vehicle chase (the landspeeder levels in Super Star Wars, the jeep in Jurassic Park)
-- A racer
-- A stealth or escape sequence
-- A puzzle level
+### 5. The Chase (the finale, running toward the screen)
+The first idea of the lot. After the boss is beaten, the final escape: the character runs
+toward the camera while something huge chases from behind, like the boulder in the old
+Indiana Jones games or the boulder levels in Crash Bandicoot. You can't see far ahead,
+so it's all about reacting to what comes up: dodging left or right, jumping, ducking.
+Could also be a car chase.
+- **Where it fits:** last, both in the story and in the build order. It's the only level
+  that fakes 3D (things get bigger as they come closer), which makes it a good final step.
+- **What it teaches:** fake 3D perspective (scaling by distance, as in OutRun or
+  Space Harrier), lanes, timing windows, and fair warning for hazards you can't see yet
+  (shadows, sounds, signs).
+- **Cheaper fallback:** a top-down version that reuses the Dogfight's scrolling, with the
+  chaser visible at the bottom of the screen.
 
 ## Open questions for later
 - How the learning games and the action levels connect (unlocks? the action levels as
   rewards? a hub world?).
 - Whether this stays in this repo or becomes its own project once it grows.
+- Chase: on foot, in a vehicle, or both in stages?
 - Art: hand-drawn pixel sprites, generated placeholders first, or a mix.
