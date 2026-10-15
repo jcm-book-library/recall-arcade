@@ -16,6 +16,35 @@ Written down so they don't get lost.
 - Dry, dark humour. It takes itself completely seriously while being quite stupid.
 - Pays homage to different eras and styles of gaming.
 
+## How the whole thing fits together (progression)
+One "playthrough" opens everything up. Quizzes unlock the arcade levels; the player picks
+how hard they want that to be.
+
+| Track | To progress | Who it's for |
+|---|---|---|
+| Easy | One quiz in each subject at 50%+ | Lunch-break trivia and some old-school arcade fun |
+| Intermediate | Three quizzes per subject at 70-75%+ | Getting properly good |
+| Hard | Every quiz at 80-90%+ | Actually training yourself |
+
+- Finishing a full playthrough unlocks free play: any quiz or arcade level, any time.
+- **Expert** (unlocked after a playthrough): every quiz at 100% and the arcade levels
+  without dying once. Optional bragging rights.
+- **Badges for everything.** Every quiz tier earns a badge; the arcade side earns trophies;
+  together they complete a set. Achievements are never locked behind skill alone.
+- **Rating:** G/PG. Kids find it ridiculous but fun; adults get the references and the
+  nostalgia. Cartoon violence only (robots go "poof", asteroids explode).
+
+### Notes to work out
+- Percentages aren't equal across quizzes: 50% of the world (99 countries) is far harder
+  than 50% of South America (6). Each subject needs at least one small "starter" quiz so
+  Easy stays easy.
+- Idea: each arcade level is themed around a subject and unlocked by that subject's
+  quizzes (e.g. the Dogfight flies over the geography map).
+- Can you switch tracks mid-playthrough without losing progress? (Probably yes.)
+- Should the arcade levels get easier/harder with the track too (lives, checkpoints)?
+- A playthrough could take weeks, so progress needs to survive beyond one browser:
+  a backup/export at minimum, accounts maybe later.
+
 ## Levels
 
 ### 1. The Labyrinth (top-down, Pokémon / Zelda view)
