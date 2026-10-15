@@ -1,6 +1,6 @@
 import type { Board, Deck, Item, Variant } from "../engine/types";
 import { Matcher } from "../engine/matcher";
-import { bestFor, recordGame, weakSpots } from "../engine/storage";
+import { bestFor, loadPrefs, recordGame, savePrefs, weakSpots } from "../engine/storage";
 import { formatTime, h } from "./dom";
 
 type Phase = "setup" | "playing" | "over";
@@ -8,9 +8,13 @@ type Phase = "setup" | "playing" | "over";
 const TIME_CHOICES = [2, 4, 6, 10, 15, 20, 0];
 
 export function renderPlay(root: HTMLElement, deck: Deck) {
-  let variant: Variant = deck.variants[0];
-  let minutes = variant.minutes;
-  const options: Record<string, boolean> = Object.fromEntries(deck.options.map((o) => [o.id, o.default]));
+  const prefs = loadPrefs(deck.id);
+  let variant: Variant = deck.variants.find((v) => v.id === prefs.variant) ?? deck.variants[0];
+  let minutes = prefs.minutes ?? variant.minutes;
+  const options: Record<string, boolean> = Object.fromEntries(
+    deck.options.map((o) => [o.id, prefs.options?.[o.id] ?? o.default]),
+  );
+  const remember = () => savePrefs(deck.id, { variant: variant.id, minutes, options });
   let phase: Phase = "setup";
   let board: Board | null = null;
   let playing: Item[] = [];
@@ -20,6 +24,15 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   let ticker = 0;
   let pending = 0;
   let buildToken = 0;
+  let closeTimer = 0;
+  let noteTimer = 0;
+
+  function showNote(text: string, kind: "info" | "close" = "info") {
+    clearTimeout(noteTimer);
+    note.textContent = text;
+    note.dataset.kind = kind;
+    noteTimer = window.setTimeout(() => (note.textContent = ""), 4000);
+  }
 
   // ---------- layout ----------
   const title = h("h1", { class: "play-title" }, deck.title);
@@ -37,7 +50,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     "aria-label": "Your answer",
   });
   const giveUp = h("button", { class: "btn ghost", type: "button" }, "Give up");
-  const hud = h("div", { class: "hud" }, h("div", { class: "hud-stats" }, timer, score), input, giveUp);
+  const note = h("p", { class: "note", "aria-live": "polite" });
+  const hud = h("div", { class: "hud" }, h("div", { class: "hud-stats" }, timer, score), input, giveUp, note);
   hud.hidden = true;
   const results = h("div", { class: "results" });
   results.hidden = true;
@@ -71,6 +85,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
           onclick: () => {
             variant = v;
             minutes = v.minutes;
+            remember();
             renderSetup();
             buildBoard();
           },
@@ -83,7 +98,10 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
       {
         id: "minutes",
         "aria-label": "Time limit",
-        onchange: (e) => (minutes = Number((e.target as HTMLSelectElement).value)),
+        onchange: (e) => {
+          minutes = Number((e.target as HTMLSelectElement).value);
+          remember();
+        },
       },
       ...TIME_CHOICES.map((m) => {
         const o = h("option", { value: String(m) }, m ? `${m} min` : "No limit");
@@ -98,6 +116,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
         id: `opt-${o.id}`,
         onchange: (e) => {
           options[o.id] = (e.target as HTMLInputElement).checked;
+          remember();
           renderSetup();
           buildBoard();
         },
@@ -175,7 +194,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   function start() {
     if (!board) return;
     found = new Set();
-    matcher = new Matcher(playing);
+    matcher = new Matcher(playing, deck.items);
+    note.textContent = "";
     for (const i of playing) board.setState(i.id, "open");
     board.setExplore(false);
     recent.replaceChildren();
@@ -216,6 +236,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     board.setState(item.id, "found");
     board.flash(item.id);
     input.value = "";
+    clearTimeout(closeTimer);
+    if (note.dataset.kind === "close") note.textContent = "";
     input.classList.remove("hit");
     void input.offsetWidth;
     input.classList.add("hit");
@@ -225,20 +247,35 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     if (found.size === playing.length) end();
   }
 
+  function outside(item: Item) {
+    input.value = "";
+    showNote(deck.outsideHint?.(item, options) ?? `${item.name} isn't part of this round.`);
+  }
+
   input.addEventListener("input", () => {
     clearTimeout(pending);
-    const r = matcher.check(input.value);
+    clearTimeout(closeTimer);
+    const text = input.value;
+    const r = matcher.check(text);
     if (r.kind === "match") accept(r.item);
+    else if (r.kind === "outside") outside(r.item);
     else if (r.kind === "wait") {
-      const text = input.value;
       pending = window.setTimeout(() => input.value === text && accept(r.item), 900);
+    } else if (matcher.isClose(text)) {
+      // Only nudge once they've paused, so it doesn't flicker while typing.
+      closeTimer = window.setTimeout(
+        () => input.value === text && showNote("So close. Check the spelling.", "close"),
+        1200,
+      );
     }
   });
   input.addEventListener("keydown", (e) => {
     if (e.key !== "Enter") return;
     const r = matcher.check(input.value);
-    if (r.kind !== "none") accept(r.item);
+    if (r.kind === "outside") outside(r.item);
+    else if (r.kind !== "none") accept(r.item);
     else if (input.value.trim()) {
+      if (matcher.isClose(input.value)) showNote("So close. Check the spelling.", "close");
       input.classList.remove("nope");
       void input.offsetWidth;
       input.classList.add("nope");
@@ -251,6 +288,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     phase = "over";
     clearInterval(ticker);
     clearTimeout(pending);
+    clearTimeout(closeTimer);
+    note.textContent = "";
     const seconds = Math.min(elapsed(), minutes ? minutes * 60 : Infinity);
     const missed = playing.filter((i) => !found.has(i.id));
     for (const i of missed) board.setState(i.id, "missed");

@@ -66,5 +66,7 @@ export interface Deck {
   /** Applies option toggles on top of the variant filter. */
   applyOptions?: (items: Item[], options: Record<string, boolean>) => Item[];
   progressGroups?: ProgressGroup[];
+  /** Message when the player names something real that isn't in this round. */
+  outsideHint?: (item: Item, options: Record<string, boolean>) => string | null;
   createBoard: (ctx: BoardContext) => Board | Promise<Board>;
 }

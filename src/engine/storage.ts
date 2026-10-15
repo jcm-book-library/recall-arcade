@@ -85,3 +85,30 @@ export function weakSpots(deck: string, limit = 8): { id: string; stats: ItemSta
     )
     .slice(0, limit);
 }
+
+// Remembers the last round settings per deck, e.g. Europe + territories.
+const PREFS = "learning-arcade:prefs";
+
+export interface DeckPrefs {
+  variant?: string;
+  minutes?: number;
+  options?: Record<string, boolean>;
+}
+
+export function loadPrefs(deck: string): DeckPrefs {
+  try {
+    return (JSON.parse(localStorage.getItem(PREFS) ?? "{}") as Record<string, DeckPrefs>)[deck] ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export function savePrefs(deck: string, prefs: DeckPrefs) {
+  try {
+    const all = JSON.parse(localStorage.getItem(PREFS) ?? "{}") as Record<string, DeckPrefs>;
+    all[deck] = prefs;
+    localStorage.setItem(PREFS, JSON.stringify(all));
+  } catch {
+    /* storage unavailable */
+  }
+}

@@ -79,6 +79,10 @@ export const countriesDeck: Deck = {
   ],
   applyOptions: (list, opts) => (opts.territories ? list : list.filter((i) => !i.tags.includes("territory"))),
   progressGroups: REGIONS,
+  outsideHint: (item, opts) =>
+    item.tags.includes("territory") && !opts.territories
+      ? `${item.name} is a territory, not a country. Tick "Include territories" to count these.`
+      : null,
   async createBoard({ container, items: playing, variant }) {
     const topo = await loadTopo();
     const fc = feature(topo, topo.objects.countries as GeometryCollection) as unknown as {
