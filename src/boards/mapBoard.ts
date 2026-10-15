@@ -1,4 +1,4 @@
-import { geoNaturalEarth1, geoPath, geoGraticule10, type GeoPermissibleObjects } from "d3-geo";
+import { geoEqualEarth, geoPath, geoGraticule10, type GeoPermissibleObjects } from "d3-geo";
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomTransform } from "d3-zoom";
 import type { Board, ItemState } from "../engine/types";
@@ -41,7 +41,7 @@ export function createMapBoard(
   inPlay: Set<string>,
   view: MapView,
 ): Board {
-  const projection = geoNaturalEarth1().rotate([view.rotate, 0]);
+  const projection = geoEqualEarth().rotate([view.rotate, 0]);
   const fitTarget: GeoPermissibleObjects = view.bbox
     ? bboxOutline(view.bbox)
     : { type: "FeatureCollection", features: shapes.filter((s) => s.feature).map((s) => s.feature) } as GeoPermissibleObjects;
