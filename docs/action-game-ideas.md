@@ -34,6 +34,20 @@ how hard they want that to be.
 - **Rating:** G/PG. Kids find it ridiculous but fun; adults get the references and the
   nostalgia. Cartoon violence only (robots go "poof", asteroids explode).
 
+### Decisions so far
+- **Targets are set per quiz, not as a blanket percentage.** E.g. Easy for the world map
+  might be "name 25 countries". Work out a rating system once the subjects are chosen.
+- **Not every quiz needs a clever link to its arcade level.** Sometimes the game should
+  shrug: "We looked for a connection. We couldn't find one." and launch something
+  completely unrelated.
+- **Tracks adjust both ways.** Score 180 countries on Easy and the game says something like
+  "Looks like you're better at this than you let on. Let's bump it up." It can also offer
+  to drop down.
+- **Lives scale with the track.** Easy can have unlimited lives; Hard makes you push.
+  Details later.
+- **Saving progress** gets solved with proper hosting and a database (also needed for the
+  book library project), not just a browser backup.
+
 ### Notes to work out
 - Percentages aren't equal across quizzes: 50% of the world (99 countries) is far harder
   than 50% of South America (6). Each subject needs at least one small "starter" quiz so
