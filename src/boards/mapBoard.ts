@@ -1,0 +1,184 @@
+import { geoNaturalEarth1, geoPath, geoGraticule10, type GeoPermissibleObjects } from "d3-geo";
+import { select } from "d3-selection";
+import { zoom, zoomIdentity, type ZoomTransform } from "d3-zoom";
+import type { Board, ItemState } from "../engine/types";
+
+export interface MapShape {
+  /** Item id, or null for land that is drawn but never asked. */
+  id: string | null;
+  label: string;
+  feature?: GeoPermissibleObjects;
+  point?: [number, number];
+}
+
+export interface MapView {
+  /** Projection rotation in degrees of longitude. */
+  rotate: number;
+  /** [west, south, east, north] to fit on screen; omit to fit all shapes. */
+  bbox?: [number, number, number, number];
+}
+
+const W = 960;
+const H = 540;
+const DOT_PX = 5;
+
+function bboxOutline([w, s, e, n]: [number, number, number, number]): GeoPermissibleObjects {
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= 20; i++) {
+    const lon = w + ((e - w) * i) / 20;
+    pts.push([lon, s], [lon, n]);
+  }
+  for (let i = 0; i <= 10; i++) {
+    const lat = s + ((n - s) * i) / 10;
+    pts.push([w, lat], [e, lat]);
+  }
+  return { type: "MultiPoint", coordinates: pts };
+}
+
+export function createMapBoard(
+  container: HTMLElement,
+  shapes: MapShape[],
+  inPlay: Set<string>,
+  view: MapView,
+): Board {
+  const projection = geoNaturalEarth1().rotate([view.rotate, 0]);
+  const fitTarget: GeoPermissibleObjects = view.bbox
+    ? bboxOutline(view.bbox)
+    : { type: "FeatureCollection", features: shapes.filter((s) => s.feature).map((s) => s.feature) } as GeoPermissibleObjects;
+  projection.fitExtent([[10, 10], [W - 10, H - 10]], fitTarget);
+  const path = geoPath(projection);
+
+  const wrap = document.createElement("div");
+  wrap.className = "map";
+  container.append(wrap);
+
+  const svg = select(wrap)
+    .append("svg")
+    .attr("viewBox", `0 0 ${W} ${H}`)
+    .attr("role", "img")
+    .attr("aria-label", "World map");
+  const root = svg.append("g");
+  root.append("path").attr("class", "map-ocean").attr("d", path({ type: "Sphere" }) ?? "");
+  root.append("path").attr("class", "map-grid").attr("d", path(geoGraticule10()) ?? "");
+
+  const els = new Map<string, Element[]>();
+  const track = (id: string | null, el: Element) => {
+    if (!id) return;
+    if (!els.has(id)) els.set(id, []);
+    els.get(id)!.push(el);
+  };
+
+  const landLayer = root.append("g");
+  const dotLayer = root.append("g");
+  const dots: SVGCircleElement[] = [];
+
+  for (const shape of shapes) {
+    const playing = shape.id !== null && inPlay.has(shape.id);
+    let small = false;
+    let centre: [number, number] | null = null;
+    if (shape.feature) {
+      const d = path(shape.feature);
+      if (!d) continue;
+      const p = landLayer
+        .append("path")
+        .attr("d", d)
+        .attr("class", playing ? "land" : "land off")
+        .attr("data-label", shape.label)
+        .node()!;
+      track(playing ? shape.id : null, p);
+      // Island nations can be spread wide but have almost no land, so judge by area.
+      small = path.area(shape.feature) < 30;
+      centre = path.centroid(shape.feature) as [number, number];
+    } else if (shape.point) {
+      small = true;
+      centre = projection(shape.point) as [number, number] | null;
+    }
+    if (playing && small && centre && Number.isFinite(centre[0])) {
+      const c = dotLayer
+        .append("circle")
+        .attr("cx", centre[0])
+        .attr("cy", centre[1])
+        .attr("r", DOT_PX)
+        .attr("class", "dot")
+        .attr("data-label", shape.label)
+        .node()!;
+      dots.push(c);
+      track(shape.id, c);
+    }
+  }
+
+  const applyTransform = (t: ZoomTransform) => {
+    root.attr("transform", t.toString());
+    for (const d of dots) d.setAttribute("r", String(DOT_PX / Math.sqrt(t.k)));
+  };
+  const zoomer = zoom<SVGSVGElement, unknown>()
+    .scaleExtent([1, 40])
+    .translateExtent([[0, 0], [W, H]])
+    .on("zoom", (e) => applyTransform(e.transform));
+  svg.call(zoomer).on("dblclick.zoom", null);
+
+  // Zoom buttons
+  const controls = document.createElement("div");
+  controls.className = "map-controls";
+  const btn = (label: string, title: string, fn: () => void) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.title = title;
+    b.setAttribute("aria-label", title);
+    b.addEventListener("click", fn);
+    controls.append(b);
+  };
+  btn("+", "Zoom in", () => svg.call(zoomer.scaleBy, 1.8));
+  btn("−", "Zoom out", () => svg.call(zoomer.scaleBy, 1 / 1.8));
+  btn("⟲", "Reset view", () => svg.call(zoomer.transform, zoomIdentity));
+  wrap.append(controls);
+
+  // Name tooltip, only active after a round ends
+  const tip = document.createElement("div");
+  tip.className = "map-tip";
+  tip.hidden = true;
+  wrap.append(tip);
+  let explore = false;
+  const showTip = (e: PointerEvent) => {
+    const t = e.target as Element;
+    const label = explore ? t.getAttribute?.("data-label") : null;
+    if (!label) {
+      tip.hidden = true;
+      return;
+    }
+    const r = wrap.getBoundingClientRect();
+    tip.textContent = label;
+    tip.hidden = false;
+    const x = Math.min(e.clientX - r.left + 12, r.width - tip.offsetWidth - 4);
+    tip.style.left = `${Math.max(4, x)}px`;
+    tip.style.top = `${Math.max(4, e.clientY - r.top - 34)}px`;
+  };
+  wrap.addEventListener("pointermove", showTip);
+  wrap.addEventListener("pointerdown", showTip);
+  wrap.addEventListener("pointerleave", () => (tip.hidden = true));
+
+  return {
+    setState(id: string, state: ItemState) {
+      for (const el of els.get(id) ?? []) {
+        el.classList.remove("found", "missed");
+        if (state !== "open") el.classList.add(state);
+      }
+    },
+    flash(id: string) {
+      for (const el of els.get(id) ?? []) {
+        el.classList.remove("flash");
+        void (el as SVGElement).getBoundingClientRect();
+        el.classList.add("flash");
+      }
+    },
+    setExplore(on: boolean) {
+      explore = on;
+      wrap.classList.toggle("exploring", on);
+      if (!on) tip.hidden = true;
+    },
+    destroy() {
+      wrap.remove();
+    },
+  };
+}
