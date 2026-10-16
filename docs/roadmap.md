@@ -22,6 +22,22 @@ and one small **starter** quiz (★) so the Easy track stays easy.
 | Territories: who owns what (match) | Physics: units & forces (match) | Inventions: when? (points for how close) | Time Zones (map) | Baby Animals & Group Names (match) |
 | Neighbours (name every bordering country) | Constellations (star map) | Trivia Round (the one multiple-choice quiz) | Landmarks & Wonders (pictures) | Dinosaurs (sort by era) |
 
+### Idea: "Zoom Out" (space)
+One space quiz that starts close and zooms out a step each time you clear a stage,
+like the film *Powers of Ten*:
+1. The planets
+2. The rest of the solar system: dwarf planets (Ceres, Pluto, Eris...), big moons,
+   the asteroid belt, Kuiper belt, Oort cloud
+3. The nearest stars: Proxima Centauri, Alpha Centauri, Barnard's Star, Sirius...
+4. The night sky: constellations, including the 12 of the zodiac (13 with Ophiuchus)
+5. The Milky Way: its arms (we live in the Orion Arm) and its centre
+6. Our galactic neighbours: Andromeda, Triangulum, the Magellanic Clouds
+
+The stages could match the tracks: Easy stops at the planets, Hard goes to Andromeda.
+It could replace both Solar System and Constellations in Science, freeing a slot
+(biology, e.g. cells or famous scientists). Undecided.
+Real distances are far too big to draw to scale, so each stage is its own zoom level.
+
 ### Styles of play the engine will need
 - **Type to fill a board** (map, table, skeleton). Already built.
 - **Click on the board:** given a name, find it.
