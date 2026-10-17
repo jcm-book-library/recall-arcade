@@ -23,6 +23,7 @@ export function createFlagBoard(
       const cell = document.createElement("figure");
       cell.className = "flag";
       cell.dataset.label = item.name;
+      cell.dataset.id = item.id;
       cell.innerHTML = `<img alt="" loading="lazy" src="${flagUrl(item)}"><figcaption></figcaption>`;
       grid.append(cell);
       cells.set(item.id, cell);
@@ -38,7 +39,7 @@ export function createFlagBoard(
     setState(id: string, state: ItemState) {
       const cell = cells.get(id);
       if (!cell) return;
-      cell.classList.remove("found", "missed");
+      cell.classList.remove("found", "missed", "unseen");
       if (state !== "open") cell.classList.add(state);
       cell.querySelector("figcaption")!.textContent = state === "open" ? "" : cell.dataset.label ?? "";
     },
@@ -52,6 +53,12 @@ export function createFlagBoard(
     setCurrent(id: string | null) {
       for (const c of cells.values()) c.classList.remove("current");
       if (id) cells.get(id)?.classList.add("current");
+    },
+    onPick(handler: (id: string) => void) {
+      wrap.addEventListener("click", (e) => {
+        const id = (e.target as Element).closest<HTMLElement>(".flag")?.dataset.id;
+        if (id) handler(id);
+      });
     },
     setExplore(on: boolean) {
       for (const c of cells.values()) c.title = on ? c.dataset.label ?? "" : "";

@@ -76,7 +76,7 @@ function createTableBoard(container: HTMLElement, inPlay: Set<string>, showSymbo
     setState(id: string, state: ItemState) {
       const cell = cells.get(id);
       if (!cell) return;
-      cell.classList.remove("found", "missed");
+      cell.classList.remove("found", "missed", "unseen");
       if (state !== "open") cell.classList.add(state);
       const item = items.find((i) => i.id === id)!;
       cell.querySelector(".ps")!.textContent = state === "open" && !showSymbols ? "" : (item.data!.symbol as string);

@@ -27,7 +27,10 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   let closeTimer = 0;
   let noteTimer = 0;
   const promptMode = deck.mode === "prompt";
-  let queue: string[] = [];
+  // One-at-a-time rounds: a single pass through `order`; `pos` is the item on screen.
+  let order: string[] = [];
+  let pos = 0;
+  let seen = new Set<string>();
   let current: Item | null = null;
   const label = (i: Item) => deck.describe?.(i) ?? i.name;
 
@@ -54,8 +57,9 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     "aria-label": "Your answer",
   });
   const giveUp = h("button", { class: "btn ghost", type: "button" }, "Give up");
-  const skipBtn = h("button", { class: "btn ghost", type: "button", title: "Skip for now (Tab key)" }, "Skip");
-  skipBtn.hidden = !promptMode;
+  const backBtn = h("button", { class: "btn ghost", type: "button", title: "Back to the last one you skipped (Shift+Tab)" }, "◂ Back");
+  const skipBtn = h("button", { class: "btn ghost", type: "button", title: "Skip for now (Tab key)" }, "Skip ▸");
+  backBtn.hidden = skipBtn.hidden = !promptMode;
   const note = h("p", { class: "note", "aria-live": "polite" });
   const promptBox = h("div", { class: "prompt", "aria-live": "polite" });
   promptBox.hidden = !promptMode;
@@ -65,7 +69,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     promptBox,
     h("div", { class: "hud-stats" }, timer, score),
     input,
-    h("div", { class: "hud-actions" }, skipBtn, giveUp),
+    h("div", { class: "hud-actions" }, backBtn, skipBtn, giveUp),
     note,
   );
   hud.hidden = true;
@@ -180,13 +184,20 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     }
     loading.remove();
     board = b;
+    b.onPick?.((id) => {
+      if (phase !== "playing" || !promptMode || found.has(id)) return;
+      const i = order.indexOf(id);
+      if (i >= 0) show(i);
+      input.focus();
+    });
     renderGroups();
   }
 
   // ---------- side panel ----------
   function renderGroups() {
     // A round that is already one group (e.g. Europe) doesn't need a breakdown.
-    const list = (deck.progressGroups ?? []).filter((g) => !deck.variants.some((v) => v.id === variant.id && v.id === g.tag));
+    const all = deck.progressGroups ?? [];
+    const list = all.some((g) => g.tag === variant.id) ? [] : all;
     const rows = list
       .map((g) => {
         const inGroup = playing.filter((i) => i.tags.includes(g.tag));
@@ -212,7 +223,10 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     found = new Set();
     matcher = new Matcher(playing, deck.items);
     note.textContent = "";
-    if (promptMode) queue = shuffle(playing.map((i) => i.id));
+    if (promptMode) {
+      order = shuffle(playing.map((i) => i.id));
+      seen = new Set();
+    }
     for (const i of playing) board.setState(i.id, "open");
     board.setExplore(false);
     recent.replaceChildren();
@@ -223,7 +237,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     input.value = "";
     input.disabled = false;
     renderGroups();
-    if (promptMode) nextPrompt();
+    if (promptMode) show(0);
     startedAt = performance.now();
     tick();
     ticker = window.setInterval(tick, 250);
@@ -240,24 +254,50 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     return a;
   }
 
-  function nextPrompt() {
-    const id = queue.find((q) => !found.has(q));
-    current = playing.find((i) => i.id === id) ?? null;
+  function show(index: number) {
+    pos = index;
+    current = playing.find((i) => i.id === order[index]) ?? null;
+    if (current) seen.add(current.id);
     board?.setCurrent?.(current?.id ?? null);
     promptBox.replaceChildren(current && deck.renderPrompt ? deck.renderPrompt(current) : "");
     // Only the item on screen counts, so answers can't be given out of turn.
     matcher = new Matcher(current ? [current] : []);
+    input.value = "";
+    note.textContent = "";
+    backBtn.disabled = previousOpen() < 0;
+  }
+
+  function previousOpen() {
+    for (let i = pos - 1; i >= 0; i--) if (!found.has(order[i])) return i;
+    return -1;
+  }
+
+  /**
+   * Move to the next unanswered item. After the last one, pick up anything the
+   * player jumped over without seeing; once everything has been seen, the round ends.
+   */
+  function advance() {
+    for (let i = pos + 1; i < order.length; i++) {
+      if (!found.has(order[i])) return show(i);
+    }
+    const missedOut = order.findIndex((id) => !found.has(id) && !seen.has(id));
+    if (missedOut >= 0) return show(missedOut);
+    end();
   }
 
   function skip() {
     if (!current || phase !== "playing") return;
-    queue = [...queue.filter((q) => q !== current!.id), current.id];
-    input.value = "";
-    note.textContent = "";
-    nextPrompt();
+    advance();
+    input.focus();
+  }
+  function back() {
+    if (phase !== "playing") return;
+    const i = previousOpen();
+    if (i >= 0) show(i);
     input.focus();
   }
   skipBtn.addEventListener("click", skip);
+  backBtn.addEventListener("click", back);
 
   function elapsed() {
     return (performance.now() - startedAt) / 1000;
@@ -292,7 +332,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     while (recent.children.length > 8) recent.lastChild!.remove();
     renderGroups();
     if (found.size === playing.length) end();
-    else if (promptMode) nextPrompt();
+    else if (promptMode) advance();
   }
 
   function outside(item: Item) {
@@ -320,7 +360,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Tab" && promptMode) {
       e.preventDefault();
-      skip();
+      if (e.shiftKey) back();
+      else skip();
       return;
     }
     if (e.key !== "Enter") return;
@@ -344,8 +385,12 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     clearTimeout(closeTimer);
     note.textContent = "";
     const seconds = Math.min(elapsed(), minutes ? minutes * 60 : Infinity);
-    const missed = playing.filter((i) => !found.has(i.id));
+    // In one-at-a-time rounds, separate "saw it and skipped" from "never got to it".
+    const unanswered = playing.filter((i) => !found.has(i.id));
+    const missed = promptMode ? unanswered.filter((i) => seen.has(i.id)) : unanswered;
+    const unseen = promptMode ? unanswered.filter((i) => !seen.has(i.id)) : [];
     for (const i of missed) board.setState(i.id, "missed");
+    for (const i of unseen) board.setState(i.id, "unseen");
     board.setCurrent?.(null);
     current = null;
     promptBox.replaceChildren();
@@ -387,6 +432,15 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
             isBest ? "That's your best for this round." : `Your best is ${prevBest!.score}/${prevBest!.total}.`,
             " Hover or tap the board to see any name.",
           ),
+          promptMode
+            ? h(
+                "p",
+                { class: "legend" },
+                h("span", { class: "key found" }, "Named"),
+                h("span", { class: "key missed" }, "Skipped"),
+                h("span", { class: "key unseen" }, "Not reached"),
+              )
+            : null,
         ),
         h(
           "div",
@@ -413,8 +467,16 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
         ? h(
             "details",
             { class: "missed", open: missed.length <= 40 },
-            h("summary", {}, `Missed (${missed.length})`),
+            h("summary", {}, promptMode ? `Skipped (${missed.length})` : `Missed (${missed.length})`),
             h("ul", {}, ...missed.map(label).sort((a, b) => a.localeCompare(b)).map((t) => h("li", {}, t))),
+          )
+        : null,
+      unseen.length
+        ? h(
+            "details",
+            { class: "missed unseen", open: unseen.length <= 40 },
+            h("summary", {}, `Not reached (${unseen.length})`),
+            h("ul", {}, ...unseen.map(label).sort((a, b) => a.localeCompare(b)).map((t) => h("li", {}, t))),
           )
         : null,
       weak.length

@@ -88,6 +88,7 @@ export function createMapBoard(
         .attr("data-label", shape.label)
         .node()!;
       track(playing ? shape.id : null, p);
+      if (playing) p.setAttribute("data-id", shape.id!);
       // Island nations can be spread wide but have almost no land, so judge by area.
       small = path.area(shape.feature) < 30;
       centre = path.centroid(shape.feature) as [number, number];
@@ -103,6 +104,7 @@ export function createMapBoard(
         .attr("r", DOT_PX)
         .attr("class", "dot")
         .attr("data-label", shape.label)
+        .attr("data-id", shape.id)
         .node()!;
       dots.push(c);
       track(shape.id, c);
@@ -163,7 +165,7 @@ export function createMapBoard(
   return {
     setState(id: string, state: ItemState) {
       for (const el of els.get(id) ?? []) {
-        el.classList.remove("found", "missed");
+        el.classList.remove("found", "missed", "unseen");
         if (state !== "open") el.classList.add(state);
       }
     },
@@ -191,6 +193,12 @@ export function createMapBoard(
       locator.setAttribute("cy", String(box.y + box.height / 2));
       locator.setAttribute("r", String(Math.max(16, Math.max(box.width, box.height) / 2 + 8)));
       locator.setAttribute("visibility", "visible");
+    },
+    onPick(handler: (id: string) => void) {
+      svg.on("click.pick", (e: MouseEvent) => {
+        const id = (e.target as Element).getAttribute?.("data-id");
+        if (id) handler(id);
+      });
     },
     setExplore(on: boolean) {
       explore = on;

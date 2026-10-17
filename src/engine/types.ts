@@ -34,7 +34,8 @@ export interface ProgressGroup {
   label: string;
 }
 
-export type ItemState = "open" | "found" | "missed";
+/** "unseen": a one-at-a-time round ended before this item came up. */
+export type ItemState = "open" | "found" | "missed" | "unseen";
 
 export interface Board {
   setState(id: string, state: ItemState): void;
@@ -42,6 +43,8 @@ export interface Board {
   flash(id: string): void;
   /** Highlight the item being asked about (one-at-a-time games). */
   setCurrent?(id: string | null): void;
+  /** Called when the player clicks an item on the board, to jump to it. */
+  onPick?(handler: (id: string) => void): void;
   /** After the game, let the player hover/tap to learn names. */
   setExplore(on: boolean): void;
   destroy(): void;
