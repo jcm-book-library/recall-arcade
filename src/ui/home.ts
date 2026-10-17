@@ -3,9 +3,8 @@ import { gamesFor } from "../engine/storage";
 import { h } from "./dom";
 
 const COMING = [
-  ["Zoom Out", "From the planets to Andromeda"],
-  ["Seas & Lakes", "The water between the countries"],
-  ["Airport Codes", "MEL, SIN, LHR and the rest"],
+  ["Cells & Life", "Label the parts of a cell"],
+  ["Big Moments", "Drag history onto a timeline"],
   ["The Overworld", "Walk a pixel hero between games"],
 ];
 

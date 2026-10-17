@@ -20,6 +20,10 @@ export interface Variant {
   minutes: number;
   /** Which items this variant covers. */
   filter: (item: Item) => boolean;
+  /** If set, each round uses this many items picked at random from the filter. */
+  sample?: number;
+  /** Marks the small starter round for the Easy track. */
+  starter?: boolean;
 }
 
 export interface DeckOption {
@@ -77,8 +81,9 @@ export interface Deck {
   /**
    * "any": type answers in any order (Countries of the World).
    * "prompt": one item at a time is shown, and you name it (Flags, Capitals).
+   * "click": one name at a time is shown, and you click it on the board (Seas & Lakes).
    */
-  mode?: "any" | "prompt";
+  mode?: "any" | "prompt" | "click";
   /** What to show for the current item in "prompt" mode. */
   renderPrompt?: (item: Item) => Node;
   /** Longer label for result lists, e.g. "France: Paris". */

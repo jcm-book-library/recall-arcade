@@ -4,11 +4,14 @@ import { countriesDeck } from "./decks/countries";
 import { elementsDeck } from "./decks/elements";
 import { flagsDeck } from "./decks/flags";
 import { capitalsDeck } from "./decks/capitals";
+import { waterDeck } from "./decks/water";
+import { airportsDeck } from "./decks/airports";
+import { zoomOutDeck } from "./decks/zoomout";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 
 // Every game in the arcade. Adding a new deck here adds it to the home screen.
-const DECKS: Deck[] = [countriesDeck, flagsDeck, capitalsDeck, elementsDeck];
+const DECKS: Deck[] = [countriesDeck, flagsDeck, capitalsDeck, waterDeck, zoomOutDeck, elementsDeck, airportsDeck];
 
 const root = document.getElementById("app")!;
 let cleanup: (() => void) | void;

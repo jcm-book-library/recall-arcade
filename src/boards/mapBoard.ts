@@ -9,6 +9,10 @@ export interface MapShape {
   label: string;
   feature?: GeoPermissibleObjects;
   point?: [number, number];
+  /** How to draw it. Defaults to land. */
+  kind?: "land" | "water" | "river";
+  /** Seas and oceans are drawn beneath the land so coastlines stay crisp. */
+  underLand?: boolean;
 }
 
 export interface MapView {
@@ -68,7 +72,9 @@ export function createMapBoard(
     els.get(id)!.push(el);
   };
 
+  const seaLayer = root.append("g");
   const landLayer = root.append("g");
+  const waterLayer = root.append("g");
   const dotLayer = root.append("g");
   // Pulsing ring that marks the place being asked about.
   const locator = root.append("circle").attr("class", "locator").attr("visibility", "hidden").node()!;
@@ -81,16 +87,23 @@ export function createMapBoard(
     if (shape.feature) {
       const d = path(shape.feature);
       if (!d) continue;
-      const p = landLayer
+      const kind = shape.kind ?? "land";
+      const layer = kind === "land" ? landLayer : shape.underLand ? seaLayer : waterLayer;
+      const p = layer
         .append("path")
         .attr("d", d)
-        .attr("class", playing ? "land" : "land off")
+        .attr("class", playing ? kind : `${kind} off`)
         .attr("data-label", shape.label)
         .node()!;
       track(playing ? shape.id : null, p);
       if (playing) p.setAttribute("data-id", shape.id!);
+      if (kind === "river" && playing) {
+        // Rivers are thin, so give them a wider invisible strip to click on.
+        waterLayer.append("path").attr("d", d).attr("class", "river-hit")
+          .attr("data-id", shape.id!).attr("data-label", shape.label);
+      }
       // Island nations can be spread wide but have almost no land, so judge by area.
-      small = path.area(shape.feature) < 30;
+      small = kind !== "river" && path.area(shape.feature) < 30;
       centre = path.centroid(shape.feature) as [number, number];
     } else if (shape.point) {
       small = true;

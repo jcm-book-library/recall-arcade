@@ -26,7 +26,12 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   let buildToken = 0;
   let closeTimer = 0;
   let noteTimer = 0;
-  const promptMode = deck.mode === "prompt";
+  const clickMode = deck.mode === "click";
+  const promptMode = deck.mode === "prompt" || clickMode;
+  // Items no longer asked: named, or (click games) revealed after three wrong clicks.
+  let revealed = new Set<string>();
+  let wrongClicks = 0;
+  const closed = (id: string) => found.has(id) || revealed.has(id);
   // One-at-a-time rounds: a single pass through `order`; `pos` is the item on screen.
   let order: string[] = [];
   let pos = 0;
@@ -61,6 +66,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   const skipBtn = h("button", { class: "btn ghost", type: "button", title: "Skip for now (Tab key)" }, "Skip ▸");
   backBtn.hidden = skipBtn.hidden = !promptMode;
   const note = h("p", { class: "note", "aria-live": "polite" });
+  if (clickMode) input.hidden = true;
   const promptBox = h("div", { class: "prompt", "aria-live": "polite" });
   promptBox.hidden = !promptMode;
   const hud = h(
@@ -110,7 +116,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
             buildBoard();
           },
         },
-        v.label,
+        v.starter ? `★ ${v.label}` : v.label,
       ),
     );
     const timeSelect = h(
@@ -168,6 +174,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   function selectItems(): Item[] {
     let list = deck.items.filter(variant.filter);
     if (deck.applyOptions) list = deck.applyOptions(list, options);
+    if (variant.sample && list.length > variant.sample) list = shuffle(list).slice(0, variant.sample);
     return list;
   }
 
@@ -185,6 +192,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     loading.remove();
     board = b;
     b.onPick?.((id) => {
+      if (clickMode) return clicked(id);
       if (phase !== "playing" || !promptMode || found.has(id)) return;
       const i = order.indexOf(id);
       if (i >= 0) show(i);
@@ -218,8 +226,11 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   }
 
   // ---------- the round ----------
-  function start() {
+  async function start() {
+    // Sampled rounds draw a fresh set of items every time.
+    if (variant.sample) await buildBoard();
     if (!board) return;
+    revealed = new Set();
     found = new Set();
     matcher = new Matcher(playing, deck.items);
     note.textContent = "";
@@ -238,10 +249,11 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     input.disabled = false;
     renderGroups();
     if (promptMode) show(0);
+    if (clickMode) document.addEventListener("keydown", clickKeys);
     startedAt = performance.now();
     tick();
     ticker = window.setInterval(tick, 250);
-    input.focus();
+    if (!clickMode) input.focus();
   }
 
   // ---------- one-at-a-time rounds ----------
@@ -258,7 +270,9 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     pos = index;
     current = playing.find((i) => i.id === order[index]) ?? null;
     if (current) seen.add(current.id);
-    board?.setCurrent?.(current?.id ?? null);
+    wrongClicks = 0;
+    // In click games, highlighting the answer would give it away.
+    board?.setCurrent?.(clickMode ? null : current?.id ?? null);
     promptBox.replaceChildren(current && deck.renderPrompt ? deck.renderPrompt(current) : "");
     // Only the item on screen counts, so answers can't be given out of turn.
     matcher = new Matcher(current ? [current] : []);
@@ -268,7 +282,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   }
 
   function previousOpen() {
-    for (let i = pos - 1; i >= 0; i--) if (!found.has(order[i])) return i;
+    for (let i = pos - 1; i >= 0; i--) if (!closed(order[i])) return i;
     return -1;
   }
 
@@ -278,9 +292,9 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
    */
   function advance() {
     for (let i = pos + 1; i < order.length; i++) {
-      if (!found.has(order[i])) return show(i);
+      if (!closed(order[i])) return show(i);
     }
-    const missedOut = order.findIndex((id) => !found.has(id) && !seen.has(id));
+    const missedOut = order.findIndex((id) => !closed(id) && !seen.has(id));
     if (missedOut >= 0) return show(missedOut);
     end();
   }
@@ -288,13 +302,43 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   function skip() {
     if (!current || phase !== "playing") return;
     advance();
-    input.focus();
+    if (!clickMode) input.focus();
   }
   function back() {
     if (phase !== "playing") return;
     const i = previousOpen();
     if (i >= 0) show(i);
-    input.focus();
+    if (!clickMode) input.focus();
+  }
+
+  /** Click games: the player clicked something on the board. */
+  function clicked(id: string) {
+    if (phase !== "playing" || !current || closed(id)) return;
+    if (id === current.id) return accept(current);
+    wrongClicks++;
+    const other = deck.items.find((i) => i.id === id);
+    const left = 3 - wrongClicks;
+    if (left > 0) {
+      const called = (i: Item) => (i.data?.inSentence as string) ?? i.name;
+      showNote(`${other ? `That's ${called(other)}.` : "Not that one."} ${left} ${left === 1 ? "try" : "tries"} left.`);
+      return;
+    }
+    // Three strikes: show where it was and move on.
+    const answer = current;
+    revealed.add(answer.id);
+    board?.setState(answer.id, "missed");
+    board?.flash(answer.id);
+    renderGroups();
+    if (playing.every((i) => closed(i.id))) return end();
+    advance();
+    showNote(`Missed that one: ${answer.name} is now shown in red.`);
+  }
+
+  function clickKeys(e: KeyboardEvent) {
+    if (e.key !== "Tab" || phase !== "playing") return;
+    e.preventDefault();
+    if (e.shiftKey) back();
+    else skip();
   }
   skipBtn.addEventListener("click", skip);
   backBtn.addEventListener("click", back);
@@ -331,7 +375,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     recent.prepend(h("li", {}, label(item)));
     while (recent.children.length > 8) recent.lastChild!.remove();
     renderGroups();
-    if (found.size === playing.length) end();
+    if (playing.every((i) => closed(i.id))) end();
     else if (promptMode) advance();
   }
 
@@ -380,6 +424,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   function end() {
     if (phase !== "playing" || !board) return;
     phase = "over";
+    document.removeEventListener("keydown", clickKeys);
     clearInterval(ticker);
     clearTimeout(pending);
     clearTimeout(closeTimer);
@@ -387,7 +432,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     const seconds = Math.min(elapsed(), minutes ? minutes * 60 : Infinity);
     // In one-at-a-time rounds, separate "saw it and skipped" from "never got to it".
     const unanswered = playing.filter((i) => !found.has(i.id));
-    const missed = promptMode ? unanswered.filter((i) => seen.has(i.id)) : unanswered;
+    const missed = promptMode ? unanswered.filter((i) => seen.has(i.id) || revealed.has(i.id)) : unanswered;
     const unseen = promptMode ? unanswered.filter((i) => !seen.has(i.id)) : [];
     for (const i of missed) board.setState(i.id, "missed");
     for (const i of unseen) board.setState(i.id, "unseen");
@@ -507,6 +552,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   buildBoard();
 
   return () => {
+    document.removeEventListener("keydown", clickKeys);
     clearInterval(ticker);
     clearTimeout(pending);
     buildToken++;

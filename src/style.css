@@ -16,6 +16,12 @@
   --accent: #f0a31a;
   --on-accent: #1b1406;
   --unseen: #a9b6c0;
+  --water: #b4cfe0;
+  --river: #3f7fb0;
+  /* Zoom Out is always drawn as deep space, whatever the page theme. */
+  --space: #0a0f1f;
+  --space-ink: #e8ecff;
+  --space-dim: #3a4670;
   --font-pixel: "Silkscreen", "Courier New", monospace;
   --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r: 6px;
@@ -233,6 +239,76 @@ button, input, select { font: inherit; color: inherit; }
 .flag { cursor: pointer; }
 .flag.current img { filter: grayscale(1) opacity(0.35); outline: 3px solid var(--accent); outline-offset: 2px; }
 .flag.flash img { animation: hit 0.8s; }
+
+/* ---------- seas, lakes & rivers ---------- */
+.water { fill: var(--water); stroke: var(--grid); stroke-width: 0.6; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill 0.3s; }
+.water:hover { stroke: var(--accent); stroke-width: 1.5; }
+.water.off { fill: var(--ocean); stroke: none; cursor: default; }
+.water.found { fill: var(--found); opacity: 0.8; }
+.water.missed { fill: var(--missed); opacity: 0.8; }
+.water.unseen { fill: var(--unseen); }
+.river { fill: none; stroke: var(--river); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.river.found { stroke: var(--found); stroke-width: 3; }
+.river.missed { stroke: var(--missed); stroke-width: 3; }
+.river.unseen { stroke: var(--unseen); }
+.river-hit { fill: none; stroke: transparent; stroke-width: 12; vector-effect: non-scaling-stroke; cursor: pointer; pointer-events: stroke; }
+.river-hit:hover + .river, .river-hit:hover { stroke: color-mix(in srgb, var(--accent) 40%, transparent); }
+
+/* ---------- airport codes ---------- */
+.prompt-code .code { font: clamp(2.6rem, 9vw, 4rem)/1 var(--font-pixel); letter-spacing: 0.12em; color: var(--accent); }
+
+/* ---------- zoom out ---------- */
+.zoom { display: grid; gap: 10px; }
+.ztabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ztab {
+  display: inline-flex; gap: 6px; align-items: baseline; padding: 6px 10px; cursor: pointer;
+  border: 2px solid var(--line); border-radius: var(--r); background: var(--panel); font-size: 0.9rem;
+}
+.ztab .zn { font-family: var(--font-pixel); color: var(--muted); }
+.ztab .zc { color: var(--muted); font-variant-numeric: tabular-nums; }
+.ztab.on { border-color: var(--accent); }
+.ztab.done .zc { color: var(--found); font-weight: 700; }
+.zviewport {
+  position: relative; aspect-ratio: 1000 / 560; max-width: 100%; overflow: hidden;
+  border-radius: var(--r); border: 2px solid var(--line);
+  background: radial-gradient(ellipse at 30% 40%, #18224a 0%, var(--space) 70%);
+}
+.zstage { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 0.9s ease, opacity 0.9s ease; transform-origin: 50% 50%; }
+.zstage.z-past { transform: scale(0.15); opacity: 0; pointer-events: none; }
+.zstage.z-future { transform: scale(4); opacity: 0; pointer-events: none; }
+.zcaption { font-size: 0.92rem; color: var(--muted); }
+.zcaption strong { color: var(--ink); font-weight: 700; }
+.z-sun { fill: #ffcf5a; }
+.z-earth { fill: #4f8fd6; }
+.z-orbit { fill: none; stroke: var(--space-dim); stroke-width: 1; stroke-dasharray: 3 5; }
+.z-ring { fill: none; stroke: #c9b07a; stroke-width: 3; opacity: 0.6; }
+.z-parent { fill: #4b5680; }
+.z-divider { stroke: var(--space-dim); stroke-width: 1; }
+.z-halo { fill: #1b2550; opacity: 0.55; }
+.z-bar { fill: #ffe9a8; opacity: 0.35; }
+.z-you { fill: var(--accent); stroke: var(--space); stroke-width: 2; }
+.z-you-label { fill: var(--accent); font: 700 13px var(--font-body); paint-order: stroke; stroke: var(--space); stroke-width: 4px; }
+.z-caption, .z-small { fill: #8f9bc7; font: 13px var(--font-body); }
+.z-caption { font: 12px var(--font-pixel); letter-spacing: 0.08em; text-transform: uppercase; text-anchor: middle; }
+.z-centre { text-anchor: middle; }
+.zitem .mark { fill: var(--space-dim); stroke: #6c78a8; stroke-width: 1; transition: fill 0.4s, stroke 0.4s; }
+.zitem .band { fill: none; stroke: var(--space-dim); stroke-width: 26; stroke-linecap: round; opacity: 0.8; }
+.zitem .ring { fill: none; stroke: #6c78a8; stroke-width: 2; stroke-dasharray: 8 6; }
+.zitem .arm { fill: none; stroke: var(--space-dim); stroke-width: 22; stroke-linecap: round; opacity: 0.9; }
+.zitem .arm.spur { stroke-width: 12; }
+.zitem .star { fill: #8f9bc7; stroke: none; }
+.zlabel { fill: var(--space-ink); font: 600 14px var(--font-body); visibility: hidden; paint-order: stroke; stroke: var(--space); stroke-width: 4px; }
+.zlabel.above, .zlabel.below { text-anchor: middle; }
+.zlabel.left { text-anchor: end; }
+.zitem.found .zlabel, .zitem.missed .zlabel { visibility: visible; }
+.zitem.missed .zlabel { fill: #ff7a6e; }
+.zitem.found .band, .zitem.found .arm { stroke: #5fd08d; opacity: 0.55; }
+.zitem.found .ring { stroke: #5fd08d; }
+.zitem.found .star { fill: #ffe9a8; }
+.zitem.missed .mark { stroke: #ff7a6e; }
+.zitem.missed .band, .zitem.missed .arm { stroke: #ff7a6e; opacity: 0.45; }
+.zitem.flash .mark { animation: zflash 1s ease-out; }
+@keyframes zflash { 0% { stroke: #ffcf5a; stroke-width: 6; } }
 
 /* ---------- periodic table ---------- */
 .ptable-scroll { overflow-x: auto; padding-bottom: 6px; }
