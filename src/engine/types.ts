@@ -40,6 +40,8 @@ export interface Board {
   setState(id: string, state: ItemState): void;
   /** Briefly highlight a just-found item. */
   flash(id: string): void;
+  /** Highlight the item being asked about (one-at-a-time games). */
+  setCurrent?(id: string | null): void;
   /** After the game, let the player hover/tap to learn names. */
   setExplore(on: boolean): void;
   destroy(): void;
@@ -69,4 +71,14 @@ export interface Deck {
   /** Message when the player names something real that isn't in this round. */
   outsideHint?: (item: Item, options: Record<string, boolean>) => string | null;
   createBoard: (ctx: BoardContext) => Board | Promise<Board>;
+  /**
+   * "any": type answers in any order (Countries of the World).
+   * "prompt": one item at a time is shown, and you name it (Flags, Capitals).
+   */
+  mode?: "any" | "prompt";
+  /** What to show for the current item in "prompt" mode. */
+  renderPrompt?: (item: Item) => Node;
+  /** Longer label for result lists, e.g. "France: Paris". */
+  describe?: (item: Item) => string;
+  placeholder?: string;
 }

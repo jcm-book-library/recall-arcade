@@ -16,11 +16,11 @@ and one small **starter** quiz (★) so the Easy track stays easy.
 | Geography | Science | History | Travel & Transport | Nature & Animals |
 |---|---|---|---|---|
 | Countries of the World (map) ✅ built | Periodic Table ✅ built | ★ Big Moments: drag events onto a timeline | ★ NATO Phonetic Alphabet | ★ Australian Animals (pictures) |
-| ★ Capitals (match) | ★ The Solar System (diagram, order) | Australian Prime Ministers (in order) | Airport Codes (MEL, SIN, LHR...) | Animal Groups (sort: mammal, bird, reptile...) |
+| ★ Capitals (match) | ★ Zoom Out: from the planets to Andromeda (space) | Australian Prime Ministers (in order) | Airport Codes (MEL, SIN, LHR...) | Animal Groups (sort: mammal, bird, reptile...) |
 | Flags (pictures) | Bones of the Body (click the skeleton) | Europe in 1914 (map) | Airlines (tail fins / logos) | Dog Breeds (pictures) |
 | Seas, Lakes & Rivers (click the map) | Organs & Body Systems (match) | The Ancient World (map) | Currencies (match) | Where Animals Live (map) |
 | Territories: who owns what (match) | Physics: units & forces (match) | Inventions: when? (points for how close) | Time Zones (map) | Baby Animals & Group Names (match) |
-| Neighbours (name every bordering country) | Constellations (star map) | Trivia Round (the one multiple-choice quiz) | Landmarks & Wonders (pictures) | Dinosaurs (sort by era) |
+| Neighbours (name every bordering country) | Cells & Life (label the cell) | Trivia Round (the one multiple-choice quiz) | Landmarks & Wonders (pictures) | Dinosaurs (sort by era) |
 
 ### Idea: "Zoom Out" (space)
 One space quiz that starts close and zooms out a step each time you clear a stage,
@@ -34,8 +34,8 @@ like the film *Powers of Ten*:
 6. Our galactic neighbours: Andromeda, Triangulum, the Magellanic Clouds
 
 The stages could match the tracks: Easy stops at the planets, Hard goes to Andromeda.
-It could replace both Solar System and Constellations in Science, freeing a slot
-(biology, e.g. cells or famous scientists). Undecided.
+Decided: Zoom Out replaces Solar System and Constellations in Science, and the freed slot
+goes to **Cells & Life** (biology).
 Real distances are far too big to draw to scale, so each stage is its own zoom level.
 
 ### Styles of play the engine will need

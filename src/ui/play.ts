@@ -26,6 +26,10 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   let buildToken = 0;
   let closeTimer = 0;
   let noteTimer = 0;
+  const promptMode = deck.mode === "prompt";
+  let queue: string[] = [];
+  let current: Item | null = null;
+  const label = (i: Item) => deck.describe?.(i) ?? i.name;
 
   function showNote(text: string, kind: "info" | "close" = "info") {
     clearTimeout(noteTimer);
@@ -46,12 +50,24 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     autocomplete: "off",
     autocapitalize: "off",
     spellcheck: "false",
-    placeholder: "Type a name…",
+    placeholder: deck.placeholder ?? "Type a name…",
     "aria-label": "Your answer",
   });
   const giveUp = h("button", { class: "btn ghost", type: "button" }, "Give up");
+  const skipBtn = h("button", { class: "btn ghost", type: "button", title: "Skip for now (Tab key)" }, "Skip");
+  skipBtn.hidden = !promptMode;
   const note = h("p", { class: "note", "aria-live": "polite" });
-  const hud = h("div", { class: "hud" }, h("div", { class: "hud-stats" }, timer, score), input, giveUp, note);
+  const promptBox = h("div", { class: "prompt", "aria-live": "polite" });
+  promptBox.hidden = !promptMode;
+  const hud = h(
+    "div",
+    { class: "hud" },
+    promptBox,
+    h("div", { class: "hud-stats" }, timer, score),
+    input,
+    h("div", { class: "hud-actions" }, skipBtn, giveUp),
+    note,
+  );
   hud.hidden = true;
   const results = h("div", { class: "results" });
   results.hidden = true;
@@ -196,6 +212,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     found = new Set();
     matcher = new Matcher(playing, deck.items);
     note.textContent = "";
+    if (promptMode) queue = shuffle(playing.map((i) => i.id));
     for (const i of playing) board.setState(i.id, "open");
     board.setExplore(false);
     recent.replaceChildren();
@@ -206,11 +223,41 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     input.value = "";
     input.disabled = false;
     renderGroups();
+    if (promptMode) nextPrompt();
     startedAt = performance.now();
     tick();
     ticker = window.setInterval(tick, 250);
     input.focus();
   }
+
+  // ---------- one-at-a-time rounds ----------
+  function shuffle<T>(list: T[]): T[] {
+    const a = [...list];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function nextPrompt() {
+    const id = queue.find((q) => !found.has(q));
+    current = playing.find((i) => i.id === id) ?? null;
+    board?.setCurrent?.(current?.id ?? null);
+    promptBox.replaceChildren(current && deck.renderPrompt ? deck.renderPrompt(current) : "");
+    // Only the item on screen counts, so answers can't be given out of turn.
+    matcher = new Matcher(current ? [current] : []);
+  }
+
+  function skip() {
+    if (!current || phase !== "playing") return;
+    queue = [...queue.filter((q) => q !== current!.id), current.id];
+    input.value = "";
+    note.textContent = "";
+    nextPrompt();
+    input.focus();
+  }
+  skipBtn.addEventListener("click", skip);
 
   function elapsed() {
     return (performance.now() - startedAt) / 1000;
@@ -241,10 +288,11 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     input.classList.remove("hit");
     void input.offsetWidth;
     input.classList.add("hit");
-    recent.prepend(h("li", {}, item.name));
+    recent.prepend(h("li", {}, label(item)));
     while (recent.children.length > 8) recent.lastChild!.remove();
     renderGroups();
     if (found.size === playing.length) end();
+    else if (promptMode) nextPrompt();
   }
 
   function outside(item: Item) {
@@ -270,6 +318,11 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     }
   });
   input.addEventListener("keydown", (e) => {
+    if (e.key === "Tab" && promptMode) {
+      e.preventDefault();
+      skip();
+      return;
+    }
     if (e.key !== "Enter") return;
     const r = matcher.check(input.value);
     if (r.kind === "outside") outside(r.item);
@@ -293,6 +346,9 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     const seconds = Math.min(elapsed(), minutes ? minutes * 60 : Infinity);
     const missed = playing.filter((i) => !found.has(i.id));
     for (const i of missed) board.setState(i.id, "missed");
+    board.setCurrent?.(null);
+    current = null;
+    promptBox.replaceChildren();
     board.setExplore(true);
     input.disabled = true;
     hud.hidden = true;
@@ -358,7 +414,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
             "details",
             { class: "missed", open: missed.length <= 40 },
             h("summary", {}, `Missed (${missed.length})`),
-            h("ul", {}, ...missed.sort((a, b) => a.name.localeCompare(b.name)).map((i) => h("li", {}, i.name))),
+            h("ul", {}, ...missed.map(label).sort((a, b) => a.localeCompare(b)).map((t) => h("li", {}, t))),
           )
         : null,
       weak.length
@@ -373,7 +429,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
                 h(
                   "li",
                   {},
-                  w.item!.name,
+                  label(w.item!),
                   h("span", {}, ` missed ${w.stats.missed} of ${w.stats.missed + w.stats.found}`),
                 ),
               ),

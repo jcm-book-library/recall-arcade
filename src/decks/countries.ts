@@ -54,6 +54,36 @@ let topoPromise: Promise<Topology> | null = null;
 const loadTopo = () =>
   (topoPromise ??= import("world-atlas/countries-50m.json").then((m) => m.default as unknown as Topology));
 
+/**
+ * Draws the world map for any deck whose item ids are country map names.
+ * `labelFor` sets the name shown when hovering after a round.
+ */
+export async function createCountryMap(
+  container: HTMLElement,
+  playing: Item[],
+  viewId: string,
+  labelFor: (countryName: string, mapName: string) => string = (n) => n,
+) {
+  const topo = await loadTopo();
+  const fc = feature(topo, topo.objects.countries as GeometryCollection) as unknown as {
+    features: { properties: { name: string } }[];
+  };
+  const known = new Set(items.map((i) => i.id));
+  const nameOf = (n: string) => items.find((i) => i.id === n)?.name ?? hiddenLabels.get(n) ?? n;
+  const shapes: MapShape[] = fc.features
+    .filter((f) => f.properties.name !== "Antarctica")
+    .map((f) => {
+      const n = f.properties.name;
+      return { id: known.has(n) ? n : null, label: labelFor(nameOf(n), n), feature: f as never };
+    });
+  for (const [id, point] of Object.entries(EXTRA_POINTS)) {
+    shapes.push({ id, label: labelFor(nameOf(id), id), point });
+  }
+  return createMapBoard(container, shapes, new Set(playing.map((i) => i.id)), VIEWS[viewId] ?? VIEWS.world);
+}
+
+export { REGIONS, items as countryItems };
+
 export const countriesDeck: Deck = {
   id: "countries",
   title: "Countries of the World",
@@ -83,25 +113,6 @@ export const countriesDeck: Deck = {
     item.tags.includes("territory") && !opts.territories
       ? `${item.name} is a territory, not a country. Tick "Include territories" to count these.`
       : null,
-  async createBoard({ container, items: playing, variant }) {
-    const topo = await loadTopo();
-    const fc = feature(topo, topo.objects.countries as GeometryCollection) as unknown as {
-      features: { properties: { name: string } }[];
-    };
-    const known = new Set(items.map((i) => i.id));
-    const shapes: MapShape[] = fc.features
-      .filter((f) => f.properties.name !== "Antarctica")
-      .map((f) => {
-        const n = f.properties.name;
-        return {
-          id: known.has(n) ? n : null,
-          label: items.find((i) => i.id === n)?.name ?? hiddenLabels.get(n) ?? n,
-          feature: f as never,
-        };
-      });
-    for (const [id, point] of Object.entries(EXTRA_POINTS)) {
-      shapes.push({ id, label: items.find((i) => i.id === id)?.name ?? id, point });
-    }
-    return createMapBoard(container, shapes, new Set(playing.map((i) => i.id)), VIEWS[variant.id] ?? VIEWS.world);
-  },
+  createBoard: ({ container, items: playing, variant }) =>
+    createCountryMap(container, playing, variant.id),
 };

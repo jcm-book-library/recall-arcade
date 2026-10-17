@@ -3,8 +3,7 @@ import { gamesFor } from "../engine/storage";
 import { h } from "./dom";
 
 const COMING = [
-  ["Flags", "Match every flag to its country"],
-  ["Capitals", "From Canberra to Ouagadougou"],
+  ["Zoom Out", "From the planets to Andromeda"],
   ["Seas & Lakes", "The water between the countries"],
   ["Airport Codes", "MEL, SIN, LHR and the rest"],
   ["The Overworld", "Walk a pixel hero between games"],

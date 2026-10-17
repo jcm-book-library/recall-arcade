@@ -193,6 +193,34 @@ button, input, select { font: inherit; color: inherit; }
   background: var(--ink); color: var(--bg); font-size: 0.9rem; white-space: nowrap;
 }
 
+/* ---------- one-at-a-time prompt ---------- */
+.prompt { grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; min-height: 64px; }
+.prompt-text { margin: 0; font-size: 1.35rem; text-align: center; text-wrap: balance; }
+.prompt-text strong { color: var(--accent); }
+.prompt-flag {
+  height: clamp(90px, 18vw, 150px); width: auto; max-width: 100%;
+  border: 1px solid var(--line); border-radius: 4px; box-shadow: 4px 4px 0 var(--line);
+}
+.hud-actions { display: flex; gap: 8px; }
+.hud-actions .btn { white-space: nowrap; padding-inline: 14px; }
+.locator { fill: none; stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; animation: pulse 1.2s ease-in-out infinite; pointer-events: none; }
+.land.current { fill: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.dot.current { fill: var(--accent); opacity: 1; r: 9px; stroke-width: 2; }
+
+/* ---------- flag wall ---------- */
+.flagwall h3 { font: 0.8rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 14px 0 8px; }
+.flagwall h3:first-child { margin-top: 0; }
+.flaggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.flag { margin: 0; display: grid; gap: 3px; align-content: start; }
+.flag img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 3px; border: 1px solid var(--line); filter: grayscale(1) opacity(0.35); transition: filter 0.3s; }
+.flag figcaption { font-size: 0.72rem; line-height: 1.2; min-height: 1.2em; text-align: center; }
+.flag.found img { filter: none; }
+.flag.found figcaption { color: var(--found); font-weight: 700; }
+.flag.missed img { filter: none; }
+.flag.missed figcaption { color: var(--missed); font-weight: 700; }
+.flag.current img { filter: grayscale(1) opacity(0.35); outline: 3px solid var(--accent); outline-offset: 2px; }
+.flag.flash img { animation: hit 0.8s; }
+
 /* ---------- periodic table ---------- */
 .ptable-scroll { overflow-x: auto; padding-bottom: 6px; }
 .ptable {
@@ -217,6 +245,7 @@ button, input, select { font: inherit; color: inherit; }
 @keyframes flash { 0% { fill: var(--accent); background: var(--accent); } 100% { } }
 @keyframes hit { 0% { border-color: var(--found); box-shadow: 0 0 0 4px var(--found); } 100% { } }
 @keyframes nope { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes pulse { 50% { opacity: 0.55; } }
 @keyframes blink { 50% { opacity: 0.4; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

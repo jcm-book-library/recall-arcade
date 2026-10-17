@@ -70,6 +70,8 @@ export function createMapBoard(
 
   const landLayer = root.append("g");
   const dotLayer = root.append("g");
+  // Pulsing ring that marks the place being asked about.
+  const locator = root.append("circle").attr("class", "locator").attr("visibility", "hidden").node()!;
   const dots: SVGCircleElement[] = [];
 
   for (const shape of shapes) {
@@ -171,6 +173,24 @@ export function createMapBoard(
         void (el as SVGElement).getBoundingClientRect();
         el.classList.add("flash");
       }
+    },
+    setCurrent(id: string | null) {
+      for (const el of wrap.querySelectorAll(".current")) el.classList.remove("current");
+      const targets = id ? els.get(id) ?? [] : [];
+      for (const el of targets) {
+        el.classList.add("current");
+        // Keep the highlighted dot on top of its neighbours.
+        if (el.tagName === "circle") el.parentNode?.append(el);
+      }
+      if (!targets.length) {
+        locator.setAttribute("visibility", "hidden");
+        return;
+      }
+      const box = (targets[0] as SVGGraphicsElement).getBBox();
+      locator.setAttribute("cx", String(box.x + box.width / 2));
+      locator.setAttribute("cy", String(box.y + box.height / 2));
+      locator.setAttribute("r", String(Math.max(16, Math.max(box.width, box.height) / 2 + 8)));
+      locator.setAttribute("visibility", "visible");
     },
     setExplore(on: boolean) {
       explore = on;

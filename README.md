@@ -6,6 +6,8 @@ Started with a Sporcle-style "name every country" map quiz.
 ## Games
 - **Countries of the World**: type every country before time runs out; the map fills in.
   World or one continent at a time, with optional territories (Greenland, New Caledonia...).
+- **Flags of the World**: a flag appears, you name the country. Skip and come back.
+- **Capital Cities**: a country is ringed on the map, you name its capital.
 - **Periodic Table**: name the elements, with optional symbol hints.
 
 ## How it's built
@@ -19,7 +21,10 @@ Started with a Sporcle-style "name every country" map quiz.
 ```
 npm install
 npm run dev     # opens a live-reloading local copy
-npm run build   # makes dist/index.html, a single self-contained file
+npm run build   # makes the finished site in dist/
 ```
 
 Map data: Natural Earth via the `world-atlas` package (public domain).
+Flags: the `flag-icons` package (MIT licence).
+
+Plans and ideas live in [docs/](docs/).
