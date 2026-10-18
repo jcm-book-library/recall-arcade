@@ -3,12 +3,13 @@ import { gamesFor } from "../engine/storage";
 import { h } from "./dom";
 
 // The five subjects, each aiming for six quizzes. Planned ones show as "coming".
+// The five subjects, six quizzes each. Planned ones would show as "coming".
 const SUBJECTS: { name: string; planned: string[] }[] = [
-  { name: "Geography", planned: ["Territories", "Neighbours"] },
-  { name: "Science", planned: ["Physics: Units & Forces", "Organs & Body Systems"] },
-  { name: "History", planned: ["Australian Prime Ministers", "Europe in 1914", "The Ancient World", "Inventions", "Trivia Round"] },
-  { name: "Travel & Transport", planned: ["NATO Alphabet", "Airlines", "Currencies", "Time Zones", "Landmarks"] },
-  { name: "Nature & Animals", planned: ["Australian Animals", "Animal Groups", "Dog Breeds", "Where Animals Live", "Baby Animals", "Dinosaurs"] },
+  { name: "Geography", planned: [] },
+  { name: "Science", planned: [] },
+  { name: "History", planned: [] },
+  { name: "Travel & Transport", planned: [] },
+  { name: "Nature & Animals", planned: [] },
 ];
 
 function card(deck: Deck) {

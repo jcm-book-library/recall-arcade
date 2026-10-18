@@ -95,6 +95,8 @@ export interface Deck {
   /** Longer label for result lists, e.g. "France: Paris". */
   describe?: (item: Item) => string;
   placeholder?: string | ((options: Record<string, boolean>) => string);
+  /** Custom way to compare answers, e.g. "+5:30" and "UTC+0530" both mean the same offset. */
+  answerKey?: (text: string) => string;
   /** A short tip shown under the board, e.g. how to zoom. */
   tip?: string;
 }

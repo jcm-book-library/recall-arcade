@@ -1,4 +1,5 @@
 import { feature } from "topojson-client";
+import { geoArea, geoBounds } from "d3-geo";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import type { Deck, Item } from "../engine/types";
 import { createMapBoard, type MapShape, type MapView } from "../boards/mapBoard";
@@ -63,6 +64,7 @@ export async function createCountryMap(
   playing: Item[],
   viewId: string,
   labelFor: (countryName: string, mapName: string) => string = (n) => n,
+  extra: { hub?: string; fitTo?: string[] } = {},
 ) {
   const topo = await loadTopo();
   const fc = feature(topo, topo.objects.countries as GeometryCollection) as unknown as {
@@ -74,12 +76,42 @@ export async function createCountryMap(
     .filter((f) => f.properties.name !== "Antarctica")
     .map((f) => {
       const n = f.properties.name;
-      return { id: known.has(n) ? n : null, label: labelFor(nameOf(n), n), feature: f as never };
+      return {
+        id: known.has(n) ? n : null,
+        label: labelFor(nameOf(n), n),
+        feature: f as never,
+        extraClass: n === extra.hub ? "hub" : undefined,
+      };
     });
   for (const [id, point] of Object.entries(EXTRA_POINTS)) {
     shapes.push({ id, label: labelFor(nameOf(id), id), point });
   }
-  return createMapBoard(container, shapes, new Set(playing.map((i) => i.id)), VIEWS[viewId] ?? VIEWS.world);
+  let view = VIEWS[viewId] ?? VIEWS.world;
+  if (extra.fitTo?.length) {
+    // Fit the map to a group of countries, e.g. a country and its neighbours.
+    const fc = { type: "FeatureCollection", features: fc_features(extra.fitTo) } as never;
+    let [[w, s], [e, n]] = geoBounds(fc);
+    if (w > e) e += 360; // crosses the 180° line (Russia)
+    if (e - w > 300) [w, e] = [-180, 180];
+    const pad = Math.max(3, (e - w) * 0.12);
+    view = { rotate: -(w + e) / 2, bbox: [w - pad, Math.max(-85, s - pad), e + pad, Math.min(85, n + pad)] };
+  }
+  return createMapBoard(container, shapes, new Set(playing.map((i) => i.id)), view);
+
+  /** Each country's largest landmass only, so overseas islands don't stretch the view. */
+  function fc_features(ids: string[]) {
+    return shapes
+      .filter((sh) => sh.feature && ids.includes((sh.feature as unknown as { properties: { name: string } }).properties.name))
+      .map((sh) => {
+        const g = (sh.feature as unknown as { geometry: { type: string; coordinates: unknown[] } }).geometry;
+        if (g.type !== "MultiPolygon") return sh.feature;
+        // Ignore any piece that reads as "most of the globe" (an outline stored inside out).
+        const polys = g.coordinates
+          .map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: c } }) as never)
+          .filter((poly) => geoArea(poly) < 2 * Math.PI);
+        return polys.length ? polys.reduce((a, b) => (geoArea(b) > geoArea(a) ? b : a)) : sh.feature;
+      });
+  }
 }
 
 /** Every country as plain background land, for maps that quiz something else. */

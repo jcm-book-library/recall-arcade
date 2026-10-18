@@ -6,9 +6,10 @@ export function createFlagBoard(
   items: Item[],
   flagUrl: (item: Item) => string,
   groups: ProgressGroup[],
+  extraClass = "",
 ): Board {
   const wrap = document.createElement("div");
-  wrap.className = "flagwall";
+  wrap.className = `flagwall ${extraClass}`.trim();
   const cells = new Map<string, HTMLElement>();
   const placed = new Set<string>();
 
@@ -16,6 +17,7 @@ export function createFlagBoard(
     if (!list.length) return;
     const head = document.createElement("h3");
     head.textContent = title;
+    head.hidden = !title;
     const grid = document.createElement("div");
     grid.className = "flaggrid";
     for (const item of list) {
@@ -24,7 +26,9 @@ export function createFlagBoard(
       cell.className = "flag";
       cell.dataset.label = item.name;
       cell.dataset.id = item.id;
-      cell.innerHTML = `<img alt="" loading="lazy" src="${flagUrl(item)}"><figcaption></figcaption>`;
+      const src = flagUrl(item);
+      // No picture available: show an empty frame rather than a broken-image icon.
+      cell.innerHTML = src ? `<img alt="" loading="lazy" src="${src}"><figcaption></figcaption>` : `<span class="noimg">?</span><figcaption></figcaption>`;
       grid.append(cell);
       cells.set(item.id, cell);
     }
@@ -32,7 +36,7 @@ export function createFlagBoard(
   };
   // Each flag appears once, under its first region.
   for (const g of groups) section(g.label, items.filter((i) => !placed.has(i.id) && i.tags.includes(g.tag)));
-  section("Other", items.filter((i) => !placed.has(i.id)));
+  section(groups.length ? "Other" : "", items.filter((i) => !placed.has(i.id)));
   container.append(wrap);
 
   return {

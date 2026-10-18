@@ -13,6 +13,8 @@ export interface MapShape {
   kind?: "land" | "water" | "river";
   /** Seas and oceans are drawn beneath the land so coastlines stay crisp. */
   underLand?: boolean;
+  /** Extra CSS class, e.g. "hub" for the country in the middle of a Neighbours round. */
+  extraClass?: string;
 }
 
 export interface MapView {
@@ -94,7 +96,7 @@ export function createMapBoard(
       const p = layer
         .append("path")
         .attr("d", d)
-        .attr("class", playing ? kind : `${kind} off`)
+        .attr("class", `${playing ? kind : `${kind} off`}${shape.extraClass ? ` ${shape.extraClass}` : ""}`)
         .attr("data-label", shape.label)
         .node()!;
       track(playing ? shape.id : null, p);

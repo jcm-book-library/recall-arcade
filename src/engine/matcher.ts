@@ -48,11 +48,14 @@ export class Matcher {
   private found = new Set<string>();
 
   /** `allItems` lets the matcher recognise answers that belong to other rounds. */
-  constructor(items: Item[], allItems: Item[] = []) {
+  private key: (text: string) => string;
+
+  constructor(items: Item[], allItems: Item[] = [], key: (text: string) => string = normalize) {
+    this.key = key;
     const index = (list: Item[], into: Map<string, Item>) => {
       for (const item of list) {
         for (const label of [item.name, ...(item.aliases ?? [])]) {
-          const key = normalize(label);
+          const key = this.key(label);
           if (key && !into.has(key)) into.set(key, item);
         }
       }
@@ -67,7 +70,7 @@ export class Matcher {
   }
 
   check(text: string): MatchResult {
-    const key = normalize(text);
+    const key = this.key(text);
     if (!key) return { kind: "none" };
     const item = this.byKey.get(key);
     if (!item) {
@@ -90,7 +93,7 @@ export class Matcher {
 
   /** True when the text is a near-miss spelling of an answer still to find. */
   isClose(text: string): boolean {
-    const key = normalize(text);
+    const key = this.key(text);
     if (key.length < 4) return false;
     const max = key.length >= 8 ? 2 : 1;
     for (const [k, item] of this.byKey) {

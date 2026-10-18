@@ -9,18 +9,22 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 2. **The arcade:** five short retro levels (Labyrinth, Dogfight, Brawl, Boss, Chase),
    one per subject, unlocked by doing well in that subject's quizzes.
 
-## Subjects and quizzes
-Each subject has six quizzes that don't overlap, each with a different style of play,
-and one small **starter** quiz (★) so the Easy track stays easy.
+## Subjects and quizzes (all 30 built ✅)
 
 | Geography | Science | History | Travel & Transport | Nature & Animals |
 |---|---|---|---|---|
-| Countries of the World ✅ | Periodic Table ✅ | ★ Big Moments: drag events onto a timeline ✅ | ★ NATO Phonetic Alphabet | ★ Australian Animals (pictures) |
-| ★ Capitals (match) ✅ | ★ Zoom Out: from the planets to Andromeda (space) ✅ | Australian Prime Ministers (in order) | Airport Codes (MEL, SIN, LHR...) ✅ | Animal Groups (sort: mammal, bird, reptile...) |
-| Flags (pictures) ✅ | Bones of the Body (click the skeleton) ✅ | Europe in 1914 (map) | Airlines (tail fins / logos) | Dog Breeds (pictures) |
-| Seas, Lakes & Rivers (click the map) ✅ | Organs & Body Systems (match) | The Ancient World (map) | Currencies (match) | Where Animals Live (map) |
-| Territories: who owns what (match) | Physics: units & forces (match) | Inventions: when? (points for how close) | Time Zones (map) | Baby Animals & Group Names (match) |
-| Neighbours (name every bordering country) | Cells & Life (label the cell) ✅ | Trivia Round (the one multiple-choice quiz) | Landmarks & Wonders (pictures) | Dinosaurs (sort by era) |
+| Countries of the World | Zoom Out (space) | Big Moments (timeline) | Airport Codes | Australian Animals (photos) |
+| Flags | Periodic Table | Who Lived When? (timeline) | Airline Codes | Animal Groups (multiple choice) |
+| Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Dog Breeds (photos) |
+| Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Europe in 1914 (map) | Currencies | Where Animals Live (multiple choice) |
+| Territories | Units & Forces | The Ancient World (map) | Time Zones | Baby Animals & Group Names |
+| Neighbours | Famous Scientists | Trivia Round (multiple choice) | Landmarks & Wonders (photos) | Dinosaurs (multiple choice) |
+
+### Next ideas for existing games
+- **The Human Body:** add muscles and body systems as further rounds.
+- **Who Lived When?:** more people, especially pre-1900.
+- **Big Moments:** an Inventions era.
+- **More accurate visuals:** see "Visual accuracy" below.
 
 ### Idea: "Zoom Out" (space)
 One space quiz that starts close and zooms out a step each time you clear a stage,
@@ -52,6 +56,17 @@ Wikimedia Commons.
 
 ### Later: the Master's expansion pack
 Harder material once the basics are done: quantum mechanics, deeper astronomy and so on.
+
+## Visual accuracy (for later)
+The diagrams (skeleton, organs, cells, space) are drawn from simple shapes in code.
+For more accuracy, swap in real sources:
+- **Anatomy and cells:** freely licensed SVG diagrams from Wikimedia Commons, with clickable
+  regions laid over them.
+- **Space:** real star positions and constellation lines (public star catalogues),
+  NASA images (public domain).
+- **3D:** a rotatable skeleton or solar system with three.js and open 3D models.
+- **Pixel art for The Overworld:** free sprite packs (e.g. Kenney, CC0), or drawn in
+  Aseprite or Piskel.
 
 ## Progression (summary)
 - Three tracks: **Easy** (one quiz per subject, low target), **Intermediate** (three per

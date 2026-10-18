@@ -32,5 +32,6 @@ export const historyDeck: Deck = {
   createBoard: () => {
     throw new Error("Big Moments uses its own screen");
   },
-  screen: (root, deck) => renderTimeline(root, deck, ERAS),
+  screen: (root, deck) =>
+    renderTimeline(root, deck, ERAS, { ask: "When did this happen?", how: "Drag the marker to the year you think each event happened." }),
 };

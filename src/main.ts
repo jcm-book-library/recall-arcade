@@ -1,24 +1,37 @@
 import "./style.css";
 import type { Deck } from "./engine/types";
 import { countriesDeck } from "./decks/countries";
-import { elementsDeck } from "./decks/elements";
 import { flagsDeck } from "./decks/flags";
 import { capitalsDeck } from "./decks/capitals";
 import { waterDeck } from "./decks/water";
-import { airportsDeck } from "./decks/airports";
+import { territoriesDeck, neighboursDeck } from "./decks/geo-extra";
 import { zoomOutDeck } from "./decks/zoomout";
+import { elementsDeck } from "./decks/elements";
 import { cellsDeck } from "./decks/cells";
-import { bonesDeck } from "./decks/bones";
+import { bodyDeck } from "./decks/body";
 import { historyDeck } from "./decks/history";
+import { peopleDeck } from "./decks/people";
+import { europe1914Deck, ancientDeck } from "./decks/history-maps";
+import { airportsDeck } from "./decks/airports";
+import { timezonesDeck, currenciesDeck } from "./decks/travel-maps";
+import { natoDeck, pmDeck, unitsDeck, scientistsDeck, airlinesDeck, babyDeck } from "./decks/text-decks";
+import { triviaDeck, animalGroupsDeck, habitatsDeck, dinosaursDeck } from "./decks/choice-decks";
+import { ausAnimalsDeck, dogsDeck, landmarksDeck } from "./decks/picture-decks";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 
-// Every game in the arcade. Adding a new deck here adds it to the home screen.
+// Every game in the arcade, grouped by subject on the home page (six each).
 const DECKS: Deck[] = [
-  countriesDeck, flagsDeck, capitalsDeck, waterDeck,
-  zoomOutDeck, elementsDeck, cellsDeck, bonesDeck,
-  historyDeck,
-  airportsDeck,
+  // Geography
+  countriesDeck, flagsDeck, capitalsDeck, waterDeck, territoriesDeck, neighboursDeck,
+  // Science
+  zoomOutDeck, elementsDeck, cellsDeck, bodyDeck, unitsDeck, scientistsDeck,
+  // History
+  historyDeck, peopleDeck, pmDeck, europe1914Deck, ancientDeck, triviaDeck,
+  // Travel & Transport
+  airportsDeck, airlinesDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
+  // Nature & Animals
+  ausAnimalsDeck, animalGroupsDeck, dogsDeck, habitatsDeck, babyDeck, dinosaursDeck,
 ];
 
 const root = document.getElementById("app")!;

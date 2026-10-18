@@ -248,7 +248,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     if (!board) return;
     revealed = new Set();
     found = new Set();
-    matcher = new Matcher(playing, deck.items);
+    matcher = new Matcher(playing, deck.items, deck.answerKey);
     note.textContent = "";
     if (promptMode) {
       order = shuffle(playing.map((i) => i.id));
@@ -291,7 +291,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     board?.setCurrent?.(clickMode ? null : current?.id ?? null);
     promptBox.replaceChildren(current && deck.renderPrompt ? deck.renderPrompt(current, { click: clickMode }) : "");
     // Only the item on screen counts, so answers can't be given out of turn.
-    matcher = new Matcher(current ? [current] : []);
+    matcher = new Matcher(current ? [current] : [], [], deck.answerKey);
     input.value = "";
     note.textContent = "";
     backBtn.disabled = previousOpen() < 0;

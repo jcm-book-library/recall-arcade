@@ -18,9 +18,12 @@ export const yearText = (y: number) => (y < 0 ? `${-y} BC` : y < 1000 ? `AD ${y}
 /** How far off you can be before scoring nothing. Recent history is judged more tightly. */
 const tolerance = (year: number) => (year >= 1900 ? 30 : year >= 1500 ? 60 : year >= 500 ? 200 : 500);
 
-export function score(guess: number, actual: number) {
-  const tol = tolerance(actual);
-  const off = Math.abs(guess - actual);
+/** Distance from a guess to a year, or to a span of years (a lifetime). */
+const distance = (guess: number, from: number, to: number) => (guess < from ? from - guess : guess > to ? guess - to : 0);
+
+export function score(guess: number, from: number, to = from) {
+  const tol = tolerance((from + to) / 2);
+  const off = distance(guess, from, to);
   if (off <= Math.max(1, tol / 30)) return 100;
   return Math.round(100 * Math.max(0, 1 - off / tol));
 }
@@ -55,7 +58,13 @@ function shuffle<T>(list: T[]): T[] {
   return a;
 }
 
-export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
+export interface TimelineText {
+  /** Small heading above each card, e.g. "When did this happen?" */
+  ask: string;
+  how: string;
+}
+
+export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text: TimelineText) {
   let era = eras[0];
   let round: Item[] = [];
   let index = 0;
@@ -63,7 +72,11 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
   let locked = false;
   let total = 0;
   const results: { item: Item; guess: number; points: number }[] = [];
-  const yearOf = (i: Item) => i.data!.year as number;
+  // Events have one year; people have a lifetime (from, to).
+  const fromOf = (i: Item) => (i.data!.from ?? i.data!.year) as number;
+  const toOf = (i: Item) => (i.data!.to ?? i.data!.year) as number;
+  const yearOf = (i: Item) => Math.round((fromOf(i) + toOf(i)) / 2);
+  const span = (i: Item) => (fromOf(i) === toOf(i) ? yearText(fromOf(i)) : `${yearText(fromOf(i))} – ${yearText(toOf(i))}`);
 
   const title = h("h1", { class: "play-title" }, deck.title);
   const setup = h("div", { class: "setup" });
@@ -109,7 +122,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
       h(
         "div",
         { class: "setup-row" },
-        h("p", { class: "muted tl-how" }, `Drag the marker to the year you think each event happened. ${ROUND} events from ${pool.length}, up to 100 points each for being close.`),
+        h("p", { class: "muted tl-how" }, `${text.how} ${ROUND} at a time from ${pool.length}, up to 100 points each for being close.`),
         h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
         h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
       ),
@@ -152,7 +165,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
     }
     // Earlier events this round stay on the line, so the order builds up as you play.
     for (const r of results) {
-      track.append(h("span", { class: "tl-pin", style: `left:${sc.toPct(yearOf(r.item))}%`, title: `${yearText(yearOf(r.item))}: ${r.item.name}` }));
+      track.append(h("span", { class: "tl-pin", style: `left:${sc.toPct(yearOf(r.item))}%`, title: `${span(r.item)}: ${r.item.name}` }));
     }
     const marker = h("span", { class: "tl-guess" });
     marker.hidden = true;
@@ -204,23 +217,34 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
     function lock() {
       if (guess === null || locked) return;
       locked = true;
-      const year = yearOf(item);
-      const points = score(guess, year);
+      const from = fromOf(item);
+      const to = toOf(item);
+      const points = score(guess, from, to);
       total += points;
       results.push({ item, guess, points });
+      const isSpan = from !== to;
       actual.hidden = false;
-      actual.style.left = `${sc.toPct(year)}%`;
-      actual.dataset.year = yearText(year);
-      const [a, b] = [sc.toPct(guess), sc.toPct(year)].sort((x, y) => x - y);
+      actual.style.left = `${sc.toPct(isSpan ? from : from)}%`;
+      if (isSpan) {
+        actual.classList.add("span");
+        actual.style.width = `${sc.toPct(to) - sc.toPct(from)}%`;
+      }
+      actual.dataset.year = span(item);
+      const nearest = guess < from ? from : guess > to ? to : guess;
+      const [a, b] = [sc.toPct(guess), sc.toPct(nearest)].sort((x, y) => x - y);
       gap.hidden = false;
       gap.style.left = `${a}%`;
       gap.style.width = `${b - a}%`;
-      const off = Math.abs(guess - year);
+      const off = Math.abs(guess - nearest);
+      const about = item.data!.approx ? "about " : "";
       feedback.className = `tl-feedback ${points >= 80 ? "good" : points >= 40 ? "ok" : "bad"}`;
-      feedback.textContent =
-        off === 0
-          ? `Spot on: ${yearText(year)}. +${points}`
-          : `It was ${item.data!.approx ? "about " : ""}${yearText(year)}. You were ${off} ${off === 1 ? "year" : "years"} off. +${points}`;
+      feedback.textContent = isSpan
+        ? off === 0
+          ? `Yes: ${about}${span(item)}. +${points}`
+          : `They lived ${about}${span(item)}. You were ${off} ${off === 1 ? "year" : "years"} ${guess < from ? "before they were born" : "after they died"}. +${points}`
+        : off === 0
+          ? `Spot on: ${yearText(from)}. +${points}`
+          : `It was ${about}${yearText(from)}. You were ${off} ${off === 1 ? "year" : "years"} off. +${points}`;
       lockBtn.textContent = index + 1 < round.length ? "Next ▸" : "See results ▸";
       lockBtn.onclick = next;
       scoreLine.textContent = `Score: ${total}`;
@@ -233,8 +257,9 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
       h(
         "div",
         { class: "tl-card" },
-        h("span", { class: "tl-count" }, `Event ${index + 1} of ${round.length}`),
+        h("span", { class: "tl-count" }, `${text.ask} · ${index + 1} of ${round.length}`),
         h("p", { class: "tl-event" }, item.name),
+        item.data!.note ? h("span", { class: "muted" }, item.data!.note as string) : null,
         item.data!.approx ? h("span", { class: "muted tl-approx" }, "The exact year is debated, so close counts.") : null,
       ),
       h("div", { class: "tl-wrap" }, track),
@@ -259,7 +284,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
       results.filter((r) => r.points >= 60).map((r) => r.item.id),
       results.filter((r) => r.points < 60).map((r) => r.item.id),
     );
-    const sorted = [...results].sort((a, b) => yearOf(a.item) - yearOf(b.item));
+    const sorted = [...results].sort((a, b) => fromOf(a.item) - fromOf(b.item));
     results$.replaceChildren(
       h(
         "div",
@@ -298,7 +323,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[]) {
           h(
             "li",
             { class: r.points >= 80 ? "good" : r.points >= 40 ? "ok" : "bad" },
-            h("span", { class: "tl-y" }, yearText(yearOf(r.item))),
+            h("span", { class: "tl-y" }, span(r.item)),
             h("span", { class: "tl-e" }, r.item.name),
             h("span", { class: "tl-g" }, `you said ${yearText(r.guess)} · +${r.points}`),
           ),

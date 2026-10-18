@@ -1,0 +1,36 @@
+{
+  "animals": {
+    "koala": "Koala", "kangaroo": "Red kangaroo", "wombat": "Common wombat", "platypus": "Platypus",
+    "echidna": "Short-beaked echidna", "emu": "Emu", "kookaburra": "Laughing kookaburra",
+    "devil": "Tasmanian devil", "quokka": "Quokka", "dingo": "Dingo", "cassowary": "Southern cassowary",
+    "glider": "Sugar glider", "wallaby": "Red-necked wallaby", "numbat": "Numbat", "bilby": "Greater bilby",
+    "frillneck": "Frill-necked lizard", "croc": "Saltwater crocodile", "cockatoo": "Sulphur-crested cockatoo",
+    "lyrebird": "Superb lyrebird", "penguin": "Little penguin", "thornydevil": "Thorny devil", "galah": "Galah",
+    "quoll": "Spotted-tailed quoll", "possum": "Common brushtail possum", "bluetongue": "Blue-tongued skink",
+    "dugong": "Dugong"
+  },
+  "dogs": {
+    "labrador": "Labrador Retriever", "gsd": "German Shepherd", "golden": "Golden Retriever",
+    "frenchie": "French Bulldog", "bulldog": "Bulldog", "poodle": "Poodle", "beagle": "Beagle",
+    "rottweiler": "Rottweiler", "dachshund": "Dachshund", "corgi": "Pembroke Welsh Corgi",
+    "husky": "Siberian Husky", "bordercollie": "Border Collie", "boxer": "Boxer (dog)", "greatdane": "Great Dane",
+    "chihuahua": "Chihuahua (dog)", "pug": "Pug", "shihtzu": "Shih Tzu", "dalmatian": "Dalmatian (dog)",
+    "aussieshepherd": "Australian Shepherd", "dobermann": "Dobermann", "jackrussell": "Jack Russell Terrier",
+    "cavalier": "Cavalier King Charles Spaniel", "bernese": "Bernese Mountain Dog", "stbernard": "St. Bernard (dog)",
+    "greyhound": "Greyhound", "cattledog": "Australian Cattle Dog", "kelpie": "Australian Kelpie",
+    "staffy": "Staffordshire Bull Terrier", "whippet": "Whippet", "afghan": "Afghan Hound", "shiba": "Shiba Inu",
+    "samoyed": "Samoyed (dog)"
+  },
+  "landmarks": {
+    "eiffel": "Eiffel Tower", "taj": "Taj Mahal", "greatwall": "Great Wall of China", "colosseum": "Colosseum",
+    "liberty": "Statue of Liberty", "opera": "Sydney Opera House", "machupicchu": "Machu Picchu",
+    "redeemer": "Christ the Redeemer (statue)", "petra": "Petra", "chichen": "Chichen Itza",
+    "stonehenge": "Stonehenge", "bigben": "Big Ben", "goldengate": "Golden Gate Bridge",
+    "pisa": "Leaning Tower of Pisa", "sagrada": "Sagrada Família", "parthenon": "Parthenon",
+    "pyramid": "Great Pyramid of Giza", "angkor": "Angkor Wat", "burj": "Burj Khalifa", "rushmore": "Mount Rushmore",
+    "uluru": "Uluru", "neuschwanstein": "Neuschwanstein Castle", "towerbridge": "Tower Bridge",
+    "hagiasophia": "Hagia Sophia", "moai": "Moai", "forbidden": "Forbidden City", "fuji": "Mount Fuji",
+    "stbasil": "Saint Basil's Cathedral", "brandenburg": "Brandenburg Gate", "harbourbridge": "Sydney Harbour Bridge",
+    "apostles": "The Twelve Apostles (Victoria)", "alhambra": "Alhambra"
+  }
+}
