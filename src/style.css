@@ -251,10 +251,15 @@ button, input, select { font: inherit; color: inherit; }
 .river.found { stroke: var(--found); stroke-width: 3; }
 .river.missed { stroke: var(--missed); stroke-width: 3; }
 .river.unseen { stroke: var(--unseen); }
+.map.pickable [data-id] { cursor: pointer; }
+.tip { margin: 8px 0 0; font-size: 0.88rem; color: var(--muted); }
 .river-hit { fill: none; stroke: transparent; stroke-width: 12; vector-effect: non-scaling-stroke; cursor: pointer; pointer-events: stroke; }
 .river-hit:hover + .river, .river-hit:hover { stroke: color-mix(in srgb, var(--accent) 40%, transparent); }
 
 /* ---------- airport codes ---------- */
+.prompt-code { text-align: center; }
+.prompt-city { margin: 0; font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 700; color: var(--accent); text-wrap: balance; }
+.prompt-airport { margin: 2px 0 0; color: var(--muted); }
 .prompt-code .code { font: clamp(2.6rem, 9vw, 4rem)/1 var(--font-pixel); letter-spacing: 0.12em; color: var(--accent); }
 
 /* ---------- zoom out ---------- */

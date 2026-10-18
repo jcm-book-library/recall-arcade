@@ -74,6 +74,8 @@ export function createMapBoard(
 
   const seaLayer = root.append("g");
   const landLayer = root.append("g");
+  // Rivers sit under lakes, so a river running through a lake never blocks clicks on it.
+  const riverLayer = root.append("g");
   const waterLayer = root.append("g");
   const dotLayer = root.append("g");
   // Pulsing ring that marks the place being asked about.
@@ -88,7 +90,7 @@ export function createMapBoard(
       const d = path(shape.feature);
       if (!d) continue;
       const kind = shape.kind ?? "land";
-      const layer = kind === "land" ? landLayer : shape.underLand ? seaLayer : waterLayer;
+      const layer = kind === "land" ? landLayer : kind === "river" ? riverLayer : shape.underLand ? seaLayer : waterLayer;
       const p = layer
         .append("path")
         .attr("d", d)
@@ -99,11 +101,12 @@ export function createMapBoard(
       if (playing) p.setAttribute("data-id", shape.id!);
       if (kind === "river" && playing) {
         // Rivers are thin, so give them a wider invisible strip to click on.
-        waterLayer.append("path").attr("d", d).attr("class", "river-hit")
+        riverLayer.append("path").attr("d", d).attr("class", "river-hit")
           .attr("data-id", shape.id!).attr("data-label", shape.label);
       }
       // Island nations can be spread wide but have almost no land, so judge by area.
-      small = kind !== "river" && path.area(shape.feature) < 30;
+      // Long thin lakes and straits are hard to click too, so water gets a dot more readily.
+      small = kind === "land" ? path.area(shape.feature) < 30 : kind === "water" && path.area(shape.feature) < 150;
       centre = path.centroid(shape.feature) as [number, number];
     } else if (shape.point) {
       small = true;
@@ -208,6 +211,7 @@ export function createMapBoard(
       locator.setAttribute("visibility", "visible");
     },
     onPick(handler: (id: string) => void) {
+      wrap.classList.add("pickable");
       svg.on("click.pick", (e: MouseEvent) => {
         const id = (e.target as Element).getAttribute?.("data-id");
         if (id) handler(id);

@@ -58,7 +58,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     autocomplete: "off",
     autocapitalize: "off",
     spellcheck: "false",
-    placeholder: deck.placeholder ?? "Type a name…",
+    placeholder: "Type a name…",
     "aria-label": "Your answer",
   });
   const giveUp = h("button", { class: "btn ghost", type: "button" }, "Give up");
@@ -95,7 +95,12 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
       setup,
       hud,
       results,
-      h("div", { class: "play-body" }, h("div", { class: "board-wrap" }, boardHost), side),
+      h(
+        "div",
+        { class: "play-body" },
+        h("div", { class: "board-wrap" }, boardHost, deck.tip ? h("p", { class: "tip" }, deck.tip) : null),
+        side,
+      ),
     ),
   );
 
@@ -191,9 +196,9 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     }
     loading.remove();
     board = b;
-    b.onPick?.((id) => {
+    if (promptMode) b.onPick?.((id) => {
       if (clickMode) return clicked(id);
-      if (phase !== "playing" || !promptMode || found.has(id)) return;
+      if (phase !== "playing" || found.has(id)) return;
       const i = order.indexOf(id);
       if (i >= 0) show(i);
       input.focus();
@@ -227,6 +232,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
 
   // ---------- the round ----------
   async function start() {
+    const ph = deck.placeholder;
+    input.placeholder = (typeof ph === "function" ? ph(options) : ph) ?? "Type a name…";
     // Sampled rounds draw a fresh set of items every time.
     if (variant.sample) await buildBoard();
     if (!board) return;
@@ -316,11 +323,10 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     if (phase !== "playing" || !current || closed(id)) return;
     if (id === current.id) return accept(current);
     wrongClicks++;
-    const other = deck.items.find((i) => i.id === id);
     const left = 3 - wrongClicks;
     if (left > 0) {
-      const called = (i: Item) => (i.data?.inSentence as string) ?? i.name;
-      showNote(`${other ? `That's ${called(other)}.` : "Not that one."} ${left} ${left === 1 ? "try" : "tries"} left.`);
+      // Don't name what they clicked: that would give away a later answer.
+      showNote(`Not that one. ${left} ${left === 1 ? "try" : "tries"} left.`);
       return;
     }
     // Three strikes: show where it was and move on.

@@ -88,5 +88,7 @@ export interface Deck {
   renderPrompt?: (item: Item) => Node;
   /** Longer label for result lists, e.g. "France: Paris". */
   describe?: (item: Item) => string;
-  placeholder?: string;
+  placeholder?: string | ((options: Record<string, boolean>) => string);
+  /** A short tip shown under the board, e.g. how to zoom. */
+  tip?: string;
 }

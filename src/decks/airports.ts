@@ -48,10 +48,10 @@ const fullName = (a: Airport) => (a.airport === a.city ? a.city : `${a.city} ${a
 export const airportsDeck: Deck = {
   id: "airports",
   title: "Airport Codes",
-  blurb: "Three letters appear. Name the city. Choose a region, or a world round of 50 drawn at random.",
+  blurb: "An airport appears. Type its three-letter code. Choose a region, or a world round of 50 drawn at random.",
   noun: "airports",
   mode: "prompt",
-  placeholder: "City or airport…",
+  placeholder: (opts) => (opts.cityFirst ? "City or airport…" : "Three-letter code…"),
   items,
   variants: [
     { id: "hubs", label: "The Big Hubs", minutes: 4, starter: true, filter: (i) => i.tags.includes("hub") },
@@ -59,11 +59,11 @@ export const airportsDeck: Deck = {
     { id: "world", label: "World: 50 at random", minutes: 10, sample: 50, filter: () => true },
   ],
   options: [
-    { id: "reverse", label: "Type the code instead", hint: "See the airport, type its three-letter code", default: false },
+    { id: "cityFirst", label: "Show the code, name the city", hint: "Flip it: see MEL, type Melbourne", default: false },
   ],
-  // Reverse mode swaps question and answer: the code becomes the thing to type.
+  // By default the airport is shown and the code is the answer.
   applyOptions: (list, opts) =>
-    opts.reverse ? list.map((i) => ({ ...i, name: i.id, aliases: [], data: { ...i.data, reverse: true } })) : list,
+    opts.cityFirst ? list : list.map((i) => ({ ...i, name: i.id, aliases: [], data: { ...i.data, reverse: true } })),
   progressGroups: REGIONS,
   describe: (i) => {
     const a = info(i);
@@ -74,9 +74,10 @@ export const airportsDeck: Deck = {
     const wrap = document.createElement("div");
     wrap.className = "prompt-code";
     if (item.data!.reverse) {
-      wrap.innerHTML = `<p class="prompt-text"><strong></strong> <span class="muted"></span></p>`;
-      wrap.querySelector("strong")!.textContent = fullName(a);
-      wrap.querySelector("span")!.textContent = `(${a.country})`;
+      wrap.innerHTML = `<p class="prompt-city"></p><p class="prompt-airport"></p>`;
+      wrap.querySelector(".prompt-city")!.textContent = a.city;
+      wrap.querySelector(".prompt-airport")!.textContent =
+        a.airport === a.city ? a.country : `${a.airport} · ${a.country}`;
     } else {
       wrap.innerHTML = `<span class="code"></span>`;
       wrap.querySelector(".code")!.textContent = a.code;

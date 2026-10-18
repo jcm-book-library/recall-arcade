@@ -44,6 +44,7 @@ export const waterDeck: Deck = {
   blurb: "A name appears. Find it on the map and click it. Three wrong clicks and it's shown to you.",
   noun: "places",
   mode: "click",
+  tip: "Small lakes and narrow straits have a dot you can click. Zoom with the + button, your scroll wheel or a pinch.",
   items,
   variants: [
     { id: "starter", label: "The Big Ones", minutes: 3, starter: true, filter: (i) => i.tags.includes("starter") },
