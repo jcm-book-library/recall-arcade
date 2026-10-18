@@ -26,8 +26,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   let buildToken = 0;
   let closeTimer = 0;
   let noteTimer = 0;
-  const clickMode = deck.mode === "click";
-  const promptMode = deck.mode === "prompt" || clickMode;
+  let clickMode = false;
+  let promptMode = false;
   // Items no longer asked: named, or (click games) revealed after three wrong clicks.
   let revealed = new Set<string>();
   let wrongClicks = 0;
@@ -64,11 +64,11 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   const giveUp = h("button", { class: "btn ghost", type: "button" }, "Give up");
   const backBtn = h("button", { class: "btn ghost", type: "button", title: "Back to the last one you skipped (Shift+Tab)" }, "◂ Back");
   const skipBtn = h("button", { class: "btn ghost", type: "button", title: "Skip for now (Tab key)" }, "Skip ▸");
-  backBtn.hidden = skipBtn.hidden = !promptMode;
+
   const note = h("p", { class: "note", "aria-live": "polite" });
-  if (clickMode) input.hidden = true;
+
   const promptBox = h("div", { class: "prompt", "aria-live": "polite" });
-  promptBox.hidden = !promptMode;
+
   const hud = h(
     "div",
     { class: "hud" },
@@ -104,8 +104,17 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     ),
   );
 
+  /** Some games can be played by typing or by clicking, set by an option. */
+  function syncMode() {
+    clickMode = deck.mode === "click" || (!!deck.clickOption && options[deck.clickOption]);
+    promptMode = deck.mode === "prompt" || clickMode;
+    input.hidden = clickMode;
+    backBtn.hidden = skipBtn.hidden = promptBox.hidden = !promptMode;
+  }
+
   // ---------- setup controls ----------
   function renderSetup() {
+    syncMode();
     const variantChips = deck.variants.map((v) =>
       h(
         "button",
@@ -280,7 +289,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     wrongClicks = 0;
     // In click games, highlighting the answer would give it away.
     board?.setCurrent?.(clickMode ? null : current?.id ?? null);
-    promptBox.replaceChildren(current && deck.renderPrompt ? deck.renderPrompt(current) : "");
+    promptBox.replaceChildren(current && deck.renderPrompt ? deck.renderPrompt(current, { click: clickMode }) : "");
     // Only the item on screen counts, so answers can't be given out of turn.
     matcher = new Matcher(current ? [current] : []);
     input.value = "";

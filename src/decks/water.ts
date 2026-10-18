@@ -40,6 +40,7 @@ const KIND_WORD: Record<string, string> = {
 
 export const waterDeck: Deck = {
   id: "water",
+  subject: "Geography",
   title: "Seas, Lakes & Rivers",
   blurb: "A name appears. Find it on the map and click it. Three wrong clicks and it's shown to you.",
   noun: "places",

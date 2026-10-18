@@ -15,12 +15,12 @@ and one small **starter** quiz (★) so the Easy track stays easy.
 
 | Geography | Science | History | Travel & Transport | Nature & Animals |
 |---|---|---|---|---|
-| Countries of the World (map) ✅ built | Periodic Table ✅ built | ★ Big Moments: drag events onto a timeline | ★ NATO Phonetic Alphabet | ★ Australian Animals (pictures) |
-| ★ Capitals (match) | ★ Zoom Out: from the planets to Andromeda (space) | Australian Prime Ministers (in order) | Airport Codes (MEL, SIN, LHR...) | Animal Groups (sort: mammal, bird, reptile...) |
-| Flags (pictures) | Bones of the Body (click the skeleton) | Europe in 1914 (map) | Airlines (tail fins / logos) | Dog Breeds (pictures) |
-| Seas, Lakes & Rivers (click the map) | Organs & Body Systems (match) | The Ancient World (map) | Currencies (match) | Where Animals Live (map) |
+| Countries of the World ✅ | Periodic Table ✅ | ★ Big Moments: drag events onto a timeline ✅ | ★ NATO Phonetic Alphabet | ★ Australian Animals (pictures) |
+| ★ Capitals (match) ✅ | ★ Zoom Out: from the planets to Andromeda (space) ✅ | Australian Prime Ministers (in order) | Airport Codes (MEL, SIN, LHR...) ✅ | Animal Groups (sort: mammal, bird, reptile...) |
+| Flags (pictures) ✅ | Bones of the Body (click the skeleton) ✅ | Europe in 1914 (map) | Airlines (tail fins / logos) | Dog Breeds (pictures) |
+| Seas, Lakes & Rivers (click the map) ✅ | Organs & Body Systems (match) | The Ancient World (map) | Currencies (match) | Where Animals Live (map) |
 | Territories: who owns what (match) | Physics: units & forces (match) | Inventions: when? (points for how close) | Time Zones (map) | Baby Animals & Group Names (match) |
-| Neighbours (name every bordering country) | Cells & Life (label the cell) | Trivia Round (the one multiple-choice quiz) | Landmarks & Wonders (pictures) | Dinosaurs (sort by era) |
+| Neighbours (name every bordering country) | Cells & Life (label the cell) ✅ | Trivia Round (the one multiple-choice quiz) | Landmarks & Wonders (pictures) | Dinosaurs (sort by era) |
 
 ### Idea: "Zoom Out" (space)
 One space quiz that starts close and zooms out a step each time you clear a stage,

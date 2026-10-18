@@ -100,6 +100,7 @@ function createTableBoard(container: HTMLElement, inPlay: Set<string>, showSymbo
 
 export const elementsDeck: Deck = {
   id: "elements",
+  subject: "Science",
   title: "Periodic Table",
   blurb: "Name the chemical elements. Each square shows its atomic number as a clue.",
   noun: "elements",

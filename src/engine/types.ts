@@ -84,8 +84,14 @@ export interface Deck {
    * "click": one name at a time is shown, and you click it on the board (Seas & Lakes).
    */
   mode?: "any" | "prompt" | "click";
+  /** An option id that, when ticked, switches a "prompt" game to "click" (Bones, Cells). */
+  clickOption?: string;
+  /** A game with its own screen instead of the standard one (Big Moments). */
+  screen?: (root: HTMLElement, deck: Deck) => () => void;
+  /** Which of the five subjects the game belongs to, for the home page. */
+  subject?: string;
   /** What to show for the current item in "prompt" mode. */
-  renderPrompt?: (item: Item) => Node;
+  renderPrompt?: (item: Item, how: { click: boolean }) => Node;
   /** Longer label for result lists, e.g. "France: Paris". */
   describe?: (item: Item) => string;
   placeholder?: string | ((options: Record<string, boolean>) => string);

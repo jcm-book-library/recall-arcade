@@ -15,6 +15,7 @@ const count = (n: number) => items.filter((i) => stageOf(i) <= n).length;
 
 export const zoomOutDeck: Deck = {
   id: "zoomout",
+  subject: "Science",
   title: "Zoom Out",
   blurb: "Start with the planets. Clear a stage and the view zooms out: stars, constellations, the Milky Way, then the galaxies next door.",
   noun: "things in space",

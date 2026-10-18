@@ -100,6 +100,7 @@ export { REGIONS, items as countryItems };
 
 export const countriesDeck: Deck = {
   id: "countries",
+  subject: "Geography",
   title: "Countries of the World",
   blurb: "Type every country you can before the clock runs out. Each one lights up on the map.",
   noun: "places",

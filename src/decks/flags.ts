@@ -23,6 +23,7 @@ const flagOf = (i: Item) => i.data!.flag as string;
 
 export const flagsDeck: Deck = {
   id: "flags",
+  subject: "Geography",
   title: "Flags of the World",
   blurb: "A flag appears. Name the country. Skip the ones you don't know and come back to them.",
   noun: "flags",

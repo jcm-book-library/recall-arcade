@@ -23,6 +23,7 @@ const countryOf = (i: Item) => i.data!.country as string;
 
 export const capitalsDeck: Deck = {
   id: "capitals",
+  subject: "Geography",
   title: "Capital Cities",
   blurb: "A country lights up on the map. Name its capital. Skip and come back to the tricky ones.",
   noun: "capitals",

@@ -47,6 +47,7 @@ const fullName = (a: Airport) => (a.airport === a.city ? a.city : `${a.city} ${a
 
 export const airportsDeck: Deck = {
   id: "airports",
+  subject: "Travel & Transport",
   title: "Airport Codes",
   blurb: "An airport appears. Type its three-letter code. Choose a region, or a world round of 50 drawn at random.",
   noun: "airports",

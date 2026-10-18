@@ -11,6 +11,9 @@ Started with a Sporcle-style "name every country" map quiz.
 - **Seas, Lakes & Rivers**: a name appears, you click it on the map. Three wrong clicks and it's shown.
 - **Zoom Out**: name the planets, then zoom out stage by stage to the galaxies next door.
 - **Airport Codes**: name the city for each code (or the reverse), by region or 50 at random.
+- **Cells & Life**: label the parts of a plant and an animal cell (type or click).
+- **Bones of the Body**: name the bones on a skeleton (type or click).
+- **Big Moments**: drag events onto a timeline; points for how close you get.
 - **Periodic Table**: name the elements, with optional symbol hints.
 
 ## How it's built
