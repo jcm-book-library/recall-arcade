@@ -14,13 +14,15 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 | Geography | Science | History | Travel & Transport | Nature & Animals |
 |---|---|---|---|---|
 | Countries of the World | Zoom Out (space) | Big Moments (timeline) | Airport Codes | Australian Animals (photos) |
-| Flags | Periodic Table | Who Lived When? (timeline) | Airline Codes | Animal Groups (multiple choice) |
-| Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Dog Breeds (photos) |
-| Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Europe in 1914 (map) | Currencies | Where Animals Live (multiple choice) |
-| Territories | Units & Forces | The Ancient World (map) | Time Zones | Baby Animals & Group Names |
-| Neighbours | Famous Scientists | Trivia Round (multiple choice) | Landmarks & Wonders (photos) | Dinosaurs (multiple choice) |
+| Flags | Periodic Table | Who Lived When? (timeline) | Airline Codes | Classifying Life (4 zoom-in levels) |
+| Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Pet Breeds (click the photo; dogs and cats) |
+| Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Empires Through Time (6 maps, 323 BC–1914) | Currencies | Where Animals Live (photo, click the continent) |
+| Territories | Units & Forces + Conversions | Mythology | Time Zones | Baby Animals & Group Names (name the animal) |
+| Neighbours | Famous Scientists (50+) | Trivia Round (multiple choice) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
 
 ### Next ideas for existing games
+- **Mythology:** deep enough to become its own subject later (more cultures, heroes, monsters).
+- **Empires Through Time:** the 1815 map includes Aboriginal nations, a possible future round.
 - **The Human Body:** add muscles and body systems as further rounds.
 - **Who Lived When?:** more people, especially pre-1900.
 - **Big Moments:** an Inventions era.

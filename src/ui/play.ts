@@ -330,7 +330,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   /** Click games: the player clicked something on the board. */
   function clicked(id: string) {
     if (phase !== "playing" || !current || closed(id)) return;
-    if (id === current.id) return accept(current);
+    if (deck.judgeClick ? deck.judgeClick(id, current) : id === current.id) return accept(current);
     wrongClicks++;
     const left = 3 - wrongClicks;
     if (left > 0) {

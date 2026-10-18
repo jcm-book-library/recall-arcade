@@ -84,6 +84,11 @@ export interface Deck {
    * "click": one name at a time is shown, and you click it on the board (Seas & Lakes).
    */
   mode?: "any" | "prompt" | "click";
+  /**
+   * Click games where the thing clicked isn't the item itself (clicking a country for an
+   * animal that lives on that continent). Returns whether the click is right.
+   */
+  judgeClick?: (clickedId: string, current: Item) => boolean;
   /** An option id that, when ticked, switches a "prompt" game to "click" (Bones, Cells). */
   clickOption?: string;
   /** A game with its own screen instead of the standard one (Big Moments). */

@@ -1,5 +1,7 @@
 // Picture quizzes: a photo appears and you name it. Photos come from Wikipedia at play time.
 import type { Deck, Item } from "../engine/types";
+import { createMapBoard, type MapShape } from "../boards/mapBoard";
+import { backgroundLand, countryItems } from "./countries";
 import { createFlagBoard } from "../boards/flagBoard";
 import { loadPictures, type Picture } from "../data/pictures";
 
@@ -14,11 +16,58 @@ function parse(table: string): Item[] {
     });
 }
 
+type PictureSet = Parameters<typeof loadPictures>[0];
 const loaded = new Map<string, Map<string, Picture>>();
+
+/** The photo, question and credit shown for the current item. */
+function photoPrompt(pic: Picture | undefined, question: string, strong?: string) {
+  const fig = document.createElement("figure");
+  fig.className = "prompt-photo";
+  const q = document.createElement("figcaption");
+  q.className = "prompt-text";
+  q.textContent = question;
+  if (strong) {
+    const s = document.createElement("strong");
+    s.textContent = strong;
+    q.prepend(s, " ");
+  }
+  if (pic) {
+    const img = document.createElement("img");
+    img.src = pic.src;
+    img.alt = "Photo";
+    const credit = document.createElement("a");
+    credit.className = "credit";
+    credit.href = pic.page;
+    credit.target = "_blank";
+    credit.rel = "noopener";
+    credit.textContent = `Photo: ${pic.artist} · ${pic.license}`;
+    fig.append(img, q, credit);
+  } else {
+    const missing = document.createElement("p");
+    missing.className = "muted";
+    missing.textContent = "This photo didn't load. Press Skip to move on.";
+    fig.append(q, missing);
+  }
+  return fig;
+}
+
+async function safeLoad(set: PictureSet, container: HTMLElement) {
+  try {
+    const pics = await loadPictures(set);
+    loaded.set(set, pics);
+    return pics;
+  } catch {
+    const warn = document.createElement("p");
+    warn.className = "note";
+    warn.textContent = "Couldn't reach Wikipedia for the photos. Check your connection and reload.";
+    container.append(warn);
+    return new Map<string, Picture>();
+  }
+}
 
 function pictureDeck(cfg: {
   id: string;
-  set: "animals" | "dogs" | "landmarks";
+  set: PictureSet;
   title: string;
   subject: string;
   blurb: string;
@@ -79,7 +128,10 @@ function pictureDeck(cfg: {
         container.append(warn);
       }
       loaded.set(cfg.set, pics);
-      return createFlagBoard(container, playing, (i) => pics.get(i.id)?.src ?? "", [], "photos");
+      return createFlagBoard(container, playing, (i) => pics.get(i.id)?.src ?? "", [], "photos", (i) => {
+        const p = pics.get(i.id);
+        return p ? `Photo: ${p.artist} · ${p.license}` : "";
+      });
     },
   };
 }
@@ -118,48 +170,6 @@ quoll|Quoll|Spotted-tailed quoll;Tiger quoll||
 possum|Brushtail possum|Possum;Common brushtail possum||
 bluetongue|Blue-tongued lizard|Blue-tongue;Blue tongue;Blue-tongued skink;Bluey||
 dugong|Dugong|Sea cow||`),
-});
-
-export const dogsDeck = pictureDeck({
-  id: "dogs",
-  set: "dogs",
-  title: "Dog Breeds",
-  subject: "Nature & Animals",
-  blurb: "Labrador or Golden Retriever? Kelpie or Cattle Dog? A photo appears: name the breed.",
-  noun: "breeds",
-  question: "What breed is this?",
-  items: parse(`labrador|Labrador Retriever|Labrador;Lab||s
-gsd|German Shepherd|Alsatian;German Shepherd Dog||s
-golden|Golden Retriever|Golden||s
-frenchie|French Bulldog|Frenchie||s
-bulldog|Bulldog|British Bulldog;English Bulldog||
-poodle|Poodle|||s
-beagle|Beagle|||s
-rottweiler|Rottweiler|Rottie||
-dachshund|Dachshund|Sausage dog;Wiener dog||s
-corgi|Corgi|Pembroke Welsh Corgi;Welsh Corgi||s
-husky|Siberian Husky|Husky||s
-bordercollie|Border Collie|||
-boxer|Boxer|||
-greatdane|Great Dane|||
-chihuahua|Chihuahua|||
-pug|Pug|||s
-shihtzu|Shih Tzu|||
-dalmatian|Dalmatian|||
-aussieshepherd|Australian Shepherd|Aussie Shepherd;Aussie||
-dobermann|Dobermann|Doberman;Doberman Pinscher||
-jackrussell|Jack Russell Terrier|Jack Russell||
-cavalier|Cavalier King Charles Spaniel|Cavalier;King Charles Spaniel;Cavalier King Charles||
-bernese|Bernese Mountain Dog|Bernese||
-stbernard|St Bernard|Saint Bernard||
-greyhound|Greyhound|||
-cattledog|Australian Cattle Dog|Blue Heeler;Heeler;Red Heeler;Cattle dog;Queensland Heeler||
-kelpie|Kelpie|Australian Kelpie||
-staffy|Staffordshire Bull Terrier|Staffy;Staffie;Staffordshire||
-whippet|Whippet|||
-afghan|Afghan Hound|Afghan||
-shiba|Shiba Inu|Shiba||
-samoyed|Samoyed|||`),
 });
 
 export const landmarksDeck = pictureDeck({
@@ -203,3 +213,250 @@ harbourbridge|Sydney Harbour Bridge|Harbour Bridge;The Coathanger;Harbor Bridge|
 apostles|Twelve Apostles|The Twelve Apostles;12 Apostles|Great Ocean Road, Victoria|
 alhambra|Alhambra|The Alhambra|Granada, Spain|`),
 });
+
+// ---------------------------------------------------------------- Pet breeds (click the photo)
+const dogItems = parse(`labrador|Labrador Retriever|Labrador;Lab||s
+gsd|German Shepherd|Alsatian||s
+golden|Golden Retriever|||s
+frenchie|French Bulldog|||s
+bulldog|Bulldog|British Bulldog||
+poodle|Poodle|||s
+beagle|Beagle|||s
+rottweiler|Rottweiler|||
+dachshund|Dachshund|Sausage dog||s
+corgi|Corgi|Pembroke Welsh Corgi||s
+husky|Siberian Husky|Husky||s
+bordercollie|Border Collie|||
+boxer|Boxer|||
+greatdane|Great Dane|||
+chihuahua|Chihuahua|||
+pug|Pug|||s
+shihtzu|Shih Tzu|||
+dalmatian|Dalmatian|||
+aussieshepherd|Australian Shepherd|||
+dobermann|Dobermann|||
+jackrussell|Jack Russell Terrier|||
+cavalier|Cavalier King Charles Spaniel|||
+bernese|Bernese Mountain Dog|||
+stbernard|St Bernard|||
+greyhound|Greyhound|||
+cattledog|Australian Cattle Dog|Blue Heeler||
+kelpie|Kelpie|||
+staffy|Staffordshire Bull Terrier|Staffy||
+whippet|Whippet|||
+afghan|Afghan Hound|||
+shiba|Shiba Inu|||
+samoyed|Samoyed|||`).map((i) => ({ ...i, tags: ["dog", ...i.tags.map((t) => (t === "starter" ? "dogstarter" : t))] }));
+const catItems = parse(`persian|Persian|||s
+siamese|Siamese|||s
+mainecoon|Maine Coon|||s
+ragdoll|Ragdoll|||s
+bengal|Bengal|||s
+sphynx|Sphynx|||s
+british|British Shorthair|||
+scottishfold|Scottish Fold|||
+abyssinian|Abyssinian|||
+russianblue|Russian Blue|||
+birman|Birman|||
+burmese|Burmese|||
+norwegian|Norwegian Forest Cat|||
+devonrex|Devon Rex|||
+siberian|Siberian|||
+exotic|Exotic Shorthair|||`).map((i) => ({ ...i, id: `cat-${i.id}`, tags: ["cat", ...i.tags.map((t) => (t === "starter" ? "catstarter" : t))] }));
+
+export const petsDeck: Deck = {
+  id: "pets",
+  subject: "Nature & Animals",
+  title: "Pet Breeds",
+  blurb: "A breed is named. Click its photo. Dogs and cats, from Kelpies to Maine Coons.",
+  noun: "breeds",
+  mode: "click",
+  items: [...dogItems, ...catItems],
+  variants: [
+    { id: "dogstarter", label: "Famous Dogs", minutes: 2, starter: true, filter: (i) => i.tags.includes("dogstarter") },
+    { id: "catstarter", label: "Famous Cats", minutes: 2, starter: true, filter: (i) => i.tags.includes("catstarter") },
+    { id: "dog", label: "All Dogs", minutes: 5, filter: (i) => i.tags.includes("dog") },
+    { id: "cat", label: "All Cats", minutes: 4, filter: (i) => i.tags.includes("cat") },
+    { id: "all", label: "Everything", minutes: 8, filter: () => true },
+  ],
+  options: [],
+  progressGroups: [
+    { tag: "dog", label: "Dogs" },
+    { tag: "cat", label: "Cats" },
+  ],
+  tip: "Photos come from Wikipedia. Hover over a photo to see who took it and its licence.",
+  renderPrompt: (item) => {
+    const p = document.createElement("p");
+    p.className = "prompt-text";
+    p.append("Click the ");
+    const s = document.createElement("strong");
+    s.textContent = item.name;
+    p.append(s);
+    return p;
+  },
+  createBoard: async ({ container, items: playing }) => {
+    const [dogs, cats] = await Promise.all([safeLoad("dogs", container), safeLoad("cats", container)]);
+    const src = (i: Item) => (i.tags.includes("cat") ? cats.get(i.id.replace(/^cat-/, "")) : dogs.get(i.id))?.src ?? "";
+    const groups = [
+      { tag: "dog", label: "Dogs" },
+      { tag: "cat", label: "Cats" },
+    ].filter((g) => playing.some((i) => i.tags.includes(g.tag)));
+    const pic = (i: Item) => (i.tags.includes("cat") ? cats.get(i.id.replace(/^cat-/, "")) : dogs.get(i.id));
+    const credit = (i: Item) => {
+      const p = pic(i);
+      return p ? `Photo: ${p.artist} · ${p.license}` : "";
+    };
+    return createFlagBoard(container, playing, src, groups.length > 1 ? groups : [], "photos pick", credit);
+  },
+};
+
+// ---------------------------------------------------------------- Where animals live (map)
+const CONTINENT_NAME: Record<string, string> = {
+  AF: "Africa", AS: "Asia", EU: "Europe", NA: "North America", SA: "South America", OC: "Oceania", AN: "Antarctica",
+};
+/** "id|name|continent|lat|lon|note|starter" */
+const habitatItems: Item[] = `lion|Lion|AF|-2.3|34.8||s
+giraffe|Giraffe|AF|1.0|37.0||s
+zebra|Zebra|AF|-6.0|36.0||
+hippo|Hippopotamus|AF|-13.0|31.5||s
+gorilla|Gorilla|AF|-1.0|13.0||
+lemur|Ring-tailed lemur|AF|-23.0|45.5|Only found on Madagascar.|
+meerkat|Meerkat|AF|-24.5|21.0||
+panda|Giant panda|AS|31.0|103.5||s
+tiger|Bengal tiger|AS|21.9|89.2||s
+orangutan|Orangutan|AS|1.0|114.0|Only on Borneo and Sumatra.|
+komodo|Komodo dragon|AS|-8.55|119.49|Only on a few Indonesian islands.|
+redpanda|Red panda|AS|27.5|88.5||
+snowleopard|Snow leopard|AS|35.5|77.0||
+bison|American bison|NA|44.6|-110.5||s
+baldeagle|Bald eagle|NA|58.0|-134.0||
+grizzly|Grizzly bear|NA|48.5|-113.0||
+raccoon|Raccoon|NA|39.0|-85.0||
+sloth|Sloth|SA|-3.5|-62.0||s
+jaguar|Jaguar|SA|-17.0|-57.0||
+llama|Llama|SA|-18.0|-67.5||
+capybara|Capybara|SA|-16.0|-56.5|The world's biggest rodent.|
+toucan|Toucan|SA|-15.0|-50.0||
+kangaroo|Kangaroo|OC|-25.0|135.0||s
+koala|Koala|OC|-28.0|152.0||
+kiwi|Kiwi|OC|-38.5|176.0|New Zealand's national bird.|s
+cassowary|Cassowary|OC|-16.9|145.5||
+emperor|Emperor penguin|AN|-77.46|169.2|Breeds on the Antarctic sea ice in winter.|s
+weddell|Weddell seal|AN|-75.0|-45.0||
+lynx|Iberian lynx|EU|37.0|-6.4|Spain and Portugal only.|
+chamois|Chamois|EU|46.5|10.0||
+hedgehog|European hedgehog|EU|51.0|10.0||s
+ibex|Alpine ibex|EU|45.5|7.2||`
+  .split("\n")
+  .map((line) => {
+    const [id, name, continent, lat, lon, note, starter] = line.split("|");
+    return { id, name, tags: [continent, ...(starter ? ["starter"] : [])], data: { continent, point: [Number(lon), Number(lat)], note } };
+  });
+
+const tagsOfCountry = new Map(countryItems.map((c) => [c.id, c.tags]));
+
+export const habitatsDeck: Deck = {
+  id: "habitats",
+  subject: "Nature & Animals",
+  title: "Where Animals Live",
+  blurb: "A photo of an animal appears. Click the continent it lives on in the wild. Then a dot shows where.",
+  noun: "animals",
+  mode: "click",
+  items: habitatItems,
+  variants: [
+    { id: "starter", label: "Famous Animals", minutes: 3, starter: true, filter: (i) => i.tags.includes("starter") },
+    { id: "all", label: `All ${habitatItems.length}`, minutes: 6, filter: () => true },
+  ],
+  options: [],
+  tip: "Click anywhere on the right continent. Countries that span two continents (like Russia) count for both.",
+  describe: (i) => `${i.name}: ${CONTINENT_NAME[i.data!.continent as string]}`,
+  judgeClick: (clicked, item) => {
+    const continent = item.data!.continent as string;
+    if (clicked === "Antarctica") return continent === "AN";
+    return (tagsOfCountry.get(clicked) ?? []).includes(continent);
+  },
+  renderPrompt: (item) => photoPrompt(loaded.get("habitats")?.get(item.id), "lives on which continent?", item.name),
+  createBoard: async ({ container, items: playing }) => {
+    const [land] = await Promise.all([backgroundLand(true), safeLoad("habitats", container)]);
+    // Every country (and Antarctica) is clickable; each animal's dot appears once answered.
+    const shapes: MapShape[] = [
+      ...land.map((s) => ({ ...s, id: (s.feature as unknown as { properties: { name: string } }).properties.name })),
+      ...playing.map((i) => ({ id: i.id, label: i.name, point: i.data!.point as [number, number] })),
+    ];
+    const ids = new Set([...shapes.map((s) => s.id!), ...playing.map((i) => i.id)]);
+    const board = createMapBoard(container, shapes, ids, { rotate: -10 });
+    container.querySelector(".map")?.classList.add("hide-dots");
+    return board;
+  },
+};
+
+// ---------------------------------------------------------------- Dinosaurs (photo + where found)
+/** "id|name|aliases|period|where found|lat|lon|starter|aussie" */
+const dinoItems: Item[] = `trex|Tyrannosaurus rex|T. rex;T rex;Trex;Tyrannosaurus|Late Cretaceous|Montana, USA|47.6|-106.7|s|
+triceratops|Triceratops||Late Cretaceous|Wyoming, USA|43.0|-104.5|s|
+velociraptor|Velociraptor|Raptor|Late Cretaceous|Gobi Desert, Mongolia|44.13|103.72|s|
+spinosaurus|Spinosaurus||Cretaceous|Egypt|28.3|28.9|s|
+ankylosaurus|Ankylosaurus||Late Cretaceous|Montana, USA|47.0|-107.5|s|
+parasaurolophus|Parasaurolophus||Late Cretaceous|Alberta, Canada|50.76|-111.5||
+pachy|Pachycephalosaurus||Late Cretaceous|South Dakota, USA|45.5|-102.5||
+iguanodon|Iguanodon||Early Cretaceous|Sussex, England|51.0|-0.2||
+muttaburra|Muttaburrasaurus||Early Cretaceous|Muttaburra, Queensland|-22.6|144.55||a
+australovenator|Australovenator|Banjo|Early Cretaceous|Winton, Queensland|-22.4|143.0||a
+leaellyn|Leaellynasaura||Early Cretaceous|Dinosaur Cove, Victoria|-38.82|143.42||a
+minmi|Minmi||Early Cretaceous|Roma, Queensland|-26.6|148.8||a
+stegosaurus|Stegosaurus||Late Jurassic|Colorado, USA|39.65|-105.2|s|
+brachiosaurus|Brachiosaurus||Late Jurassic|Colorado, USA|39.1|-108.5|s|
+diplodocus|Diplodocus||Late Jurassic|Colorado, USA|38.4|-105.2|s|
+allosaurus|Allosaurus||Late Jurassic|Utah, USA|39.3|-110.7||
+archaeopteryx|Archaeopteryx||Late Jurassic|Solnhofen, Germany|48.9|11.0||
+brontosaurus|Brontosaurus|Apatosaurus|Late Jurassic|Wyoming, USA|41.9|-106.0||
+dilophosaurus|Dilophosaurus||Early Jurassic|Arizona, USA|36.0|-111.0||
+megalosaurus|Megalosaurus||Middle Jurassic|Oxfordshire, England|51.8|-1.3||
+coelophysis|Coelophysis||Late Triassic|New Mexico, USA|36.3|-106.5||
+plateosaurus|Plateosaurus||Late Triassic|Trossingen, Germany|48.07|8.63||
+herrerasaurus|Herrerasaurus||Late Triassic|San Juan, Argentina|-30.0|-67.9||
+eoraptor|Eoraptor||Late Triassic|San Juan, Argentina|-30.1|-67.6||
+argentinosaurus|Argentinosaurus||Late Cretaceous|Neuquén, Argentina|-38.9|-68.6||
+giganotosaurus|Giganotosaurus||Late Cretaceous|Neuquén, Argentina|-39.5|-69.2||
+oviraptor|Oviraptor||Late Cretaceous|Gobi Desert, Mongolia|44.0|103.3||
+protoceratops|Protoceratops||Late Cretaceous|Gobi Desert, Mongolia|44.3|104.1||`
+  .split("\n")
+  .map((line) => {
+    const [id, name, aliases, period, where, lat, lon, starter, aussie] = line.split("|");
+    return {
+      id,
+      name,
+      aliases: aliases ? aliases.split(";") : [],
+      tags: [...(starter ? ["starter"] : []), ...(aussie ? ["aussie"] : [])],
+      data: { period, where, point: [Number(lon), Number(lat)] },
+    };
+  });
+
+export const dinosaursDeck: Deck = {
+  id: "dinosaurs",
+  subject: "Nature & Animals",
+  title: "Dinosaurs",
+  blurb: "A fossil or reconstruction appears, with the spot where it was dug up. Name the dinosaur.",
+  noun: "dinosaurs",
+  mode: "prompt",
+  placeholder: "Which dinosaur?",
+  items: dinoItems,
+  variants: [
+    { id: "starter", label: "The Famous Ones", minutes: 3, starter: true, filter: (i) => i.tags.includes("starter") },
+    { id: "aussie", label: "Australian Dinosaurs", minutes: 2, filter: (i) => i.tags.includes("aussie") },
+    { id: "all", label: `All ${dinoItems.length}`, minutes: 6, filter: () => true },
+  ],
+  options: [],
+  tip: "The ring shows where the first or most famous fossils were found. Photos come from Wikipedia.",
+  describe: (i) => `${i.name}: ${i.data!.where} (${i.data!.period})`,
+  renderPrompt: (item) => photoPrompt(loaded.get("dinos")?.get(item.id), `Which dinosaur is this? Found in ${item.data!.where}.`),
+  createBoard: async ({ container, items: playing }) => {
+    const [land] = await Promise.all([backgroundLand(), safeLoad("dinos", container)]);
+    return createMapBoard(
+      container,
+      [...land, ...playing.map((i) => ({ id: i.id, label: `${i.name}: ${i.data!.where}`, point: i.data!.point as [number, number] }))],
+      new Set(playing.map((i) => i.id)),
+      { rotate: -10 },
+    );
+  },
+};

@@ -11,12 +11,12 @@ import { cellsDeck } from "./decks/cells";
 import { bodyDeck } from "./decks/body";
 import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
-import { europe1914Deck, ancientDeck } from "./decks/history-maps";
+import { empiresDeck } from "./decks/history-maps";
 import { airportsDeck } from "./decks/airports";
 import { timezonesDeck, currenciesDeck } from "./decks/travel-maps";
-import { natoDeck, pmDeck, unitsDeck, scientistsDeck, airlinesDeck, babyDeck } from "./decks/text-decks";
-import { triviaDeck, animalGroupsDeck, habitatsDeck, dinosaursDeck } from "./decks/choice-decks";
-import { ausAnimalsDeck, dogsDeck, landmarksDeck } from "./decks/picture-decks";
+import { natoDeck, pmDeck, unitsDeck, scientistsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
+import { triviaDeck, lifeDeck } from "./decks/choice-decks";
+import { ausAnimalsDeck, petsDeck, landmarksDeck, habitatsDeck, dinosaursDeck } from "./decks/picture-decks";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 
@@ -27,11 +27,11 @@ const DECKS: Deck[] = [
   // Science
   zoomOutDeck, elementsDeck, cellsDeck, bodyDeck, unitsDeck, scientistsDeck,
   // History
-  historyDeck, peopleDeck, pmDeck, europe1914Deck, ancientDeck, triviaDeck,
+  historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, triviaDeck,
   // Travel & Transport
   airportsDeck, airlinesDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
   // Nature & Animals
-  ausAnimalsDeck, animalGroupsDeck, dogsDeck, habitatsDeck, babyDeck, dinosaursDeck,
+  ausAnimalsDeck, lifeDeck, petsDeck, habitatsDeck, babyDeck, dinosaursDeck,
 ];
 
 const root = document.getElementById("app")!;

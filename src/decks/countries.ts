@@ -115,13 +115,13 @@ export async function createCountryMap(
 }
 
 /** Every country as plain background land, for maps that quiz something else. */
-export async function backgroundLand(): Promise<MapShape[]> {
+export async function backgroundLand(withAntarctica = false): Promise<MapShape[]> {
   const topo = await loadTopo();
   const fc = feature(topo, topo.objects.countries as GeometryCollection) as unknown as {
     features: { properties: { name: string } }[];
   };
   return fc.features
-    .filter((f) => f.properties.name !== "Antarctica")
+    .filter((f) => withAntarctica || f.properties.name !== "Antarctica")
     .map((f) => {
       const n = f.properties.name;
       return { id: null, label: items.find((i) => i.id === n)?.name ?? hiddenLabels.get(n) ?? n, feature: f as never };

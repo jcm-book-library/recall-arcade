@@ -7,6 +7,8 @@ export function createFlagBoard(
   flagUrl: (item: Item) => string,
   groups: ProgressGroup[],
   extraClass = "",
+  /** Photo credit, shown when hovering a picture. */
+  creditFor?: (item: Item) => string,
 ): Board {
   const wrap = document.createElement("div");
   wrap.className = `flagwall ${extraClass}`.trim();
@@ -29,6 +31,8 @@ export function createFlagBoard(
       const src = flagUrl(item);
       // No picture available: show an empty frame rather than a broken-image icon.
       cell.innerHTML = src ? `<img alt="" loading="lazy" src="${src}"><figcaption></figcaption>` : `<span class="noimg">?</span><figcaption></figcaption>`;
+      const credit = creditFor?.(item);
+      if (credit) cell.querySelector("img")?.setAttribute("title", credit);
       grid.append(cell);
       cells.set(item.id, cell);
     }

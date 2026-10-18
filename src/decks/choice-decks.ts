@@ -87,169 +87,143 @@ Nicholas II|Who was the last tsar of Russia?|Peter the Great;Alexander III;Ivan 
   },
 );
 
-// ---------------------------------------------------------------- Animal groups
-const CLASSES = ["Mammal", "Bird", "Reptile", "Amphibian", "Fish", "Insect", "Arachnid"];
-export const animalGroupsDeck = choiceDeck(
+// ---------------------------------------------------------------- Classifying life
+// Four levels that zoom in, from the kingdoms of life down to the orders of mammals.
+const LEVELS: { tag: string; label: string; options: string[]; question: (name: string) => string; note: string }[] = [
   {
-    id: "animalgroups",
-    title: "Animal Groups",
-    subject: "Nature & Animals",
-    blurb: "Mammal, bird, reptile, amphibian, fish, insect or arachnid? Some are trickier than they look.",
-    noun: "animals",
-    items: parse(
-      `Mammal|Dolphin|Breathes air and feeds its young milk, like all mammals.|starter
-Fish|Whale shark|The biggest fish in the world, not a whale.|
-Mammal|Bat|The only mammal that can truly fly.|starter
-Bird|Penguin|A bird that swims instead of flies.|starter
-Mammal|Platypus|One of the few mammals that lays eggs.|starter
-Mammal|Echidna|Another egg-laying mammal, found in Australia.|
-Amphibian|Axolotl|A salamander that keeps its gills as an adult.|
-Reptile|Crocodile||starter
-Reptile|Turtle||
-Reptile|Snake||starter
-Amphibian|Frog||starter
-Fish|Seahorse|Yes, a fish. The males carry the eggs.|
-Fish|Shark|Sharks are fish with skeletons made of cartilage.|starter
-Fish|Eel||
-Arachnid|Spider|Eight legs: arachnids, not insects.|starter
-Arachnid|Scorpion||
-Arachnid|Tick|Ticks have eight legs, like spiders.|
-Insect|Butterfly||starter
-Insect|Ant||
-Insect|Dragonfly||
-Insect|Ladybird||
-Bird|Ostrich||
-Bird|Kiwi||
-Bird|Emu||starter
-Bird|Kookaburra||
-Reptile|Gecko||
-Reptile|Komodo dragon|The largest living lizard.|
-Reptile|Tuatara|Looks like a lizard but is the last of an ancient reptile group.|
-Amphibian|Newt||
-Amphibian|Toad||
-Amphibian|Caecilian|A legless amphibian that looks like a worm.|
-Fish|Manta ray||
-Fish|Stingray||
-Mammal|Koala||starter
-Mammal|Seal||
-Mammal|Flying fox|A large fruit bat.|`,
-      "g",
-    ),
+    tag: "kingdom",
+    label: "1 · Kingdoms",
+    options: ["Animal", "Plant", "Fungus", "Bacterium"],
+    question: (n) => `Is ${n} an animal, plant, fungus or bacterium?`,
+    note: "Start wide: the big kingdoms of life.",
   },
   {
-    rounds: [
-      { id: "starter", label: "The Basics", starter: true, filter: (i) => i.tags.includes("starter") },
-      { id: "all", label: "All 36", filter: () => true },
-    ],
-    question: (i) => `A ${clue(i).toLowerCase()} is a…`,
-    options: () => CLASSES,
-    shuffleOptions: false,
-    explain: extra,
+    tag: "backbone",
+    label: "2 · Backbone?",
+    options: ["Vertebrate", "Invertebrate"],
+    question: (n) => `Does ${n} have a backbone?`,
+    note: "Zoom in on animals: backbone (vertebrate) or not (invertebrate)?",
   },
+  {
+    tag: "class",
+    label: "3 · Classes",
+    options: ["Mammal", "Bird", "Reptile", "Amphibian", "Fish", "Insect", "Arachnid"],
+    question: (n) => `${n.charAt(0).toUpperCase()}${n.slice(1)} is a…`,
+    note: "Zoom in again: which class?",
+  },
+  {
+    tag: "order",
+    label: "4 · Mammal Orders",
+    options: ["Primate", "Carnivore", "Rodent", "Rabbits & hares", "Marsupial", "Monotreme", "Bat", "Whales & dolphins", "Even-toed hoofed", "Odd-toed hoofed"],
+    question: (n) => `Which group of mammals is ${n} in?`,
+    note: "Zoom right in on mammals: which order?",
+  },
+];
+
+/** "answer|subject (with a/an/the)|note|level,starter" */
+const lifeItems = parse(
+  `Fungus|a mushroom||kingdom,starter
+Fungus|yeast|Yeast is a single-celled fungus that makes bread rise.|kingdom,starter
+Fungus|mould on bread||kingdom
+Fungus|a truffle||kingdom
+Plant|an oak tree||kingdom,starter
+Plant|a fern||kingdom
+Plant|moss||kingdom
+Plant|a Venus flytrap|It eats insects, but it's still a plant.|kingdom,starter
+Animal|coral|Coral is made of tiny animals called polyps.|kingdom,starter
+Animal|a sponge|Sea sponges are some of the simplest animals.|kingdom,starter
+Animal|a jellyfish||kingdom
+Animal|a sea anemone||kingdom
+Bacterium|E. coli||kingdom,starter
+Bacterium|Salmonella||kingdom
+Bacterium|the bacteria in yoghurt||kingdom
+Invertebrate|an octopus||backbone,starter
+Invertebrate|a snail||backbone
+Invertebrate|a crab||backbone,starter
+Invertebrate|a starfish||backbone
+Invertebrate|an earthworm||backbone
+Invertebrate|a squid||backbone
+Invertebrate|a butterfly||backbone
+Invertebrate|a spider||backbone
+Vertebrate|a shark|Sharks' skeletons are cartilage, but they still have a backbone.|backbone,starter
+Vertebrate|a frog||backbone,starter
+Vertebrate|a snake|A snake is mostly backbone: hundreds of vertebrae.|backbone
+Vertebrate|a bat||backbone
+Vertebrate|a seahorse||backbone
+Vertebrate|a penguin||backbone
+Mammal|a dolphin|Breathes air and feeds its young milk, like all mammals.|class,starter
+Fish|a whale shark|The biggest fish in the world, not a whale.|class
+Mammal|a bat|The only mammal that can truly fly.|class,starter
+Bird|a penguin|A bird that swims instead of flies.|class,starter
+Mammal|a platypus|One of the few mammals that lays eggs.|class,starter
+Amphibian|an axolotl|A salamander that keeps its gills as an adult.|class
+Reptile|a crocodile||class,starter
+Reptile|a turtle||class
+Amphibian|a frog||class,starter
+Fish|a seahorse|Yes, a fish. The males carry the eggs.|class
+Fish|a shark||class,starter
+Arachnid|a spider|Eight legs: arachnids, not insects.|class,starter
+Arachnid|a scorpion||class
+Arachnid|a tick|Ticks have eight legs, like spiders.|class
+Insect|a butterfly||class,starter
+Insect|a dragonfly||class
+Insect|a ladybird||class
+Bird|a kiwi||class
+Bird|an emu||class
+Reptile|a gecko||class
+Reptile|a tuatara|Looks like a lizard but is the last of an ancient reptile group.|class
+Amphibian|a caecilian|A legless amphibian that looks like a worm.|class
+Fish|a stingray||class
+Mammal|a seal||class
+Primate|a chimpanzee||order,starter
+Primate|a lemur||order
+Primate|a human|Yes, we're primates.|order,starter
+Carnivore|a lion||order,starter
+Carnivore|a seal|Seals are in the same order as cats, dogs and bears.|order
+Carnivore|a bear||order
+Rodent|a mouse||order,starter
+Rodent|a capybara||order
+Rodent|a beaver||order
+Rabbits & hares|a rabbit|Not a rodent: rabbits have their own order, the lagomorphs.|order,starter
+Marsupial|a kangaroo||order,starter
+Marsupial|a wombat||order
+Marsupial|a Tasmanian devil||order
+Monotreme|a platypus|Monotremes lay eggs. Only the platypus and echidnas are left.|order,starter
+Monotreme|an echidna||order
+Bat|a flying fox||order
+Whales & dolphins|a blue whale||order,starter
+Whales & dolphins|a dolphin||order
+Even-toed hoofed|a hippopotamus|Hippos' closest living relatives are whales.|order
+Even-toed hoofed|a cow||order
+Even-toed hoofed|a giraffe||order
+Odd-toed hoofed|a horse||order,starter
+Odd-toed hoofed|a rhinoceros||order
+Odd-toed hoofed|a tapir||order`,
+  "cl",
 );
 
-// ---------------------------------------------------------------- Where animals live
-const CONTINENTS = ["Africa", "Asia", "Europe", "North America", "South America", "Oceania", "Antarctica"];
-export const habitatsDeck = choiceDeck(
+export const lifeDeck = choiceDeck(
   {
-    id: "habitats",
-    title: "Where Animals Live",
+    id: "life",
+    title: "Classifying Life",
     subject: "Nature & Animals",
-    blurb: "Which continent is each animal from in the wild?",
-    noun: "animals",
-    items: parse(
-      `Africa|Lion||starter
-Africa|Giraffe||starter
-Africa|Zebra||
-Africa|Hippopotamus||starter
-Africa|Gorilla||
-Africa|Ring-tailed lemur|Only found on Madagascar.|
-Africa|Meerkat||
-Asia|Giant panda||starter
-Asia|Bengal tiger||starter
-Asia|Orangutan|Only on Borneo and Sumatra.|
-Asia|Komodo dragon|Only on a few Indonesian islands.|
-Asia|Red panda||
-Asia|Snow leopard||
-North America|American bison||starter
-North America|Bald eagle||
-North America|Grizzly bear||
-North America|Raccoon||
-South America|Sloth||starter
-South America|Jaguar||
-South America|Llama||
-South America|Capybara|The world's biggest rodent.|
-South America|Toucan||
-Oceania|Kangaroo||starter
-Oceania|Koala||
-Oceania|Kiwi|New Zealand's national bird.|starter
-Oceania|Cassowary||
-Antarctica|Emperor penguin|Breeds on the Antarctic sea ice in winter.|starter
-Antarctica|Weddell seal||
-Europe|Iberian lynx|Spain and Portugal only.|
-Europe|Chamois|A mountain goat-antelope of the Alps.|
-Europe|European hedgehog||starter
-Europe|Alpine ibex||`,
-      "w",
-    ),
+    blurb: "Start with the kingdoms of life, then zoom in: backbone or not, which class, which order of mammal.",
+    noun: "living things",
+    items: lifeItems,
   },
   {
-    rounds: [
-      { id: "starter", label: "Famous Animals", starter: true, filter: (i) => i.tags.includes("starter") },
-      { id: "all", label: "All 32", filter: () => true },
-    ],
-    question: (i) => `Where does the ${clue(i).toLowerCase()} live in the wild?`,
-    options: () => CONTINENTS,
+    rounds: LEVELS.map((l, i) => ({
+      id: l.tag,
+      label: l.label,
+      starter: i === 0,
+      filter: (it: Item) => it.tags.includes(l.tag),
+      question: (it: Item) => l.question(clue(it)),
+      options: () => l.options,
+      note: l.note,
+    })),
+    question: clue,
+    options: () => [],
     shuffleOptions: false,
     explain: extra,
-  },
-);
-
-// ---------------------------------------------------------------- Dinosaurs
-export const dinosaursDeck = choiceDeck(
-  {
-    id: "dinosaurs",
-    title: "Dinosaurs",
-    subject: "Nature & Animals",
-    blurb: "Triassic, Jurassic or Cretaceous? Put each dinosaur in its period.",
-    noun: "dinosaurs",
-    items: parse(
-      `Cretaceous|Tyrannosaurus rex|T. rex lived closer in time to us than to Stegosaurus.|starter
-Cretaceous|Triceratops||starter
-Cretaceous|Velociraptor|Real ones were about the size of a turkey, with feathers.|starter
-Cretaceous|Spinosaurus||
-Cretaceous|Ankylosaurus||starter
-Cretaceous|Parasaurolophus||
-Cretaceous|Pachycephalosaurus||
-Cretaceous|Iguanodon|One of the first dinosaurs ever named, in 1825.|
-Cretaceous|Muttaburrasaurus|Found in Queensland.|
-Cretaceous|Australovenator|An Australian meat-eater nicknamed "Banjo".|
-Jurassic|Stegosaurus||starter
-Jurassic|Brachiosaurus||starter
-Jurassic|Diplodocus||starter
-Jurassic|Allosaurus||
-Jurassic|Archaeopteryx|A feathered link between dinosaurs and birds.|
-Jurassic|Brontosaurus||
-Jurassic|Dilophosaurus||
-Jurassic|Megalosaurus|The first dinosaur ever named, in 1824.|
-Triassic|Coelophysis||starter
-Triassic|Plateosaurus||
-Triassic|Herrerasaurus|One of the earliest known dinosaurs.|
-Triassic|Eoraptor||`,
-      "d",
-    ),
-  },
-  {
-    rounds: [
-      { id: "starter", label: "The Famous Ones", starter: true, filter: (i) => i.tags.includes("starter") },
-      { id: "all", label: "All 22", filter: () => true },
-    ],
-    question: (i) => `When did ${clue(i)} live?`,
-    options: () => ["Triassic", "Jurassic", "Cretaceous"],
-    shuffleOptions: false,
-    explain: (i) => {
-      const range: Record<string, string> = { Triassic: "252–201", Jurassic: "201–145", Cretaceous: "145–66" };
-      return `${i.name}: ${range[i.name]} million years ago.${extra(i) ? ` ${extra(i)}` : ""}`;
-    },
   },
 );

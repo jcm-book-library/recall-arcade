@@ -9,6 +9,10 @@ export interface ChoiceRound {
   filter: (item: Item) => boolean;
   /** How many questions per round; defaults to all of them. */
   count?: number;
+  /** Rounds can ask their own kind of question with their own answers (Classifying Life). */
+  question?: (item: Item) => string;
+  options?: (item: Item) => string[];
+  note?: string;
 }
 
 export interface ChoiceSpec {
@@ -83,7 +87,7 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
       h(
         "div",
         { class: "setup-row" },
-        h("p", { class: "muted tl-how" }, `${Math.min(round.count ?? pool.length, pool.length)} questions from ${pool.length}. Click an answer, or press its number key.`),
+        h("p", { class: "muted tl-how" }, `${round.note ? `${round.note} ` : ""}${Math.min(round.count ?? pool.length, pool.length)} questions from ${pool.length}. Click an answer, or press its number key.`),
         h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
         h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
       ),
@@ -105,7 +109,8 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
   function show() {
     const item = questions[index];
     answered = false;
-    const opts = spec.shuffleOptions === false ? spec.options(item) : shuffle(spec.options(item));
+    const raw = (round.options ?? spec.options)(item);
+    const opts = spec.shuffleOptions === false ? raw : shuffle(raw);
     const feedback = h("p", { class: "mc-feedback", "aria-live": "polite" });
     const next = h("button", { type: "button", class: "btn primary" }, index + 1 < questions.length ? "Next ▸" : "See results ▸");
     next.hidden = true;
@@ -143,7 +148,7 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
         "div",
         { class: "tl-card" },
         h("span", { class: "tl-count" }, `Question ${index + 1} of ${questions.length}`),
-        h("p", { class: "tl-event" }, spec.question(item)),
+        h("p", { class: "tl-event" }, (round.question ?? spec.question)(item)),
       ),
       h("div", { class: buttons.length > 4 ? "mc-options many" : "mc-options" }, ...buttons),
       h("div", { class: "tl-actions" }, feedback, score, next),
@@ -208,7 +213,7 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
             h(
               "ul",
               { class: "mc-review" },
-              ...wrong.map((l) => h("li", {}, h("span", {}, spec.question(l.item)), h("strong", {}, ` ${l.item.name}`), h("span", { class: "muted" }, ` (you said ${l.picked})`))),
+              ...wrong.map((l) => h("li", {}, h("span", {}, (round.question ?? spec.question)(l.item)), h("strong", {}, ` ${l.item.name}`), h("span", { class: "muted" }, ` (you said ${l.picked})`))),
             ),
           )
         : h("span", {}),

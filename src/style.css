@@ -463,7 +463,13 @@ button, input, select { font: inherit; color: inherit; }
 .credit { font-size: 0.75rem; color: var(--muted); max-width: 60ch; text-align: center; text-decoration: none; }
 .credit:hover { text-decoration: underline; }
 .noimg { display: grid; place-items: center; aspect-ratio: 4 / 3; border: 1px dashed var(--line); border-radius: 3px; color: var(--muted); font-family: var(--font-pixel); }
-.flagwall.photos .flag:not(.found):not(.missed):not(.unseen) img { filter: blur(6px) grayscale(1) opacity(0.35); }
+.flagwall.photos:not(.pick) .flag:not(.found):not(.missed):not(.unseen) img { filter: blur(6px) grayscale(1) opacity(0.35); }
+.flagwall.pick .flaggrid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.flagwall.pick .flag img { filter: none; }
+.flagwall.pick .flag:not(.found):not(.missed) img:hover { outline: 3px solid var(--accent); outline-offset: 2px; }
+.map.hide-dots .dot:not(.found):not(.missed) { display: none; }
+.map.hide-dots .dot { pointer-events: none; }
+.map.hide-dots .land:hover { fill: color-mix(in srgb, var(--accent) 30%, var(--land)); }
 
 /* ---------- tile board ---------- */
 .tiles h3 { font: 0.8rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 14px 0 8px; }
