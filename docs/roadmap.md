@@ -63,10 +63,12 @@ For more accuracy, swap in real sources:
 - **Anatomy and cells:** freely licensed SVG diagrams from Wikimedia Commons, with clickable
   regions laid over them.
 - **Space:** real star positions and constellation lines (public star catalogues),
-  NASA images (public domain).
+  NASA images (public domain). **Wanted:** a real star chart in Zoom Out's Night Sky
+  stage, so the constellation *shapes* are learned, not just their names.
 - **3D:** a rotatable skeleton or solar system with three.js and open 3D models.
-- **Pixel art for The Overworld:** free sprite packs (e.g. Kenney, CC0), or drawn in
-  Aseprite or Piskel.
+- **Pixel art for The Overworld:** Josh wants to draw this himself (Piskel or Aseprite).
+  Free packs (e.g. Kenney, CC0) can stand in as placeholders while learning.
+- **Anatomy, cells, 3D:** agreed as the next step for visuals after testing.
 
 ## Progression (summary)
 - Three tracks: **Easy** (one quiz per subject, low target), **Intermediate** (three per
