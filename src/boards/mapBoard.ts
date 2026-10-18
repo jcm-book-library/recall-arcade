@@ -1,6 +1,6 @@
 import { geoEqualEarth, geoPath, geoGraticule10, type GeoPermissibleObjects } from "d3-geo";
 import { select } from "d3-selection";
-import { zoom, zoomIdentity, type ZoomTransform } from "d3-zoom";
+import { zoom, zoomIdentity, zoomTransform, type ZoomTransform } from "d3-zoom";
 import type { Board, ItemState } from "../engine/types";
 
 export interface MapShape {
@@ -147,12 +147,59 @@ export function createMapBoard(
     b.title = title;
     b.setAttribute("aria-label", title);
     b.addEventListener("click", fn);
+    // Keep the cursor in the answer box when using the map buttons.
+    b.addEventListener("mousedown", (e) => e.preventDefault());
     controls.append(b);
   };
   btn("+", "Zoom in", () => svg.call(zoomer.scaleBy, 1.8));
   btn("−", "Zoom out", () => svg.call(zoomer.scaleBy, 1 / 1.8));
-  btn("⟲", "Reset view", () => svg.call(zoomer.transform, zoomIdentity));
+  btn("⟲", "Reset view", () => glideTo(zoomIdentity));
+  btn("◎", "Zoom to the current one", () => current && centreOn(current, Math.max(zoomTransform(svg.node()!).k, 4)));
+  const focusBtn = controls.lastElementChild as HTMLButtonElement;
+  focusBtn.hidden = true;
   wrap.append(controls);
+
+  // ---------- moving the camera ----------
+  let current: SVGGraphicsElement | null = null;
+  let glide = 0;
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  /** Smoothly pan/zoom to a new view. */
+  function glideTo(target: ZoomTransform) {
+    cancelAnimationFrame(glide);
+    const from = zoomTransform(svg.node()!);
+    if (reduceMotion) return svg.call(zoomer.transform, target);
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 450);
+      const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      const k = from.k + (target.k - from.k) * e;
+      const x = from.x + (target.x - from.x) * e;
+      const y = from.y + (target.y - from.y) * e;
+      svg.call(zoomer.transform, zoomIdentity.translate(x, y).scale(k));
+      if (t < 1) glide = requestAnimationFrame(step);
+    };
+    glide = requestAnimationFrame(step);
+  }
+
+  /** Put an element in the middle of the map at zoom level k. */
+  function centreOn(el: SVGGraphicsElement, k: number) {
+    const b = el.getBBox();
+    const cx = b.x + b.width / 2;
+    const cy = b.y + b.height / 2;
+    glideTo(zoomIdentity.translate(W / 2 - k * cx, H / 2 - k * cy).scale(k));
+  }
+
+  /** When zoomed in, follow the current item if it's off screen or near the edge. */
+  function follow(el: SVGGraphicsElement) {
+    const t = zoomTransform(svg.node()!);
+    if (t.k < 1.05) return;
+    const b = el.getBBox();
+    const [sx, sy] = t.apply([b.x + b.width / 2, b.y + b.height / 2]);
+    const margin = 0.15;
+    const inView = sx > W * margin && sx < W * (1 - margin) && sy > H * margin && sy < H * (1 - margin);
+    if (!inView) centreOn(el, t.k);
+  }
 
   // Name tooltip, only active after a round ends
   const tip = document.createElement("div");
@@ -200,10 +247,13 @@ export function createMapBoard(
         // Keep the highlighted dot on top of its neighbours.
         if (el.tagName === "circle") el.parentNode?.append(el);
       }
+      current = (targets.find((t) => t.tagName === "circle") ?? targets[0] ?? null) as SVGGraphicsElement | null;
+      focusBtn.hidden = !current;
       if (!targets.length) {
         locator.setAttribute("visibility", "hidden");
         return;
       }
+      follow(current!);
       const box = (targets[0] as SVGGraphicsElement).getBBox();
       locator.setAttribute("cx", String(box.x + box.width / 2));
       locator.setAttribute("cy", String(box.y + box.height / 2));
@@ -223,6 +273,7 @@ export function createMapBoard(
       if (!on) tip.hidden = true;
     },
     destroy() {
+      cancelAnimationFrame(glide);
       wrap.remove();
     },
   };
