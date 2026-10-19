@@ -1,0 +1,10 @@
+{
+  "name": "Recall Arcade",
+  "repo": "recall-arcade",
+  "purpose": "Short timed learning games, such as a name-every-country map quiz, that are replayed until the answers stick; progress is saved in the browser.",
+  "family": "Learning",
+  "stage": "Working",
+  "live": "https://jcm-book-library.github.io/recall-arcade/",
+  "tags": [],
+  "updated": "2026-10-19"
+}
