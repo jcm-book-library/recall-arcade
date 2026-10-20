@@ -5,11 +5,11 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 
 ## The two halves
 1. **Learning games:** short, timed quizzes you replay until the answers stick.
-   Five subjects, six quizzes each.
+   Six subjects, six quizzes each.
 2. **The arcade:** five short retro levels (Labyrinth, Dogfight, Brawl, Boss, Chase),
    one per subject, unlocked by doing well in that subject's quizzes.
 
-## Subjects and quizzes (all 30 built ✅)
+## Subjects and quizzes (all 36 built ✅)
 
 | Geography | Science | History | Travel & Transport | Nature & Animals |
 |---|---|---|---|---|
@@ -19,6 +19,20 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 | Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Empires Through Time (6 maps, 323 BC–1914) | Currencies | Where Animals Live (photo, click the continent) |
 | Territories | Units & Forces + Conversions | Mythology | Time Zones | Baby Animals & Group Names (name the animal) |
 | Neighbours | Famous Scientists (50+) | Trivia Round (multiple choice) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
+
+### Music (skill learning: reading music, on piano)
+| Quiz | Rounds |
+|---|---|
+| The Piano Keyboard | White keys ★, all 12 notes, two octaves; name the lit key or click it |
+| Treble Clef | Lines ★, spaces, both, plus ledger lines; type or answer on the piano |
+| Bass Clef | Same rounds as treble |
+| Rhythm & Note Lengths | Main notes ★, all notes, rests, how many beats? (British names, American accepted) |
+| Keys & Symbols | How loud ★, how fast, other signs, first key signatures, all key signatures |
+| Ear Training | Higher or lower ★, major or minor, intervals (with song cues) |
+
+Music ideas for later: sight-reading runs (several notes in a row), note values in a bar,
+minor key signatures, chords on the stave, a rhythm tap-along level for the arcade.
+Arts & Culture is a candidate seventh subject.
 
 ### Next ideas for existing games
 - **Mythology:** deep enough to become its own subject later (more cultures, heroes, monsters).

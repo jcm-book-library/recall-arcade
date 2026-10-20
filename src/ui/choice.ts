@@ -25,6 +25,8 @@ export interface ChoiceSpec {
   explain?: (item: Item) => string | undefined;
   /** Shuffle the answer buttons (off for fixed lists like Triassic/Jurassic/Cretaceous). */
   shuffleOptions?: boolean;
+  /** Sound for the question (Ear Training). Plays when it appears, with a button to hear it again. */
+  play?: (item: Item) => void;
 }
 
 function shuffle<T>(list: T[]): T[] {
@@ -143,12 +145,17 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
       if (!answered && n >= 1 && n <= buttons.length) pick(buttons[n - 1]);
     };
     const score = h("span", { class: "tl-score" }, `${right}/${index}`);
+    if (spec.play) window.setTimeout(() => spec.play!(item), 150);
+    const replay = spec.play
+      ? h("button", { type: "button", class: "btn ghost mc-play", onclick: () => spec.play!(item) }, "▶ Play again")
+      : null;
     game.replaceChildren(
       h(
         "div",
         { class: "tl-card" },
         h("span", { class: "tl-count" }, `Question ${index + 1} of ${questions.length}`),
         h("p", { class: "tl-event" }, (round.question ?? spec.question)(item)),
+        replay,
       ),
       h("div", { class: buttons.length > 4 ? "mc-options many" : "mc-options" }, ...buttons),
       h("div", { class: "tl-actions" }, feedback, score, next),

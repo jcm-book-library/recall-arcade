@@ -11,6 +11,7 @@ Thirty games across five subjects, six each. ★ marks the starter round in each
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology, Trivia Round
 - **Travel & Transport:** Airport Codes, Airline Codes, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
 - **Nature & Animals:** Australian Animals, Classifying Life, Pet Breeds, Where Animals Live, Baby Animals & Group Names, Dinosaurs
+- **Music:** The Piano Keyboard, Treble Clef, Bass Clef, Rhythm & Note Lengths, Keys & Symbols, Ear Training
 
 ### Ways to play
 | Style | Where |
@@ -20,7 +21,8 @@ Thirty games across five subjects, six each. ★ marks the starter round in each
 | One at a time, clicked | Seas Lakes & Rivers, Pet Breeds, Where Animals Live (and Cells / Human Body with "click instead") |
 | Labelled diagram | Cells & Life, The Human Body |
 | Timeline | Big Moments, Who Lived When? |
-| Multiple choice | Trivia Round, Classifying Life |
+| Multiple choice | Trivia Round, Classifying Life, Ear Training (listen, then choose) |
+| Piano keyboard | The Piano Keyboard, Treble and Bass Clef (name the note, or "answer on the piano") |
 
 ## How it's built
 - `src/engine/`: the shared parts every game uses: answer matching, progress saving.
@@ -29,6 +31,7 @@ Thirty games across five subjects, six each. ★ marks the starter round in each
 - `src/boards/`: ways of drawing a deck (world map, periodic table, flag/photo wall, tiles, diagrams, Zoom Out).
 - `src/ui/timeline.ts`, `src/ui/choice.ts`: the timeline and multiple-choice game screens.
 - `src/ui/`: the home screen and the play screen.
+- `src/music/`: note names, the piano sound (Web Audio, no sound files) and the stave drawing.
 
 ## Running it locally
 ```

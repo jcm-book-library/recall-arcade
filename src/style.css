@@ -539,3 +539,34 @@ button, input, select { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Music: stave, piano and symbol fonts */
+.prompt-staff { display: grid; justify-items: center; gap: 4px; width: 100%; }
+.prompt-staff .staff { width: 100%; max-width: 320px; height: auto; }
+.staff-line, .stem { stroke: var(--ink); stroke-width: 1.4; }
+.notehead { fill: var(--ink); }
+.clef, .accidental, .glyph { font-family: "Noto Music", serif; fill: var(--ink); }
+.clef.treble { font-size: 62px; }
+.clef.bass { font-size: 46px; }
+.glyph { font-size: 44px; }
+.accidental { font-size: 26px; }
+.dynamic { font: italic 700 clamp(2.4rem, 8vw, 3.4rem)/1 Georgia, "Times New Roman", serif; color: var(--accent); margin: 0; }
+.tiles.music .tile-clue { font-family: "Noto Music", serif; font-size: 2.4rem; color: var(--ink); line-height: 1.2; }
+.piano { width: 100%; touch-action: manipulation; }
+.piano svg { width: 100%; height: auto; max-height: 260px; display: block; margin: 0 auto; }
+.piano .key rect { stroke: var(--line); stroke-width: 1.5; }
+.piano .key.white rect { fill: #fdfdfb; stroke: #8c98a1; }
+.piano .key.black rect { fill: #1b242b; stroke: #0b1014; }
+.piano .key.found.white rect { fill: color-mix(in srgb, var(--found) 45%, #fdfdfb); }
+.piano .key.found.black rect { fill: color-mix(in srgb, var(--found) 70%, #1b242b); }
+.piano .key.missed.white rect { fill: color-mix(in srgb, var(--missed) 40%, #fdfdfb); }
+.piano .key.missed.black rect { fill: color-mix(in srgb, var(--missed) 70%, #1b242b); }
+.piano .key.current.white rect { fill: color-mix(in srgb, var(--accent) 70%, #fdfdfb); }
+.piano .key.current.black rect { fill: var(--accent); }
+.piano .key.flash.white rect { fill: color-mix(in srgb, var(--accent) 55%, #fdfdfb); }
+.piano .key.flash.black rect { fill: color-mix(in srgb, var(--accent) 75%, #1b242b); }
+.piano .key-label { font: 700 13px var(--font-body, sans-serif); text-anchor: middle; pointer-events: none; fill: #15212a; }
+.piano .key.black .key-label { fill: #fff; font-size: 11px; }
+.piano .middle-c { fill: var(--accent); pointer-events: none; }
+.piano.pickable .key { cursor: pointer; }
+.mc-play { align-self: center; }
