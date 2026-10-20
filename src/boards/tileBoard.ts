@@ -14,10 +14,12 @@ export function createTileBoard(
     groups?: ProgressGroup[];
     /** Wider cards for long clues. */
     wide?: boolean;
+    /** Extra class, e.g. "music" to draw clues in the music-symbol font. */
+    className?: string;
   },
 ): Board {
   const wrap = document.createElement("div");
-  wrap.className = opts.wide ? "tiles wide" : "tiles";
+  wrap.className = ["tiles", opts.wide ? "wide" : "", opts.className ?? ""].join(" ").trim();
   const cells = new Map<string, HTMLElement>();
   const placed = new Set<string>();
 

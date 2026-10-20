@@ -17,6 +17,7 @@ import { timezonesDeck, currenciesDeck } from "./decks/travel-maps";
 import { natoDeck, pmDeck, unitsDeck, scientistsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
 import { triviaDeck, lifeDeck } from "./decks/choice-decks";
 import { ausAnimalsDeck, petsDeck, landmarksDeck, habitatsDeck, dinosaursDeck } from "./decks/picture-decks";
+import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 
@@ -32,6 +33,8 @@ const DECKS: Deck[] = [
   airportsDeck, airlinesDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
   // Nature & Animals
   ausAnimalsDeck, lifeDeck, petsDeck, habitatsDeck, babyDeck, dinosaursDeck,
+  // Music
+  keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
 ];
 
 const root = document.getElementById("app")!;

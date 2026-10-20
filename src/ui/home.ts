@@ -2,14 +2,14 @@ import type { Deck } from "../engine/types";
 import { gamesFor } from "../engine/storage";
 import { h } from "./dom";
 
-// The five subjects, each aiming for six quizzes. Planned ones show as "coming".
-// The five subjects, six quizzes each. Planned ones would show as "coming".
+// The subjects, six quizzes each. Planned ones would show as "coming".
 const SUBJECTS: { name: string; planned: string[] }[] = [
   { name: "Geography", planned: [] },
   { name: "Science", planned: [] },
   { name: "History", planned: [] },
   { name: "Travel & Transport", planned: [] },
   { name: "Nature & Animals", planned: [] },
+  { name: "Music", planned: [] },
 ];
 
 function card(deck: Deck) {
