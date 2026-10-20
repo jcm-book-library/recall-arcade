@@ -46,6 +46,7 @@ export function createMapBoard(
   shapes: MapShape[],
   inPlay: Set<string>,
   view: MapView,
+  opts: { currentLabel?: (id: string) => string } = {},
 ): Board {
   const projection = geoEqualEarth().rotate([view.rotate, 0]);
   const fitTarget: GeoPermissibleObjects = view.bbox
@@ -129,9 +130,34 @@ export function createMapBoard(
     }
   }
 
+  // Name tag over the place being asked about. It sits outside the zoomed group so the
+  // text stays the same size, and is moved to follow the place when the map zooms.
+  const tag = svg.append("g").attr("class", "map-tag").attr("visibility", "hidden");
+  const tagBg = tag.append("rect").attr("rx", 6).node()!;
+  const tagText = tag.append("text").node()!;
+  let tagAt: { x: number; y: number; r: number } | null = null;
+  const placeTag = (t: ZoomTransform) => {
+    if (!tagAt) return;
+    const [x, y] = t.apply([tagAt.x, tagAt.y]);
+    const box = tagText.getBBox();
+    const w = box.width + 16;
+    const hgt = 26;
+    // Above the ring, or below it when there's no room at the top.
+    let top = y - tagAt.r * t.k - hgt - 6;
+    if (top < 4) top = y + tagAt.r * t.k + 6;
+    const left = Math.min(Math.max(4, x - w / 2), W - w - 4);
+    tagBg.setAttribute("x", String(left));
+    tagBg.setAttribute("y", String(top));
+    tagBg.setAttribute("width", String(w));
+    tagBg.setAttribute("height", String(hgt));
+    tagText.setAttribute("x", String(left + w / 2));
+    tagText.setAttribute("y", String(top + 18));
+  };
+
   const applyTransform = (t: ZoomTransform) => {
     root.attr("transform", t.toString());
     for (const d of dots) d.setAttribute("r", String(DOT_PX / Math.sqrt(t.k)));
+    placeTag(t);
   };
   const zoomer = zoom<SVGSVGElement, unknown>()
     .scaleExtent([1, 40])
@@ -253,6 +279,8 @@ export function createMapBoard(
       focusBtn.hidden = !current;
       if (!targets.length) {
         locator.setAttribute("visibility", "hidden");
+        tag.attr("visibility", "hidden");
+        tagAt = null;
         return;
       }
       follow(current!);
@@ -261,6 +289,12 @@ export function createMapBoard(
       locator.setAttribute("cy", String(box.y + box.height / 2));
       locator.setAttribute("r", String(Math.max(16, Math.max(box.width, box.height) / 2 + 8)));
       locator.setAttribute("visibility", "visible");
+      if (opts.currentLabel && id) {
+        tagAt = { x: box.x + box.width / 2, y: box.y + box.height / 2, r: Math.max(16, Math.max(box.width, box.height) / 2 + 8) };
+        tagText.textContent = opts.currentLabel(id);
+        tag.attr("visibility", "visible");
+        placeTag(zoomTransform(svg.node()!));
+      }
     },
     onPick(handler: (id: string) => void) {
       wrap.classList.add("pickable");

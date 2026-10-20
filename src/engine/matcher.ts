@@ -91,6 +91,18 @@ export class Matcher {
     return { kind: "match", item };
   }
 
+  /** True when the text could still grow into a longer answer ("UK" on the way to "Ukraine"). */
+  couldContinue(text: string): boolean {
+    const key = this.key(text);
+    if (!key) return false;
+    for (const map of [this.byKey, this.outside]) {
+      for (const [k, item] of map) {
+        if (k.length > key.length && k.startsWith(key) && !this.found.has(item.id)) return true;
+      }
+    }
+    return false;
+  }
+
   /** True when the text is a near-miss spelling of an answer still to find. */
   isClose(text: string): boolean {
     const key = this.key(text);

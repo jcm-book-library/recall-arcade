@@ -81,9 +81,10 @@ export function createPianoBoard(container: HTMLElement, opts: PianoOptions): Bo
     const id = (e.target as Element).closest("[data-id]")?.getAttribute("data-id");
     if (!id) return;
     lastPressed = { midi: Number(id.slice(1)), at: performance.now() };
-    playNote(lastPressed.midi, 1.2);
+    playNote(lastPressed.midi);
   });
 
+  let lastFlash = 0;
   let pick: ((id: string) => void) | null = null;
   svg.addEventListener("click", (e) => {
     const id = (e.target as Element).closest("[data-id]")?.getAttribute("data-id");
@@ -103,13 +104,16 @@ export function createPianoBoard(container: HTMLElement, opts: PianoOptions): Bo
     flash(id: string) {
       const m = opts.keyOf(id);
       if (m === undefined) return;
-      // Don't play it twice if the player has just pressed that key.
-      if (!(lastPressed.midi === m && performance.now() - lastPressed.at < 500)) playNote(m, 1.2);
+      // The key the player just pressed has already sounded, so don't add a second note.
+      if (performance.now() - lastPressed.at > 600) playNote(m, 1.2);
+      lastFlash = performance.now();
       const g = keys.get(m);
       if (!g) return;
       g.classList.remove("flash");
       void g.getBoundingClientRect();
       g.classList.add("flash");
+      // Only a brief glow: a lasting colour would look like the next key to find.
+      window.setTimeout(() => g.classList.remove("flash"), 700);
     },
     setCurrent(id: string | null) {
       for (const g of keys.values()) g.classList.remove("current");
@@ -117,7 +121,8 @@ export function createPianoBoard(container: HTMLElement, opts: PianoOptions): Bo
       const m = opts.keyOf(id);
       if (m === undefined) return;
       if (opts.showCurrent) keys.get(m)?.classList.add("current");
-      if (opts.playCurrent) playNote(m, 1.4);
+      // Straight after a right answer, let that note sound before the next one plays.
+      if (opts.playCurrent) playNote(m, 2.4, performance.now() - lastFlash < 300 ? 0.9 : 0);
     },
     onPick(handler) {
       wrap.classList.add("pickable");

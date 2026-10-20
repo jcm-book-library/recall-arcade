@@ -1,4 +1,4 @@
-// The six stages of Zoom Out, from the planets to the galaxies next door.
+// The six stages of Zoom Out: the night sky, then from the planets to the galaxies next door.
 // Each item has a marker drawn on its stage's diagram (1000 x 560 units).
 // Shapes: "body" = a circle, "band" = a thick curved strip, "ring" = a dashed loop,
 // "arm" = a spiral arm of the galaxy, "stars" = a small star cluster.
@@ -34,6 +34,10 @@ export const STAGES: ZoomStage[] = [
   { n: 5, title: "The Milky Way", scale: "Across this view: about 100,000 light years.", fact: "The Sun takes about 230 million years to go once around the centre of the galaxy." },
   { n: 6, title: "Our Galactic Neighbours", scale: "Across this view: about 100 million light years.", fact: "Andromeda is 2.5 million light years away and heading our way. Collision due in about 4.5 billion years." },
 ];
+
+/** The order stages are played in: the night sky we can see first, then out from the Sun. */
+export const STAGE_ORDER = [4, 1, 2, 3, 5, 6];
+export const rankOf = (stage: number) => STAGE_ORDER.indexOf(stage) + 1;
 
 const SUN_X = -70;
 const orbit = (x: number) => x - SUN_X;
