@@ -35,7 +35,9 @@ minor key signatures, chords on the stave, a rhythm tap-along level for the arca
 Arts & Culture is a candidate seventh subject.
 
 ### Next ideas for existing games
-- **Geography:** one free slot now Territories is part of Countries (ideas: US states, Australian states, mountains).
+- **Geography:** one free slot now Territories is part of Countries. Pick: **Mountains**:
+  the highest peak on each continent (Seven Summits), famous peaks (Fuji, Matterhorn, Kilimanjaro,
+  Kosciuszko…), and mountain ranges (Andes, Himalaya, Rockies, Alps, Great Dividing Range…).
 - **Mythology:** deep enough to become its own subject later (more cultures, heroes, monsters).
 - **Empires Through Time:** the 1815 map includes Aboriginal nations, a possible future round.
 - **The Human Body:** add muscles and body systems as further rounds.
@@ -47,7 +49,9 @@ Arts & Culture is a candidate seventh subject.
 One space quiz that starts with the night sky (what we can see from Earth), then starts
 close and zooms out a step each time you clear a stage, like the film *Powers of Ten*.
 Stuck? **Hint** shows first letters; **More help** lists the names to place by clicking.
-1. The night sky (played first): constellations, including the 12 of the zodiac (13 with Ophiuchus)
+1. The night sky (played first): constellations, including the 12 of the zodiac (13 with Ophiuchus).
+   Plan: real star patterns, seen as if looking up from the ground; clearing it swings the view
+   from Earth out to the solar system for stage 2.
 2. The planets
 3. The rest of the solar system: dwarf planets (Ceres, Pluto, Eris...), big moons,
    the asteroid belt, Kuiper belt, Oort cloud

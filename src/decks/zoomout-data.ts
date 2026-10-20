@@ -116,7 +116,7 @@ export const ZOOM_ITEMS: ZoomItem[] = [
   { id: "andromeda", name: "Andromeda Galaxy", aliases: ["Andromeda", "M31"], stage: 6, shape: "body", x: 560, y: 230, r: 40, color: "#e6dcff", label: "above" },
   { id: "triangulum", name: "Triangulum Galaxy", aliases: ["Triangulum", "M33"], stage: 6, shape: "body", x: 640, y: 320, r: 14, color: "#d6e4ff", label: "right" },
   { id: "localgroup", name: "Local Group", aliases: ["The Local Group"], stage: 6, shape: "ring", x: 470, y: 290, d: "M470 140 C 780 140 780 450 470 450 C 170 450 170 140 470 140 Z", label: "below" },
-  { id: "virgo", name: "Virgo Cluster", aliases: ["The Virgo Cluster"], stage: 6, shape: "stars", x: 880, y: 140, label: "below" },
+  { id: "virgocluster", name: "Virgo Cluster", aliases: ["The Virgo Cluster"], stage: 6, shape: "stars", x: 880, y: 140, label: "below" },
   { id: "laniakea", name: "Laniakea Supercluster", aliases: ["Laniakea"], stage: 6, shape: "ring", x: 500, y: 525, d: "M30 520 C 200 30 800 30 970 520", label: "above" },
 ];
 

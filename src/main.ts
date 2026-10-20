@@ -37,6 +37,17 @@ const DECKS: Deck[] = [
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
 ];
 
+// While developing, catch two items in one game sharing an id (they'd count as one).
+if (import.meta.env.DEV) {
+  for (const d of DECKS) {
+    const seen = new Set<string>();
+    for (const i of d.items) {
+      if (seen.has(i.id)) console.error(`${d.id}: duplicate item id "${i.id}"`);
+      seen.add(i.id);
+    }
+  }
+}
+
 const root = document.getElementById("app")!;
 let cleanup: (() => void) | void;
 
