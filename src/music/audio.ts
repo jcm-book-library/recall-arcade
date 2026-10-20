@@ -21,7 +21,7 @@ function audio() {
 const freq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
 /** Play one note. `when` is seconds from now; `length` is how long it rings. */
-export function playNote(midi: number, length = 1.2, when = 0) {
+export function playNote(midi: number, length = 2.4, when = 0) {
   const ac = audio();
   if (!ac || !master) return;
   const t = ac.currentTime + when + 0.01;
@@ -30,8 +30,8 @@ export function playNote(midi: number, length = 1.2, when = 0) {
   // A struck string: quick attack, then a long fade. A few harmonics give it body.
   out.gain.setValueAtTime(0, t);
   out.gain.linearRampToValueAtTime(0.9, t + 0.008);
-  out.gain.exponentialRampToValueAtTime(0.25, t + 0.25);
-  out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.3, length));
+  out.gain.exponentialRampToValueAtTime(0.5, t + 0.3);
+  out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.5, length));
   const partials: [number, number, OscillatorType][] = [
     [1, 0.6, "triangle"],
     [2, 0.22, "sine"],
@@ -46,15 +46,15 @@ export function playNote(midi: number, length = 1.2, when = 0) {
     g.gain.value = level;
     osc.connect(g).connect(out);
     osc.start(t);
-    osc.stop(t + Math.max(0.3, length) + 0.05);
+    osc.stop(t + Math.max(0.5, length) + 0.05);
   }
 }
 
-export function playChord(midis: number[], length = 1.6, when = 0) {
+export function playChord(midis: number[], length = 2.4, when = 0) {
   for (const m of midis) playNote(m, length, when);
 }
 
 /** Play notes one after another, `gap` seconds apart. */
-export function playSequence(midis: number[], gap = 0.6, length = 0.9) {
+export function playSequence(midis: number[], gap = 0.7, length = 1.4) {
   midis.forEach((m, i) => playNote(m, length, i * gap));
 }

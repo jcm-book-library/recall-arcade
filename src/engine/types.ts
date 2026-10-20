@@ -51,6 +51,12 @@ export interface Board {
   onPick?(handler: (id: string) => void): void;
   /** After the game, let the player hover/tap to learn names. */
   setExplore(on: boolean): void;
+  /**
+   * Help for any-order games: level 1 shows the first letter of every name still to find,
+   * level 2 also lists the names, to be matched to their places. 0 turns help off.
+   * `pick` is called when a listed name is matched to the right place.
+   */
+  hint?(level: number, pick: (id: string) => void): void;
   destroy(): void;
 }
 

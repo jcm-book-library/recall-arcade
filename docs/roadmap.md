@@ -9,7 +9,7 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 2. **The arcade:** five short retro levels (Labyrinth, Dogfight, Brawl, Boss, Chase),
    one per subject, unlocked by doing well in that subject's quizzes.
 
-## Subjects and quizzes (all 36 built ✅)
+## Subjects and quizzes (35 built ✅)
 
 | Geography | Science | History | Travel & Transport | Nature & Animals |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 | Flags | Periodic Table | Who Lived When? (timeline) | Airline Codes | Classifying Life (4 zoom-in levels) |
 | Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Pet Breeds (click the photo; dogs and cats) |
 | Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Empires Through Time (6 maps, 323 BC–1914) | Currencies | Where Animals Live (photo, click the continent) |
-| Territories | Units & Forces + Conversions | Mythology | Time Zones | Baby Animals & Group Names (name the animal) |
+| *(Territories now a tickbox in Countries)* | Units & Forces + Conversions | Mythology | Time Zones | Baby Animals & Group Names (name the animal) |
 | Neighbours | Famous Scientists (50+) | Trivia Round (multiple choice) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
 
 ### Music (skill learning: reading music, on piano)
@@ -35,6 +35,7 @@ minor key signatures, chords on the stave, a rhythm tap-along level for the arca
 Arts & Culture is a candidate seventh subject.
 
 ### Next ideas for existing games
+- **Geography:** one free slot now Territories is part of Countries (ideas: US states, Australian states, mountains).
 - **Mythology:** deep enough to become its own subject later (more cultures, heroes, monsters).
 - **Empires Through Time:** the 1815 map includes Aboriginal nations, a possible future round.
 - **The Human Body:** add muscles and body systems as further rounds.
@@ -43,13 +44,14 @@ Arts & Culture is a candidate seventh subject.
 - **More accurate visuals:** see "Visual accuracy" below.
 
 ### Idea: "Zoom Out" (space)
-One space quiz that starts close and zooms out a step each time you clear a stage,
-like the film *Powers of Ten*:
-1. The planets
-2. The rest of the solar system: dwarf planets (Ceres, Pluto, Eris...), big moons,
+One space quiz that starts with the night sky (what we can see from Earth), then starts
+close and zooms out a step each time you clear a stage, like the film *Powers of Ten*.
+Stuck? **Hint** shows first letters; **More help** lists the names to place by clicking.
+1. The night sky (played first): constellations, including the 12 of the zodiac (13 with Ophiuchus)
+2. The planets
+3. The rest of the solar system: dwarf planets (Ceres, Pluto, Eris...), big moons,
    the asteroid belt, Kuiper belt, Oort cloud
-3. The nearest stars: Proxima Centauri, Alpha Centauri, Barnard's Star, Sirius...
-4. The night sky: constellations, including the 12 of the zodiac (13 with Ophiuchus)
+4. The nearest stars: Proxima Centauri, Alpha Centauri, Barnard's Star, Sirius...
 5. The Milky Way: its arms (we live in the Orion Arm) and its centre
 6. Our galactic neighbours: Andromeda, Triangulum, the Magellanic Clouds
 

@@ -6,7 +6,7 @@ Started with a Sporcle-style "name every country" map quiz.
 ## Games
 Thirty games across five subjects, six each. ★ marks the starter round in each.
 
-- **Geography:** Countries of the World, Flags, Capitals, Seas Lakes & Rivers, Territories, Neighbours
+- **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours
 - **Science:** Zoom Out, Periodic Table, Cells & Life, The Human Body, Units & Forces, Famous Scientists
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology, Trivia Round
 - **Travel & Transport:** Airport Codes, Airline Codes, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
@@ -17,7 +17,7 @@ Thirty games across five subjects, six each. ★ marks the starter round in each
 | Style | Where |
 |---|---|
 | Type in any order | Countries, Periodic Table, Zoom Out, NATO, Prime Ministers, Neighbours, Empires Through Time |
-| One at a time, typed | Flags, Capitals, Territories, Airports, Airlines, Currencies, Time Zones, Units, Scientists, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
+| One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Time Zones, Units, Scientists, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
 | One at a time, clicked | Seas Lakes & Rivers, Pet Breeds, Where Animals Live (and Cells / Human Body with "click instead") |
 | Labelled diagram | Cells & Life, The Human Body |
 | Timeline | Big Moments, Who Lived When? |

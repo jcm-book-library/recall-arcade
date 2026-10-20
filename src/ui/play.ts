@@ -64,6 +64,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   const giveUp = h("button", { class: "btn ghost", type: "button" }, "Give up");
   const backBtn = h("button", { class: "btn ghost", type: "button", title: "Back to the last one you skipped (Shift+Tab)" }, "◂ Back");
   const skipBtn = h("button", { class: "btn ghost", type: "button", title: "Skip for now (Tab key)" }, "Skip ▸");
+  const hintBtn = h("button", { class: "btn ghost", type: "button", title: "First letters, then a list of names to place" }, "Hint");
+  let hintLevel = 0;
 
   const note = h("p", { class: "note", "aria-live": "polite" });
 
@@ -75,7 +77,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     promptBox,
     h("div", { class: "hud-stats" }, timer, score),
     input,
-    h("div", { class: "hud-actions" }, backBtn, skipBtn, giveUp),
+    h("div", { class: "hud-actions" }, hintBtn, backBtn, skipBtn, giveUp),
     note,
   );
   hud.hidden = true;
@@ -256,6 +258,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     }
     for (const i of playing) board.setState(i.id, "open");
     board.setExplore(false);
+    setHint(0);
     recent.replaceChildren();
     phase = "playing";
     setup.hidden = true;
@@ -271,6 +274,22 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     ticker = window.setInterval(tick, 250);
     if (!clickMode) input.focus();
   }
+
+  // ---------- help (any-order games whose board offers it) ----------
+  function setHint(level: number) {
+    hintLevel = level;
+    hintBtn.hidden = promptMode || !board?.hint;
+    hintBtn.disabled = level >= 2;
+    hintBtn.textContent = level === 0 ? "Hint" : level === 1 ? "More help" : "Hints on";
+    board?.hint?.(level, (id) => {
+      const item = playing.find((i) => i.id === id);
+      if (item && phase === "playing") accept(item);
+    });
+  }
+  hintBtn.addEventListener("click", () => {
+    setHint(hintLevel + 1);
+    if (!clickMode) input.focus();
+  });
 
   // ---------- one-at-a-time rounds ----------
   function shuffle<T>(list: T[]): T[] {
@@ -405,8 +424,11 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     const text = input.value;
     const r = matcher.check(text);
     if (r.kind === "match") accept(r.item);
-    else if (r.kind === "outside") outside(r.item);
-    else if (r.kind === "wait") {
+    else if (r.kind === "outside") {
+      // Don't wipe "UK" while they're still typing "Ukraine".
+      if (matcher.couldContinue(text)) pending = window.setTimeout(() => input.value === text && outside(r.item), 1200);
+      else outside(r.item);
+    } else if (r.kind === "wait") {
       pending = window.setTimeout(() => input.value === text && accept(r.item), 900);
     } else if (matcher.isClose(text)) {
       // Only nudge once they've paused, so it doesn't flicker while typing.
@@ -490,6 +512,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
             "p",
             { class: "muted" },
             isBest ? "That's your best for this round." : `Your best is ${prevBest!.score}/${prevBest!.total}.`,
+            hintLevel ? (hintLevel > 1 ? " You used the name list." : " You used first-letter hints.") : "",
             " Hover or tap the board to see any name.",
           ),
           promptMode

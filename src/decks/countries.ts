@@ -51,6 +51,28 @@ const rows: Row[] = COUNTRY_TABLE.trim()
 const items = rows.filter((r) => r.type !== "x").map((r) => r.item);
 const hiddenLabels = new Map(rows.filter((r) => r.type === "x").map((r) => [r.mapName, r.item.name]));
 
+// Who governs each territory, shown next to its name ("Greenland (Denmark)").
+const GOVERNED_BY: Record<string, string> = {
+  "American Samoa": "US", "Guam": "US", "N. Mariana Is.": "US", "Puerto Rico": "US", "U.S. Virgin Is.": "US",
+  "Anguilla": "UK", "Bermuda": "UK", "Br. Indian Ocean Ter.": "UK", "British Virgin Is.": "UK", "Cayman Is.": "UK",
+  "Falkland Is.": "UK", "Guernsey": "UK", "Isle of Man": "UK", "Jersey": "UK", "Montserrat": "UK", "Pitcairn Is.": "UK",
+  "S. Geo. and the Is.": "UK", "Saint Helena": "UK", "Turks and Caicos Is.": "UK",
+  "Aruba": "NL", "Curaçao": "NL", "Sint Maarten": "NL",
+  "Faeroe Is.": "DK", "Greenland": "DK",
+  "Fr. Polynesia": "FR", "Fr. S. Antarctic Lands": "FR", "New Caledonia": "FR", "St-Barthélemy": "FR", "St-Martin": "FR",
+  "St. Pierre and Miquelon": "FR", "Wallis and Futuna Is.": "FR",
+  "Cook Is.": "NZ", "Niue": "NZ",
+  "Heard I. and McDonald Is.": "AU", "Norfolk Island": "AU",
+  "Hong Kong": "CN", "Macao": "CN",
+  "Åland": "FI",
+};
+const SOVEREIGN: Record<string, string> = {
+  US: "United States", UK: "United Kingdom", NL: "Netherlands", DK: "Denmark", FR: "France",
+  NZ: "New Zealand", AU: "Australia", CN: "China", FI: "Finland",
+};
+const withGovernor = (id: string, name: string) =>
+  GOVERNED_BY[id] ? `${name} (${SOVEREIGN[GOVERNED_BY[id]]})` : name;
+
 let topoPromise: Promise<Topology> | null = null;
 const loadTopo = () =>
   (topoPromise ??= import("world-atlas/countries-50m.json").then((m) => m.default as unknown as Topology));
@@ -64,7 +86,7 @@ export async function createCountryMap(
   playing: Item[],
   viewId: string,
   labelFor: (countryName: string, mapName: string) => string = (n) => n,
-  extra: { hub?: string; fitTo?: string[] } = {},
+  extra: { hub?: string; fitTo?: string[]; currentLabel?: (id: string) => string } = {},
 ) {
   const topo = await loadTopo();
   const fc = feature(topo, topo.objects.countries as GeometryCollection) as unknown as {
@@ -96,7 +118,7 @@ export async function createCountryMap(
     const pad = Math.max(3, (e - w) * 0.12);
     view = { rotate: -(w + e) / 2, bbox: [w - pad, Math.max(-85, s - pad), e + pad, Math.min(85, n + pad)] };
   }
-  return createMapBoard(container, shapes, new Set(playing.map((i) => i.id)), view);
+  return createMapBoard(container, shapes, new Set(playing.map((i) => i.id)), view, { currentLabel: extra.currentLabel });
 
   /** Each country's largest landmass only, so overseas islands don't stretch the view. */
   function fc_features(ids: string[]) {
@@ -160,6 +182,7 @@ export const countriesDeck: Deck = {
     item.tags.includes("territory") && !opts.territories
       ? `${item.name} is a territory, not a country. Tick "Include territories" to count these.`
       : null,
+  describe: (i) => withGovernor(i.id, i.name),
   createBoard: ({ container, items: playing, variant }) =>
-    createCountryMap(container, playing, variant.id),
+    createCountryMap(container, playing, variant.id, (name, id) => withGovernor(id, name)),
 };

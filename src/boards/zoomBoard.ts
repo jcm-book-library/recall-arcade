@@ -1,5 +1,5 @@
 import type { Board, Item, ItemState } from "../engine/types";
-import { STAGES, SUN_X, orbit, type ZoomItem } from "../decks/zoomout-data";
+import { STAGES, STAGE_ORDER, SUN_X, orbit, rankOf, type ZoomItem } from "../decks/zoomout-data";
 
 const NS = "http://www.w3.org/2000/svg";
 const W = 1000;
@@ -46,17 +46,26 @@ function drawBackdrop(stage: number, g: SVGGElement) {
     el("ellipse", { cx: 622, cy: 290, rx: 62, ry: 12, class: "z-ring" }, g);
   }
   if (stage === 2) {
-    // Moons: their planets drawn as plain discs.
-    for (const [x, y, r] of [[128, 120, 10], [305, 110, 28], [575, 115, 24], [812, 110, 14]]) {
-      el("circle", { cx: x, cy: y, r, class: "z-parent" }, g);
+    // Moons: their planets, already named in the last stage, in their real colours.
+    for (const [x, y, r, color, name, ty] of [
+      [128, 120, 10, "#4f8fd6", "Earth", 146],
+      [305, 110, 28, "#d4a77a", "Jupiter", 154],
+      [575, 115, 24, "#e6cf96", "Saturn", 155],
+      [812, 110, 14, "#4a6fd1", "Neptune", 88],
+    ] as const) {
+      el("circle", { cx: x, cy: y, r, class: "z-parent", style: `fill:${color}` }, g);
+      el("text", { x, y: ty, class: "z-small z-centre z-known" }, g).textContent = name;
     }
     el("ellipse", { cx: 305, cy: 110, rx: 62, ry: 46, class: "z-orbit" }, g);
     el("text", { x: 500, y: 215, class: "z-caption" }, g).textContent = "Moons";
     el("line", { x1: 0, y1: 240, x2: W, y2: 240, class: "z-divider" }, g);
     // The Sun and planets squashed together at the left.
     el("circle", { cx: 40, cy: 430, r: 14, class: "z-sun" }, g);
-    for (const [x, r] of [[70, 2], [82, 3], [96, 3], [112, 2], [200, 7], [260, 6], [320, 4], [370, 4]]) {
-      el("circle", { cx: x, cy: 430, r, class: "z-parent" }, g);
+    for (const [x, r, color] of [
+      [70, 2, "#a7a29a"], [82, 3, "#e3c27d"], [96, 3, "#4f8fd6"], [112, 2, "#c9573a"],
+      [200, 7, "#d4a77a"], [260, 6, "#e6cf96"], [320, 4, "#9fd8df"], [370, 4, "#4a6fd1"],
+    ] as const) {
+      el("circle", { cx: x, cy: 430, r, class: "z-parent", style: `fill:${color}` }, g);
     }
     el("text", { x: 500, y: 300, class: "z-caption" }, g).textContent = "Belts and dwarf planets";
   }
@@ -115,10 +124,11 @@ function drawItem(item: Item, z: ZoomItem, g: SVGGElement) {
 export function createZoomBoard(container: HTMLElement, all: Item[], playing: Item[], maxStage: number): Board {
   const zOf = (i: Item) => i.data as unknown as ZoomItem;
   const inPlay = new Set(playing.map((i) => i.id));
-  const stages = STAGES.filter((s) => s.n <= maxStage);
+  // maxStage is how many stages deep this round goes, in play order.
+  const stages = STAGE_ORDER.filter((n) => rankOf(n) <= maxStage).map((n) => STAGES.find((s) => s.n === n)!);
   const groups = new Map<string, SVGGElement>();
   const state = new Map<string, ItemState>();
-  let currentStage = 1;
+  let currentStage = stages[0].n;
 
   const wrap = document.createElement("div");
   wrap.className = "zoom";
@@ -129,7 +139,11 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
   viewport.className = "zviewport";
   const caption = document.createElement("div");
   caption.className = "zcaption";
-  wrap.append(tabs, viewport, caption);
+  // Word bank for the second level of help.
+  const bank = document.createElement("div");
+  bank.className = "zbank";
+  bank.hidden = true;
+  wrap.append(tabs, viewport, bank, caption);
   container.append(wrap);
 
   const panes = new Map<number, SVGSVGElement>();
@@ -164,7 +178,7 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
         b.className = s.n === currentStage ? "ztab on" : got === ids.length ? "ztab done" : "ztab";
         b.setAttribute("role", "tab");
         b.setAttribute("aria-selected", String(s.n === currentStage));
-        b.innerHTML = `<span class="zn">${s.n}</span> <span class="zt"></span> <span class="zc">${got}/${ids.length}</span>`;
+        b.innerHTML = `<span class="zn">${rankOf(s.n)}</span> <span class="zt"></span> <span class="zc">${got}/${ids.length}</span>`;
         b.querySelector(".zt")!.textContent = s.title;
         b.addEventListener("click", () => go(s.n));
         return b;
@@ -172,30 +186,87 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
     );
   }
 
+  // ---------- help ----------
+  let hintLevel = 0;
+  let picked: string | null = null;
+  let onHintPick: ((id: string) => void) | null = null;
+  let bankOrder: string[] = [];
+  let bankMsg = "Pick a name, then click where it goes.";
+
+  function labelText(id: string) {
+    const grp = groups.get(id);
+    const t = grp?.querySelector(".zlabel");
+    if (!grp || !t) return;
+    const name = playing.find((i) => i.id === id)!.name;
+    const open = state.get(id) === "open";
+    const hinted = open && hintLevel >= 1;
+    t.textContent = hinted ? `${name[0]}…` : name;
+    grp.classList.toggle("hinted", hinted);
+  }
+
+  function renderBank() {
+    bank.hidden = hintLevel < 2;
+    if (bank.hidden) return;
+    const ids = bankOrder.filter((id) => state.get(id) === "open" && zOf(playing.find((i) => i.id === id)!).stage === currentStage);
+    if (picked && !ids.includes(picked)) picked = null;
+    const chips = ids.map((id) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = id === picked ? "chip on" : "chip";
+      b.textContent = playing.find((i) => i.id === id)!.name;
+      b.addEventListener("click", () => {
+        picked = picked === id ? null : id;
+        renderBank();
+      });
+      return b;
+    });
+    const msg = document.createElement("p");
+    msg.className = "zbank-note";
+    msg.textContent = ids.length ? bankMsg : "Everything on this stage is named.";
+    bank.replaceChildren(msg, ...chips);
+    wrap.classList.toggle("placing", !!picked);
+  }
+
+  viewport.addEventListener("click", (e) => {
+    if (hintLevel < 2 || !picked) return;
+    const id = (e.target as Element).closest(".zitem")?.getAttribute("data-id");
+    if (!id) return;
+    if (id === picked) {
+      picked = null;
+      bankMsg = "Pick a name, then click where it goes.";
+      onHintPick?.(id);
+    } else {
+      bankMsg = "Not that one. Try another spot.";
+      renderBank();
+    }
+  });
+
   function go(n: number) {
     currentStage = n;
     for (const [k, svg] of panes) {
       svg.classList.toggle("z-now", k === n);
-      svg.classList.toggle("z-past", k < n);
-      svg.classList.toggle("z-future", k > n);
+      svg.classList.toggle("z-past", rankOf(k) < rankOf(n));
+      svg.classList.toggle("z-future", rankOf(k) > rankOf(n));
     }
     const s = STAGES.find((x) => x.n === n)!;
     caption.innerHTML = `<strong></strong><span></span>`;
     caption.querySelector("strong")!.textContent = s.scale;
     caption.querySelector("span")!.textContent = ` ${s.fact}`;
     renderTabs();
+    renderBank();
   }
 
   /** After a stage is complete, zoom out to the next one. */
   function maybeAdvance() {
     const ids = playing.filter((i) => zOf(i).stage === currentStage).map((i) => i.id);
-    if (ids.length && ids.every((id) => state.get(id) === "found") && currentStage < maxStage) {
+    const next = stages[stages.findIndex((s) => s.n === currentStage) + 1];
+    if (ids.length && ids.every((id) => state.get(id) === "found") && next) {
       const from = currentStage;
-      window.setTimeout(() => currentStage === from && go(from + 1), 900);
+      window.setTimeout(() => currentStage === from && go(next.n), 900);
     }
   }
 
-  go(1);
+  go(stages[0].n);
 
   return {
     setState(id: string, s: ItemState) {
@@ -208,7 +279,9 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
       for (const m of grp.querySelectorAll<SVGElement>(".mark[data-color]")) {
         m.style.fill = s === "found" && m.dataset.color ? m.dataset.color : "";
       }
+      labelText(id);
       renderTabs();
+      renderBank();
       if (s === "found") maybeAdvance();
     },
     flash(id: string) {
@@ -220,8 +293,21 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
       void grp.getBoundingClientRect();
       grp.classList.add("flash");
     },
-    setExplore() {
-      /* every label is shown once the round ends */
+    setExplore(on: boolean) {
+      // Every label is shown once the round ends, so the help can go.
+      if (on) {
+        bank.hidden = true;
+        wrap.classList.remove("placing");
+      }
+    },
+    hint(level: number, pick: (id: string) => void) {
+      hintLevel = level;
+      onHintPick = pick;
+      picked = null;
+      bankMsg = "Pick a name, then click where it goes.";
+      bankOrder = [...groups.keys()].sort(() => Math.random() - 0.5);
+      for (const id of groups.keys()) labelText(id);
+      renderBank();
     },
     destroy() {
       wrap.remove();

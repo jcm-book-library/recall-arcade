@@ -4,7 +4,7 @@ import { countriesDeck } from "./decks/countries";
 import { flagsDeck } from "./decks/flags";
 import { capitalsDeck } from "./decks/capitals";
 import { waterDeck } from "./decks/water";
-import { territoriesDeck, neighboursDeck } from "./decks/geo-extra";
+import { neighboursDeck } from "./decks/geo-extra";
 import { zoomOutDeck } from "./decks/zoomout";
 import { elementsDeck } from "./decks/elements";
 import { cellsDeck } from "./decks/cells";
@@ -24,7 +24,7 @@ import { renderPlay } from "./ui/play";
 // Every game in the arcade, grouped by subject on the home page (six each).
 const DECKS: Deck[] = [
   // Geography
-  countriesDeck, flagsDeck, capitalsDeck, waterDeck, territoriesDeck, neighboursDeck,
+  countriesDeck, flagsDeck, capitalsDeck, waterDeck, neighboursDeck,
   // Science
   zoomOutDeck, elementsDeck, cellsDeck, bodyDeck, unitsDeck, scientistsDeck,
   // History

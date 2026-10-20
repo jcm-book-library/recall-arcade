@@ -563,10 +563,17 @@ button, input, select { font: inherit; color: inherit; }
 .piano .key.missed.black rect { fill: color-mix(in srgb, var(--missed) 70%, #1b242b); }
 .piano .key.current.white rect { fill: color-mix(in srgb, var(--accent) 70%, #fdfdfb); }
 .piano .key.current.black rect { fill: var(--accent); }
-.piano .key.flash.white rect { fill: color-mix(in srgb, var(--accent) 55%, #fdfdfb); }
-.piano .key.flash.black rect { fill: color-mix(in srgb, var(--accent) 75%, #1b242b); }
+.piano .key.flash rect { animation: keyglow 0.7s ease-out; }
+@keyframes keyglow { 0% { fill: #ffd27a; } }
 .piano .key-label { font: 700 13px var(--font-body, sans-serif); text-anchor: middle; pointer-events: none; fill: #15212a; }
 .piano .key.black .key-label { fill: #fff; font-size: 11px; }
 .piano .middle-c { fill: var(--accent); pointer-events: none; }
 .piano.pickable .key { cursor: pointer; }
 .mc-play { align-self: center; }
+.map-tag { pointer-events: none; }
+.map-tag rect { fill: var(--ink); opacity: 0.92; }
+.map-tag text { fill: var(--bg); font: 700 15px var(--font-body); text-anchor: middle; }
+.zitem.hinted .zlabel { visibility: visible; fill: #8f9bc7; }
+.zbank { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.zbank-note { flex: 1 0 100%; margin: 0; font-size: 0.9rem; color: var(--muted); }
+.zoom.placing .zitem { cursor: crosshair; }

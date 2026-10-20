@@ -43,8 +43,13 @@ export const capitalsDeck: Deck = {
   },
   createBoard: ({ container, items: playing, variant }) => {
     const byCountry = new Map(items.map((i) => [countryOf(i), i.name]));
-    return createCountryMap(container, playing, variant.id, (country) =>
-      byCountry.has(country) ? `${country}: ${byCountry.get(country)}` : country,
+    return createCountryMap(
+      container,
+      playing,
+      variant.id,
+      (country) => (byCountry.has(country) ? `${country}: ${byCountry.get(country)}` : country),
+      // Name the highlighted country on the map too, so it's easy to spot.
+      { currentLabel: (id) => countryItems.find((c) => c.id === id)?.name ?? id },
     );
   },
 };
