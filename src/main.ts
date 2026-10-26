@@ -22,6 +22,7 @@ import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } 
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 import { renderPong } from "./arcade/pong";
+import { renderLabyrinth } from "./arcade/labyrinth";
 
 // Every game in the arcade, grouped by subject on the home page (six each).
 const DECKS: Deck[] = [
@@ -59,6 +60,7 @@ function route() {
   const id = location.hash.replace(/^#/, "");
   const deck = DECKS.find((d) => d.id === id);
   if (id === "pong") cleanup = renderPong(root);
+  else if (id === "labyrinth") cleanup = renderLabyrinth(root);
   else if (deck) cleanup = deck.screen ? deck.screen(root, deck) : renderPlay(root, deck);
   else renderHome(root, DECKS);
   window.scrollTo(0, 0);
