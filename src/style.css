@@ -604,3 +604,47 @@ button, input, select { font: inherit; color: inherit; }
 }
 .pong-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
 .pong-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }
+
+/* ---------- arcade: The Labyrinth ---------- */
+.labyrinth { width: 100%; max-width: 964px; margin-inline: auto; min-width: 0; }
+.lab-hud {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px;
+  font: 0.8rem/1.4 var(--font-pixel); text-transform: uppercase;
+}
+.lab-lives { color: var(--missed); letter-spacing: 2px; }
+.lab-keyicon {
+  display: inline-block; width: 8px; height: 14px; margin-right: 4px; vertical-align: -2px;
+  border: 2px solid var(--ink); border-radius: 4px 4px 1px 1px;
+}
+.lab-keyicon.red { background: #d8402f; }
+.lab-keyicon.blue { background: #3f7fe0; }
+.lab-screen {
+  width: 100%; border: 2px solid var(--line); border-radius: var(--r); overflow: hidden;
+  background: #0d0b09; box-shadow: 4px 4px 0 var(--line); line-height: 0;
+}
+/* Small 320x192 picture, scaled up with hard square pixels. */
+.lab-canvas {
+  display: block; width: 100%; height: auto; aspect-ratio: 320 / 192;
+  image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: pixelated;
+  touch-action: none;
+}
+/* The on-screen arrow buttons: only on phones and other touch screens (or narrow windows). */
+.lab-pad {
+  display: none; justify-content: center; gap: 6px;
+  grid-template-columns: repeat(3, 68px); grid-template-rows: repeat(3, 68px);
+  grid-template-areas: ". up ." "left . right" ". down .";
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+@media (pointer: coarse), (max-width: 700px) { .lab-pad { display: grid; } }
+.lab-key {
+  padding: 0; font-size: 1.6rem; line-height: 1; cursor: pointer;
+  border: 2px solid var(--ink); border-radius: var(--r); background: var(--panel); color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); touch-action: none; -webkit-tap-highlight-color: transparent;
+}
+.lab-key.up { grid-area: up; }
+.lab-key.left { grid-area: left; }
+.lab-key.right { grid-area: right; }
+.lab-key.down { grid-area: down; }
+.lab-key.pressed { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); background: var(--accent); color: var(--on-accent); }
+.lab-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.lab-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }

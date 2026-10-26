@@ -33,13 +33,19 @@ function card(deck: Deck) {
 }
 
 // Arcade games are real-time games rather than quizzes, so they have no progress or best score yet.
-function arcadeCard() {
+// To add one: write its screen, add a route in main.ts, and add a line to this list.
+const ARCADE_GAMES: { id: string; title: string; blurb: string }[] = [
+  { id: "pong", title: "Planet Pong", blurb: "Where video games began. Knock the planets past the computer, mind the asteroids." },
+  { id: "labyrinth", title: "The Labyrinth", blurb: "Keys, locked doors, bats, and something big that lives in the middle. Find the stairs." },
+];
+
+function arcadeCard(game: (typeof ARCADE_GAMES)[number]) {
   return h(
     "a",
-    { class: "card", href: "#pong" },
+    { class: "card", href: `#${game.id}` },
     h("span", { class: "card-kicker" }, "Arcade game"),
-    h("h2", {}, "Planet Pong"),
-    h("p", {}, "Where video games began. Knock the planets past the computer, mind the asteroids."),
+    h("h2", {}, game.title),
+    h("p", {}, game.blurb),
     h("span", { class: "card-foot card-foot-end" }, h("span", { class: "card-go" }, "Play ▸")),
   );
 }
@@ -88,7 +94,7 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
         "section",
         { class: "subject", "aria-label": "The Arcade (preview)" },
         h("div", { class: "subject-head" }, h("h2", {}, "The Arcade (preview)")),
-        h("div", { class: "cards" }, arcadeCard()),
+        h("div", { class: "cards" }, ...ARCADE_GAMES.map(arcadeCard)),
       ),
       h(
         "section",
