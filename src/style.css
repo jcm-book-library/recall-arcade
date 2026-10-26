@@ -511,6 +511,64 @@ button, input, select { font: inherit; color: inherit; }
 .mc-review { columns: 1 !important; }
 .mc-review li { padding: 3px 0; }
 
+/* ---------- pairs games (memory and matching) ---------- */
+a.btn { text-decoration: none; }
+.btn.related { justify-self: start; border-color: var(--accent); }
+.btn.related:hover { border-color: var(--ink); }
+.pair-game, .match-game { display: grid; gap: 12px; }
+.pair-bar { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; }
+.pair-stat { font: 1rem var(--font-pixel); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pair-stat b { font-weight: 400; color: var(--ink); }
+.pair-msg { margin: 0; min-height: 1.5em; font-weight: 700; color: var(--muted); }
+.pair-msg.good { color: var(--found); }
+.pair-msg.bad { color: var(--missed); }
+.pair-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 700px) {
+  .pair-grid { grid-template-columns: repeat(var(--cols, 8), minmax(0, 1fr)); gap: 12px; max-width: 1040px; }
+}
+.pair-card { position: relative; aspect-ratio: 3 / 4; padding: 0; border: 0; background: none; cursor: pointer; perspective: 700px; min-width: 0; }
+.pc-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.35s; }
+.pair-card:not([data-state="down"]) .pc-inner { transform: rotateY(180deg); }
+.pc-face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 4px; overflow: hidden; text-align: center;
+  background: var(--panel); border: 2px solid var(--line); border-radius: var(--r);
+}
+.pc-back { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); border-color: var(--accent); box-shadow: 3px 3px 0 var(--line); font: 1.6rem var(--font-pixel); color: var(--accent); }
+.pair-card[data-state="down"]:hover .pc-back { border-color: var(--ink); }
+.pc-front { transform: rotateY(180deg); border-top-width: 5px; border-top-color: var(--er); }
+.pair-card[data-side="right"] .pc-front { border-top-color: var(--golgi); }
+.pc-front img { flex: 1 1 0; min-height: 0; width: 100%; object-fit: cover; border-radius: 3px; background: var(--bg); }
+.pc-name { font-weight: 700; font-size: 0.78rem; line-height: 1.15; overflow-wrap: anywhere; }
+.pc-front.text .pc-name { font-size: 0.9rem; }
+.pc-tag { font: 0.55rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.pair-card[data-state="matched"] .pc-front { border-color: var(--found); background: color-mix(in srgb, var(--found) 16%, var(--panel)); }
+.pair-card[data-state="matched"] { cursor: default; }
+@media (min-width: 700px) {
+  .pc-name { font-size: 0.95rem; }
+  .pc-front.text .pc-name { font-size: 1.1rem; }
+  .pc-tag { font-size: 0.65rem; }
+}
+.pair-credits { font-size: 0.85rem; }
+.pair-credits summary { cursor: pointer; color: var(--muted); }
+.pair-credits ul { margin: 6px 0 0; padding-left: 1.2em; columns: 14rem; }
+.pair-credits p { margin: 6px 0 0; }
+
+.match-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 900px; }
+.match-col { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.match-head { margin: 0; font: 0.8rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.match-item {
+  text-align: left; padding: 10px 12px; min-height: 56px; cursor: pointer; overflow-wrap: anywhere;
+  background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); font-size: 0.95rem; font-weight: 700;
+}
+.match-col:last-child .match-item { font-weight: 400; }
+.match-item:hover:not(.done) { border-color: var(--accent); }
+.match-item.on, .match-item.on:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
+.match-item.done { border-color: var(--found); background: color-mix(in srgb, var(--found) 16%, var(--panel)); cursor: default; }
+.match-item.wrong, .match-item.wrong:hover { border-color: var(--missed); background: color-mix(in srgb, var(--missed) 14%, var(--panel)); animation: nope 0.3s; }
+@media (min-width: 700px) { .match-item { font-size: 1.05rem; padding: 12px 16px; } }
+
 /* ---------- periodic table ---------- */
 .ptable-scroll { overflow-x: auto; padding-bottom: 6px; }
 .ptable {

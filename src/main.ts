@@ -15,8 +15,9 @@ import { peopleDeck } from "./decks/people";
 import { empiresDeck } from "./decks/history-maps";
 import { airportsDeck } from "./decks/airports";
 import { timezonesDeck, currenciesDeck } from "./decks/travel-maps";
-import { natoDeck, pmDeck, unitsDeck, scientistsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
-import { triviaDeck, lifeDeck } from "./decks/choice-decks";
+import { natoDeck, pmDeck, unitsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
+import { lifeDeck } from "./decks/choice-decks";
+import { famousForDeck, mythPairsDeck } from "./decks/pairs-decks";
 import { ausAnimalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/picture-decks";
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
 import { renderHome } from "./ui/home";
@@ -24,20 +25,22 @@ import { renderPlay } from "./ui/play";
 import { renderPong } from "./arcade/pong";
 import { renderLabyrinth } from "./arcade/labyrinth";
 
-// Every game in the arcade, grouped by subject on the home page (six each).
+// Every game in the arcade, grouped by subject on the home page (up to six each).
 const DECKS: Deck[] = [
   // Geography
   countriesDeck, flagsDeck, capitalsDeck, waterDeck, neighboursDeck, mountainsDeck,
   // Science
-  zoomOutDeck, elementsDeck, cellsDeck, bodyDeck, unitsDeck, scientistsDeck,
+  zoomOutDeck, elementsDeck, cellsDeck, bodyDeck, unitsDeck,
   // History
-  historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, triviaDeck,
+  historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
   // Travel & Transport
   airportsDeck, airlinesDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
   // Nature & Animals
   ausAnimalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
+  // Not on the home page: reached from Mythology, or at #mythpairs
+  mythPairsDeck,
 ];
 
 // While developing, catch two items in one game sharing an id (they'd count as one).

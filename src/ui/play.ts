@@ -181,6 +181,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
         ),
         h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
       ),
+      ...(deck.related ? [h("a", { class: "btn ghost related", href: deck.related.href }, deck.related.label)] : []),
     );
   }
 
