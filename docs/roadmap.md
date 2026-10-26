@@ -9,7 +9,7 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 2. **The arcade:** five short retro levels (Labyrinth, Dogfight, Brawl, Boss, Chase),
    one per subject, unlocked by doing well in that subject's quizzes.
 
-## Subjects and quizzes (35 built ✅)
+## Subjects and quizzes (36 built ✅)
 
 | Geography | Science | History | Travel & Transport | Nature & Animals |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 | Flags | Periodic Table | Who Lived When? (timeline) | Airline Codes | Classifying Life (4 zoom-in levels) |
 | Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Pet Breeds (click the photo; dogs and cats) |
 | Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Empires Through Time (6 maps, 323 BC–1914) | Currencies | Where Animals Live (photo, click the continent) |
-| *(Territories now a tickbox in Countries)* | Units & Forces + Conversions | Mythology | Time Zones | Baby Animals & Group Names (name the animal) |
+| Mountains (peaks + ranges; territories are a tickbox in Countries) | Units & Forces + Conversions | Mythology | Time Zones | Baby Animals & Group Names (name the animal) |
 | Neighbours | Famous Scientists (50+) | Trivia Round (multiple choice) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
 
 ### Music (skill learning: reading music, on piano)
@@ -35,9 +35,8 @@ minor key signatures, chords on the stave, a rhythm tap-along level for the arca
 Arts & Culture is a candidate seventh subject.
 
 ### Next ideas for existing games
-- **Geography:** one free slot now Territories is part of Countries. Pick: **Mountains**:
-  the highest peak on each continent (Seven Summits), famous peaks (Fuji, Matterhorn, Kilimanjaro,
-  Kosciuszko…), and mountain ranges (Andes, Himalaya, Rockies, Alps, Great Dividing Range…).
+- **Mountains:** more famous peaks, a typed "name the highlighted peak" option, and the
+  Transantarctic Mountains if Antarctica gets its own close-up map (it's too squashed on the world map).
 - **Mythology:** deep enough to become its own subject later (more cultures, heroes, monsters).
 - **Empires Through Time:** the 1815 map includes Aboriginal nations, a possible future round.
 - **The Human Body:** add muscles and body systems as further rounds.

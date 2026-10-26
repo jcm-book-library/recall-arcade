@@ -9,6 +9,7 @@
   --ocean: #c9dce7;
   --grid: #b6cbd8;
   --land: #f3f1ea;
+  --range: #c9ab84; --range-edge: #6e4f2c;
   --land-off: #dde2e0;
   --edge: #8c9ea9;
   --found: #2d9157;
@@ -34,14 +35,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0e151b; --panel: #151f27; --ink: #e5ecf0; --muted: #91a2ad; --line: #26343f;
-    --ocean: #0f1d27; --grid: #1a2c39; --land: #3a4954; --land-off: #222e37; --edge: #0e151b;
+    --ocean: #0f1d27; --grid: #1a2c39; --land: #3a4954; --land-off: #222e37; --edge: #0e151b; --range: #8a6b48; --range-edge: #e0c49e;
     --found: #3dbb70; --missed: #ec5a4f; --accent: #ffb52b; --on-accent: #1b1406; --unseen: #66788a; --bone: #d9cfb3; --bone-edge: #6b604a; --skin: #2c2622; --skin-edge: #5a4a40; --cyto: #3a2a2a; --membrane: #e08b7b; --wall: #7fb556; --nucleus: #4a3b66; --nucleus-edge: #b49ae0; --er: #78b6d8; --golgi: #e2b250; --mito: #8a5a3c; --mito-edge: #f0a875; --lyso: #8c7a32; --lyso-edge: #f1d36b; --centri: #a8b6c4; --vacuole: #2b4256; --vacuole-edge: #7fb6dc; --chloro: #4d7a3a; --chloro-edge: #a5dd88;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0e151b; --panel: #151f27; --ink: #e5ecf0; --muted: #91a2ad; --line: #26343f;
-  --ocean: #0f1d27; --grid: #1a2c39; --land: #3a4954; --land-off: #222e37; --edge: #0e151b;
+  --ocean: #0f1d27; --grid: #1a2c39; --land: #3a4954; --land-off: #222e37; --edge: #0e151b; --range: #8a6b48; --range-edge: #e0c49e;
   --found: #3dbb70; --missed: #ec5a4f; --accent: #ffb52b; --on-accent: #1b1406; --unseen: #66788a; --bone: #d9cfb3; --bone-edge: #6b604a; --skin: #2c2622; --skin-edge: #5a4a40; --cyto: #3a2a2a; --membrane: #e08b7b; --wall: #7fb556; --nucleus: #4a3b66; --nucleus-edge: #b49ae0; --er: #78b6d8; --golgi: #e2b250; --mito: #8a5a3c; --mito-edge: #f0a875; --lyso: #8c7a32; --lyso-edge: #f1d36b; --centri: #a8b6c4; --vacuole: #2b4256; --vacuole-edge: #7fb6dc; --chloro: #4d7a3a; --chloro-edge: #a5dd88;
   color-scheme: dark;
 }
@@ -577,3 +578,13 @@ button, input, select { font: inherit; color: inherit; }
 .zbank { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .zbank-note { flex: 1 0 100%; margin: 0; font-size: 0.9rem; color: var(--muted); }
 .zoom.placing .zitem { cursor: crosshair; }
+
+/* Mountains: ranges over the land, peaks as dark dots */
+.range { fill: var(--range); stroke: var(--range-edge); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill 0.3s; }
+.range:hover { stroke: var(--accent); stroke-width: 2; }
+.range.found { fill: var(--found); opacity: 0.85; }
+.range.missed { fill: var(--missed); opacity: 0.85; }
+.range.unseen { fill: var(--unseen); }
+.dot.peak { fill: var(--range-edge); stroke: var(--panel); opacity: 1; cursor: pointer; }
+.dot.peak.found { fill: var(--found); }
+.dot.peak.missed { fill: var(--missed); }

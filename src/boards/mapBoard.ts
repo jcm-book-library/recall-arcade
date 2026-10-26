@@ -10,7 +10,7 @@ export interface MapShape {
   feature?: GeoPermissibleObjects;
   point?: [number, number];
   /** How to draw it. Defaults to land. */
-  kind?: "land" | "water" | "river";
+  kind?: "land" | "water" | "river" | "range";
   /** Seas and oceans are drawn beneath the land so coastlines stay crisp. */
   underLand?: boolean;
   /** Extra CSS class, e.g. "hub" for the country in the middle of a Neighbours round. */
@@ -77,6 +77,8 @@ export function createMapBoard(
 
   const seaLayer = root.append("g");
   const landLayer = root.append("g");
+  // Mountain ranges are drawn over the land they sit on.
+  const rangeLayer = root.append("g");
   // Rivers sit under lakes, so a river running through a lake never blocks clicks on it.
   const riverLayer = root.append("g");
   const waterLayer = root.append("g");
@@ -93,7 +95,8 @@ export function createMapBoard(
       const d = path(shape.feature);
       if (!d) continue;
       const kind = shape.kind ?? "land";
-      const layer = kind === "land" ? landLayer : kind === "river" ? riverLayer : shape.underLand ? seaLayer : waterLayer;
+      const layer =
+        kind === "land" ? landLayer : kind === "range" ? rangeLayer : kind === "river" ? riverLayer : shape.underLand ? seaLayer : waterLayer;
       const p = layer
         .append("path")
         .attr("d", d)
@@ -121,7 +124,7 @@ export function createMapBoard(
         .attr("cx", centre[0])
         .attr("cy", centre[1])
         .attr("r", DOT_PX)
-        .attr("class", "dot")
+        .attr("class", shape.extraClass ? `dot ${shape.extraClass}` : "dot")
         .attr("data-label", shape.label)
         .attr("data-id", shape.id)
         .node()!;
