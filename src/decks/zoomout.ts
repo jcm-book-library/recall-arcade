@@ -18,7 +18,7 @@ const DEPTH: Record<string, number> = { sky: 1, planets: 2, solar: 3, stars: 4, 
 export const zoomOutDeck: Deck = {
   id: "zoomout",
   subject: "Science",
-  title: "Zoom Out",
+  title: "Infinity & Beyond",
   blurb: "Start with the night sky. Then clear a stage and the view zooms out: planets, the solar system, nearby stars, the Milky Way, then the galaxies next door.",
   noun: "things in space",
   items,

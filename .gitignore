@@ -3,3 +3,4 @@ dist
 # test screenshots
 *.png
 !public/**/*.png
+.claude/worktrees/

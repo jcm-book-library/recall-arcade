@@ -36,7 +36,6 @@ export const PEAKS: PeakRow[] = [
   ["chimborazo", "Chimborazo", 6263, -1.469, -78.818, "SA", "famous", ["Mount Chimborazo"]],
   ["cotopaxi", "Cotopaxi", 5897, -0.684, -78.438, "SA", "famous", ["Mount Cotopaxi"]],
   ["aoraki", "Aoraki / Mount Cook", 3724, -43.595, 170.142, "OC", "famous", ["Aoraki", "Mount Cook", "Aoraki Mount Cook", "Mt Cook"]],
-  ["uluru", "Uluru", 863, -25.344, 131.037, "OC", "famous", ["Ayers Rock"]],
   ["maunakea", "Mauna Kea", 4207, 19.821, -155.468, "OC", "famous", ["Maunakea"]],
   ["erebus", "Mount Erebus", 3794, -77.53, 167.153, "AN", "famous", ["Erebus"]],
 ];

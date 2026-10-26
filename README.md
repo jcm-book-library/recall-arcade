@@ -7,18 +7,18 @@ Started with a Sporcle-style "name every country" map quiz.
 Thirty games across five subjects, six each. ★ marks the starter round in each.
 
 - **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours, Mountains
-- **Science:** Zoom Out, Periodic Table, Cells & Life, The Human Body, Units & Forces, Famous Scientists
+- **Science:** Infinity & Beyond, Periodic Table, Cells & Life, The Human Body, Units & Forces, Famous Scientists
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology, Trivia Round
 - **Travel & Transport:** Airport Codes, Airline Codes, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
-- **Nature & Animals:** Australian Animals, Classifying Life, Pet Breeds, Where Animals Live, Baby Animals & Group Names, Dinosaurs
+- **Nature & Animals:** Australian Animals, Classifying Life, Pet Breeds, Baby Animals & Group Names, Dinosaurs
 - **Music:** The Piano Keyboard, Treble Clef, Bass Clef, Rhythm & Note Lengths, Keys & Symbols, Ear Training
 
 ### Ways to play
 | Style | Where |
 |---|---|
-| Type in any order | Countries, Periodic Table, Zoom Out, NATO, Prime Ministers, Neighbours, Empires Through Time |
+| Type in any order | Countries, Periodic Table, Infinity & Beyond, NATO, Prime Ministers, Neighbours, Empires Through Time |
 | One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Time Zones, Units, Scientists, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
-| One at a time, clicked | Seas Lakes & Rivers, Mountains, Pet Breeds, Where Animals Live (and Cells / Human Body with "click instead") |
+| One at a time, clicked | Seas Lakes & Rivers, Mountains, Pet Breeds (and Cells / Human Body with "click instead") |
 | Labelled diagram | Cells & Life, The Human Body |
 | Timeline | Big Moments, Who Lived When? |
 | Multiple choice | Trivia Round, Classifying Life, Ear Training (listen, then choose) |
@@ -28,7 +28,7 @@ Thirty games across five subjects, six each. ★ marks the starter round in each
 - `src/engine/`: the shared parts every game uses: answer matching, progress saving.
 - `src/decks/`: one file per topic. A deck is a list of items (name + accepted spellings + tags)
   plus the "board" that draws them. Adding a topic means adding a deck.
-- `src/boards/`: ways of drawing a deck (world map, periodic table, flag/photo wall, tiles, diagrams, Zoom Out).
+- `src/boards/`: ways of drawing a deck (world map, periodic table, flag/photo wall, tiles, diagrams, Infinity & Beyond).
 - `src/ui/timeline.ts`, `src/ui/choice.ts`: the timeline and multiple-choice game screens.
 - `src/ui/`: the home screen and the play screen.
 - `src/music/`: note names, the piano sound (Web Audio, no sound files) and the stave drawing.

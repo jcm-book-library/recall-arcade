@@ -3,6 +3,14 @@
 Ideas for the character-driven side of Recall Arcade. Nothing here is scheduled yet.
 Written down so they don't get lost.
 
+## Build order (agreed 26 Oct 26)
+1. **Planet Pong:** where video games began. Planets are the ball, asteroids get in the way.
+   Teaches the game loop, movement, bouncing and collisions. Prototype on the home page under
+   "The Arcade (preview)".
+2. **The Labyrinth:** a maze level. Teaches grid movement, walls and simple enemy chasing.
+3. Then the pixel character (owner draws it in Piskel/Aseprite) and the Overworld that links
+   the levels, with movement code explained step by step.
+
 ## The big picture
 - A set of short levels, each in a different classic style, built in order of difficulty.
   Each one teaches the next layer of how games are made.
