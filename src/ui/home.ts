@@ -32,6 +32,18 @@ function card(deck: Deck) {
   );
 }
 
+// Arcade games are real-time games rather than quizzes, so they have no progress or best score yet.
+function arcadeCard() {
+  return h(
+    "a",
+    { class: "card", href: "#pong" },
+    h("span", { class: "card-kicker" }, "Arcade game"),
+    h("h2", {}, "Planet Pong"),
+    h("p", {}, "Where video games began. Knock the planets past the computer, mind the asteroids."),
+    h("span", { class: "card-foot card-foot-end" }, h("span", { class: "card-go" }, "Play ▸")),
+  );
+}
+
 export function renderHome(root: HTMLElement, decks: Deck[]) {
   const sections = SUBJECTS.map((s) => {
     const built = decks.filter((d) => d.subject === s.name);
@@ -72,6 +84,12 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
         h("p", { class: "lede" }, "Short timed rounds you play again and again until it sticks. ★ marks the easy starter round in each game."),
       ),
       ...sections,
+      h(
+        "section",
+        { class: "subject", "aria-label": "The Arcade (preview)" },
+        h("div", { class: "subject-head" }, h("h2", {}, "The Arcade (preview)")),
+        h("div", { class: "cards" }, arcadeCard()),
+      ),
       h(
         "section",
         { class: "soon", "aria-label": "Coming later" },

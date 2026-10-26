@@ -21,6 +21,7 @@ import { ausAnimalsDeck, petsDeck, landmarksDeck, habitatsDeck, dinosaursDeck } 
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
+import { renderPong } from "./arcade/pong";
 
 // Every game in the arcade, grouped by subject on the home page (six each).
 const DECKS: Deck[] = [
@@ -57,7 +58,8 @@ function route() {
   cleanup = undefined;
   const id = location.hash.replace(/^#/, "");
   const deck = DECKS.find((d) => d.id === id);
-  if (deck) cleanup = deck.screen ? deck.screen(root, deck) : renderPlay(root, deck);
+  if (id === "pong") cleanup = renderPong(root);
+  else if (deck) cleanup = deck.screen ? deck.screen(root, deck) : renderPlay(root, deck);
   else renderHome(root, DECKS);
   window.scrollTo(0, 0);
 }

@@ -588,3 +588,19 @@ button, input, select { font: inherit; color: inherit; }
 .dot.peak { fill: var(--range-edge); stroke: var(--panel); opacity: 1; cursor: pointer; }
 .dot.peak.found { fill: var(--found); }
 .dot.peak.missed { fill: var(--missed); }
+
+/* ---------- arcade: Planet Pong ---------- */
+.card-foot-end { justify-content: flex-end; }
+.pong { width: 100%; max-width: 964px; margin-inline: auto; min-width: 0; }
+.pong-screen {
+  width: 100%; border: 2px solid var(--line); border-radius: var(--r); overflow: hidden;
+  background: var(--space); box-shadow: 4px 4px 0 var(--line); line-height: 0;
+}
+/* Small 320x180 picture, scaled up with hard square pixels. */
+.pong-canvas {
+  display: block; width: 100%; height: auto; aspect-ratio: 16 / 9;
+  image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: pixelated;
+  touch-action: none; /* dragging a finger over the game moves the paddle, not the page */
+}
+.pong-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.pong-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }

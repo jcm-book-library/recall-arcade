@@ -30,8 +30,14 @@ export function playNote(midi: number, length = 2.4, when = 0) {
   // A struck string: quick attack, then a long fade. A few harmonics give it body.
   out.gain.setValueAtTime(0, t);
   out.gain.linearRampToValueAtTime(0.9, t + 0.008);
-  out.gain.exponentialRampToValueAtTime(0.5, t + 0.3);
-  out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.5, length));
+  if (length < 0.4) {
+    // A short blip (arcade sounds): straight down to silence.
+    out.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.05, length));
+  } else {
+    out.gain.exponentialRampToValueAtTime(0.5, t + 0.3);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + length);
+  }
+  const end = t + Math.max(0.05, length);
   const partials: [number, number, OscillatorType][] = [
     [1, 0.6, "triangle"],
     [2, 0.22, "sine"],
@@ -46,7 +52,7 @@ export function playNote(midi: number, length = 2.4, when = 0) {
     g.gain.value = level;
     osc.connect(g).connect(out);
     osc.start(t);
-    osc.stop(t + Math.max(0.5, length) + 0.05);
+    osc.stop(end + 0.05);
   }
 }
 
