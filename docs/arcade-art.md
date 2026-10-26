@@ -15,15 +15,17 @@ One image, **32 pixels wide and 64 pixels tall**, made of eight 16 x 16 boxes:
 | **Row 4** | facing up, frame 1 | facing up, frame 2 |
 
 "Walking frame 1 and 2" are two poses with the feet in different places. The game swaps between
-them as the hero walks. Frame 1 is also what he looks like standing still.
+them as the hero walks. Frame 1 is also how the hero looks standing still.
 
 ## Drawing it in Piskel (free, in your browser)
 
 1. Open **piskelapp.com** and click **Create Sprite**.
 2. Click the **Resize** tool in the left toolbar. Type **32** for width and **64** for height, then
    confirm. (Draw on ONE frame only. Don't add animation frames.)
-3. Turn on the grid so you can see the boxes: open **Preferences** (the cog) and set the grid
-   to **16** pixels. You should now see 2 boxes across and 4 down.
+3. Find the boxes: as you move the mouse over the canvas, Piskel shows its position (x, y) at the
+   bottom right. The boxes start every 16 pixels: x 0–15 and 16–31 across; y 0–15, 16–31, 32–47
+   and 48–63 down. Tip: draw a faint guide line at x 16 and at y 16, 32 and 48, then erase it at
+   the end.
 4. Draw the hero in each box. Leave the background empty, because empty means see-through.
    Tip: draw one box well, then copy it into the others and change the feet.
 5. When you're happy, click **Export** (the download arrow on the right).
