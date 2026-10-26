@@ -27,66 +27,6 @@ function parse(table: string, prefix: string): Item[] {
 const clue = (i: Item) => i.data!.clue as string;
 const extra = (i: Item) => (i.data!.extra as string) || undefined;
 
-// ---------------------------------------------------------------- History trivia
-export const triviaDeck = choiceDeck(
-  {
-    id: "trivia",
-    title: "Trivia Round",
-    subject: "History",
-    blurb: "Classic history questions with four answers to choose from. Ten at a time.",
-    noun: "questions",
-    items: parse(
-      `Inca|Which empire built Machu Picchu?|Aztec;Maya;Olmec
-Augustus|Who was the first Roman emperor?|Julius Caesar;Nero;Caligula
-Mayflower|Which ship carried the Pilgrims to America in 1620?|Endeavour;Santa María;Beagle
-Endeavour|What was James Cook's ship on his first voyage to Australia?|Bounty;Victory;Discovery
-The Berlin Wall|Which wall split a European city from 1961 to 1989?|Hadrian's Wall;The Great Wall;The Iron Wall
-Amelia Earhart|Who was the first woman to fly solo across the Atlantic?|Amy Johnson;Bessie Coleman;Nancy Bird Walton
-Britain|In which country did the Industrial Revolution begin?|France;Germany;United States
-Egyptian hieroglyphs|The Rosetta Stone helped decode which writing?|Cuneiform;Linear B;Mayan glyphs
-Pompeii|Which city was buried by Mount Vesuvius in AD 79?|Rome;Athens;Carthage
-Karl Marx|Who wrote The Communist Manifesto with Friedrich Engels?|Vladimir Lenin;Leon Trotsky;Joseph Stalin
-Sputnik 1|What was the first artificial satellite called?|Explorer 1;Vostok 1;Apollo 1
-France|Which country gave the Statue of Liberty to the United States?|Britain;Spain;Italy
-Queen Victoria|Which queen ruled Britain for most of the 1800s?|Queen Anne;Elizabeth I;Mary I
-William the Conqueror|Who won the Battle of Hastings in 1066?|Harold Godwinson;Alfred the Great;Richard the Lionheart
-Ferdinand Magellan|Whose expedition first sailed all the way around the world?|Christopher Columbus;Vasco da Gama;James Cook
-Gallipoli|Where did Australian and New Zealand troops land on 25 April 1915?|Normandy;Kokoda;Tobruk
-The Lighthouse of Alexandria|Which ancient wonder stood in Alexandria?|The Hanging Gardens;The Colossus of Rhodes;The Temple of Artemis
-Yuri Gagarin|Who was the first person in space?|Neil Armstrong;Alan Shepard;John Glenn
-The American Civil War|Which war was fought between the northern and southern United States?|The War of 1812;The Revolutionary War;The Spanish–American War
-The Byzantine Empire|Which empire ruled from Constantinople after Rome fell in the west?|The Ottoman Empire;The Persian Empire;The Holy Roman Empire
-Genghis Khan|Who founded the Mongol Empire?|Kublai Khan;Attila;Tamerlane
-Magna Carta|Which document did King John seal in 1215?|The Bill of Rights;The Domesday Book;The Treaty of Paris
-Italy|In which country did the Renaissance begin?|France;Greece;Spain
-Gold miners at Ballarat|Who rebelled at the Eureka Stockade in 1854?|Convicts in Sydney;Farmers in Tasmania;Soldiers in Melbourne
-The Sumerians|Which people built the first ziggurats?|The Egyptians;The Romans;The Greeks
-Michelangelo|Who painted the Sistine Chapel ceiling?|Leonardo da Vinci;Raphael;Botticelli
-New Zealand|Which country was the first to give all women the vote?|Australia;United Kingdom;United States
-The Black Death|Which disease killed about a third of Europe in the 1300s?|Smallpox;Cholera;Spanish flu
-Winston Churchill|Who was Britain's prime minister for most of World War II?|Neville Chamberlain;Clement Attlee;David Lloyd George
-Qin Shi Huang|The Terracotta Army guards the tomb of which emperor?|Kublai Khan;Confucius;Emperor Wu
-The Treaty of Versailles|Which treaty ended World War I?|The Treaty of Paris;The Peace of Westphalia;The Treaty of Ghent
-South Africa|In which country was apartheid the law until the early 1990s?|Kenya;Brazil;India
-Counting Aboriginal people in the census|What did Australia's 1967 referendum change?|Becoming a republic;Votes for women;Federation of the states
-The Ottoman Empire|Which empire did Suleiman the Magnificent rule?|The Persian Empire;The Mughal Empire;The Byzantine Empire
-China|Where was paper invented?|Egypt;Greece;India
-Vasco da Gama|Who first sailed from Europe to India around Africa?|Bartolomeu Dias;Christopher Columbus;Ferdinand Magellan
-Nicholas II|Who was the last tsar of Russia?|Peter the Great;Alexander III;Ivan the Terrible`,
-      "t",
-    ),
-  },
-  {
-    rounds: [
-      { id: "ten", label: "Quick Ten", starter: true, filter: () => true, count: 10 },
-      { id: "twenty", label: "Twenty", filter: () => true, count: 20 },
-      { id: "all", label: "Everything", filter: () => true },
-    ],
-    question: clue,
-    options: (i) => [i.name, ...(extra(i) ?? "").split(";")],
-  },
-);
-
 // ---------------------------------------------------------------- Classifying life
 // Four levels that zoom in, from the kingdoms of life down to the orders of mammals.
 const LEVELS: { tag: string; label: string; options: string[]; question: (name: string) => string; note: string }[] = [

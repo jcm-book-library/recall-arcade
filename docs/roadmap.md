@@ -17,8 +17,8 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 | Flags | Periodic Table | Who Lived When? (timeline) | Airline Codes | Classifying Life (4 zoom-in levels) |
 | Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Pet Breeds (click the photo; dogs and cats) |
 | Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Empires Through Time (6 maps, 323 BC–1914) | Currencies | *(Where Animals Live removed: too many look-alike trick questions)* |
-| Mountains (peaks + ranges; territories are a tickbox in Countries) | Units & Forces + Conversions | Mythology | Time Zones | Baby Animals & Group Names (name the animal) |
-| Neighbours | Famous Scientists (50+) | Trivia Round (multiple choice) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
+| Mountains (peaks + ranges; territories are a tickbox in Countries) | Units & Forces + Conversions | Mythology (+ Greek & Roman Pairs memory game, linked from its setup screen) | Time Zones | Baby Animals & Group Names (name the animal) |
+| Neighbours | *(Famous Scientists moved to History as Famous For)* | Famous For (match people to what they did; scientists + Who Lived When? people) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
 
 ### Music (skill learning: reading music, on piano)
 | Quiz | Rounds |
@@ -46,10 +46,14 @@ Countries of the World, freeing a slot.
 - Units & Forces (physics): needs more depth.
 - Famous Scientists: **move to History**, replacing Trivia Round, as a broader
   "What are they famous for?" matching game across famous people.
+  **Done (26 Oct 26):** now Famous For, a two-column matching game (4 rounds of 6 pairs) built
+  from the scientists plus the Who Lived When? people. Trivia Round is gone.
 
 **History**
 - Mythology: a **memory (pairs) game**, Greek god ↔ Roman god with pictures, as a round
   inside Mythology for now. May become its own subject.
+  **Done (26 Oct 26):** Greek & Roman Pairs, a memory game with optional Wikipedia pictures.
+  It isn't a home-page card; it's linked from the Mythology setup screen (and lives at `#mythpairs`).
 - Big Moments and Who Lived When?: really good; grow to ~200 events and ~200 people.
 - Australian PMs: widen to world leaders (British PMs, US presidents, others).
 - Empires Through Time: could become a variation of Big Moments.
@@ -77,7 +81,8 @@ Countries of the World, freeing a slot.
 More challenges next, e.g. public-domain tunes to read and play as practice.
 
 ### New game styles to reach for
-- **Memory / pairs** (flip two cards to match): mythology pairs, flags ↔ countries, logos ↔ airlines.
+- **Memory / pairs** (flip two cards to match): mythology pairs ✅ (built, `src/ui/pairs.ts`), flags ↔ countries, logos ↔ airlines.
+  The pairs screen also does a two-column "match" style (Famous For ✅), so new pairs games are mostly data.
 - **Hangman** with 1–3 hints: group names, tricky spellings.
 - **Description ↔ picture match**: dinosaurs, landmarks.
 

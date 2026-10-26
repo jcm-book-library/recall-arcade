@@ -101,6 +101,10 @@ export interface Deck {
   screen?: (root: HTMLElement, deck: Deck) => () => void;
   /** Which of the five subjects the game belongs to, for the home page. */
   subject?: string;
+  /** Reachable by its link but not shown as a card on the home page. */
+  hidden?: boolean;
+  /** A link shown on this game's setup screen to a related game. */
+  related?: { href: string; label: string };
   /** What to show for the current item in "prompt" mode. */
   renderPrompt?: (item: Item, how: { click: boolean }) => Node;
   /** Longer label for result lists, e.g. "France: Paris". */

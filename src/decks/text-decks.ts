@@ -60,6 +60,7 @@ interface TextDeckSpec {
   describe?: (item: Item) => string;
   answerKey?: (text: string) => string;
   tip?: string;
+  related?: Deck["related"];
 }
 
 function textDeck(s: TextDeckSpec): Deck {
@@ -79,6 +80,7 @@ function textDeck(s: TextDeckSpec): Deck {
     renderPrompt: s.ask,
     answerKey: s.answerKey,
     tip: s.tip,
+    related: s.related,
     createBoard: ({ container, items }) =>
       createTileBoard(container, items, { clue: clueOf, groups: s.groups, wide: s.wide }),
   };
@@ -563,6 +565,7 @@ Mimi|Thin, tall spirits of the rocks in Arnhem Land stories|Mimih|dreaming`,
     tagged("dreaming", "Aboriginal Dreaming", 2),
     all(10),
   ],
+  related: { href: "#mythpairs", label: "Play the Greek & Roman memory game ▸" },
   tip: "Dreaming stories belong to particular Aboriginal nations, and names and meanings vary between them. These are a small, respectful starting point.",
   groups: [
     { tag: "pairs", label: "Greek and Roman" },

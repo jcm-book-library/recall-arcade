@@ -52,7 +52,7 @@ function arcadeCard(game: (typeof ARCADE_GAMES)[number]) {
 
 export function renderHome(root: HTMLElement, decks: Deck[]) {
   const sections = SUBJECTS.map((s) => {
-    const built = decks.filter((d) => d.subject === s.name);
+    const built = decks.filter((d) => d.subject === s.name && !d.hidden);
     return h(
       "section",
       { class: "subject", "aria-label": s.name },
