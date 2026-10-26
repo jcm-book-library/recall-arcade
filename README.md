@@ -6,7 +6,7 @@ Started with a Sporcle-style "name every country" map quiz.
 ## Games
 Thirty games across five subjects, six each. ★ marks the starter round in each.
 
-- **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours
+- **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours, Mountains
 - **Science:** Zoom Out, Periodic Table, Cells & Life, The Human Body, Units & Forces, Famous Scientists
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology, Trivia Round
 - **Travel & Transport:** Airport Codes, Airline Codes, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
@@ -18,7 +18,7 @@ Thirty games across five subjects, six each. ★ marks the starter round in each
 |---|---|
 | Type in any order | Countries, Periodic Table, Zoom Out, NATO, Prime Ministers, Neighbours, Empires Through Time |
 | One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Time Zones, Units, Scientists, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
-| One at a time, clicked | Seas Lakes & Rivers, Pet Breeds, Where Animals Live (and Cells / Human Body with "click instead") |
+| One at a time, clicked | Seas Lakes & Rivers, Mountains, Pet Breeds, Where Animals Live (and Cells / Human Body with "click instead") |
 | Labelled diagram | Cells & Life, The Human Body |
 | Timeline | Big Moments, Who Lived When? |
 | Multiple choice | Trivia Round, Classifying Life, Ear Training (listen, then choose) |
@@ -43,6 +43,7 @@ npm run build   # makes the finished site in dist/
 Map data: Natural Earth via the `world-atlas` package (public domain).
 Flags: the `flag-icons` package (MIT licence).
 Seas, lakes and rivers: Natural Earth (public domain), cut down by `scripts/build-water.mjs`.
+Mountain ranges: Natural Earth geography regions (public domain), cut down by `scripts/build-ranges.mjs`. Peak heights and positions are typed in `src/decks/mountains-data.ts`.
 Historical borders (323 BC to 1914): [historical-basemaps](https://github.com/aourednik/historical-basemaps) by André Ourednik (GPL-3.0), loaded from GitHub at play time, not copied here.
 Photos (animals, pets, landmarks, dinosaurs): each Wikipedia article's main image, freely licensed only, loaded at play time and shown with its photographer and licence.
 
