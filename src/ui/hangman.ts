@@ -130,7 +130,11 @@ export function renderHangman(spec: HangmanSpec) {
     }
 
     function start() {
-      words = shuffle(deck.items.filter(round.filter)).slice(0, perGame);
+      // Two clues can share an answer ("Sheep": lamb and flock), so never ask the same word twice.
+      const seenAnswers = new Set<string>();
+      words = shuffle(deck.items.filter(round.filter))
+        .filter((i) => !seenAnswers.has(i.name.toLowerCase()) && !!seenAnswers.add(i.name.toLowerCase()))
+        .slice(0, perGame);
       index = 0;
       log.length = 0;
       startedAt = Date.now();
