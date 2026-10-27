@@ -2,6 +2,7 @@
 import type { Deck, Item, ProgressGroup, Variant } from "../engine/types";
 import { createTileBoard } from "../boards/tileBoard";
 import { normalize } from "../engine/matcher";
+import { renderHangman } from "../ui/hangman";
 
 /** Turn "answer|clue|aliases;more|tags" lines into items. */
 function parse(table: string, idPrefix: string): Item[] {
@@ -132,50 +133,142 @@ Zulu|Z`,
   describe: (i) => `${clueOf(i)}: ${i.name}`,
 });
 
-// ---------------------------------------------------------------- Australian Prime Ministers
+// ---------------------------------------------------------------- Prime Ministers & Presidents
+// Three lists in one deck, split by tag: au (Australia), uk (United Kingdom), us (United States).
+// No two leaders may share an alias (the matcher gives a spelling to the first leader who owns it).
+// So a surname shared by several leaders (Johnson, Wilson, Roosevelt, Bush, Harrison...) is left off
+// as a bare alias, and each of them is reached by a longer form such as "Lyndon Johnson" or "FDR".
+// Only Adams (John Adams) and Harrison (William Henry) keep the bare surname: the more famous one.
+// UK numbers count every appointment from Robert Walpole (Starmer is the 58th), so Baldwin,
+// MacDonald, Churchill and Wilson show each number they held. US numbers are the usual count:
+// Cleveland (22nd and 24th) and Trump (45th and 47th) are one person each.
 export const pmDeck = textDeck({
   id: "pms",
-  title: "Australian Prime Ministers",
+  title: "Prime Ministers & Presidents",
   subject: "History",
-  blurb: "All 31 prime ministers since Federation. The years are your clue. Type them in any order.",
-  noun: "prime ministers",
+  blurb:
+    "Australia's 31 prime ministers since Federation, the UK's prime ministers from Salisbury (in office in 1900) to today, and all 45 people who have been US president. The numbers and years are your clue. Type them in any order.",
+  noun: "leaders",
   mode: "any",
   wide: true,
   items: parse(
-    `Edmund Barton|1st · 1901–1903|Barton
-Alfred Deakin|2nd · 1903–1910, three terms|Deakin
-Chris Watson|3rd · 1904|Watson
-George Reid|4th · 1904–1905|Reid
-Andrew Fisher|5th · 1908–1915, three terms|Fisher
-Joseph Cook|6th · 1913–1914|Cook
-Billy Hughes|7th · 1915–1923|Hughes;William Hughes
-Stanley Bruce|8th · 1923–1929|Bruce
-James Scullin|9th · 1929–1932|Scullin
-Joseph Lyons|10th · 1932–1939|Lyons
-Earle Page|11th · 1939, 19 days|Page
-Robert Menzies|12th · 1939–1941, 1949–1966|Menzies;Bob Menzies|recent
-Arthur Fadden|13th · 1941|Fadden
-John Curtin|14th · 1941–1945|Curtin
-Frank Forde|15th · 1945, 8 days|Forde
-Ben Chifley|16th · 1945–1949|Chifley
-Harold Holt|17th · 1966–1967, vanished at sea|Holt|recent
-John McEwen|18th · 1967–1968|McEwen|recent
-John Gorton|19th · 1968–1971|Gorton|recent
-William McMahon|20th · 1971–1972|McMahon;Billy McMahon|recent
-Gough Whitlam|21st · 1972–1975|Whitlam|recent
-Malcolm Fraser|22nd · 1975–1983|Fraser|recent
-Bob Hawke|23rd · 1983–1991|Hawke|recent
-Paul Keating|24th · 1991–1996|Keating|recent
-John Howard|25th · 1996–2007|Howard|recent
-Kevin Rudd|26th · 2007–2010, 2013|Rudd|recent
-Julia Gillard|27th · 2010–2013|Gillard|recent
-Tony Abbott|28th · 2013–2015|Abbott|recent
-Malcolm Turnbull|29th · 2015–2018|Turnbull|recent
-Scott Morrison|30th · 2018–2022|Morrison|recent
-Anthony Albanese|31st · 2022–|Albanese|recent`,
+    `Edmund Barton|1st · 1901–1903|Barton|au
+Alfred Deakin|2nd · 1903–1910, three terms|Deakin|au
+Chris Watson|3rd · 1904|Watson|au
+George Reid|4th · 1904–1905|Reid|au
+Andrew Fisher|5th · 1908–1915, three terms|Fisher|au
+Joseph Cook|6th · 1913–1914|Cook|au
+Billy Hughes|7th · 1915–1923|Hughes;William Hughes|au
+Stanley Bruce|8th · 1923–1929|Bruce|au
+James Scullin|9th · 1929–1932|Scullin|au
+Joseph Lyons|10th · 1932–1939|Lyons|au
+Earle Page|11th · 1939, 19 days|Page|au
+Robert Menzies|12th · 1939–1941, 1949–1966|Menzies;Bob Menzies|au
+Arthur Fadden|13th · 1941|Fadden|au
+John Curtin|14th · 1941–1945|Curtin|au
+Frank Forde|15th · 1945, 8 days|Forde|au
+Ben Chifley|16th · 1945–1949|Chifley|au
+Harold Holt|17th · 1966–1967, vanished at sea|Holt|au
+John McEwen|18th · 1967–1968|McEwen|au
+John Gorton|19th · 1968–1971|Gorton|au
+William McMahon|20th · 1971–1972|McMahon;Billy McMahon|au
+Gough Whitlam|21st · 1972–1975|Whitlam|au
+Malcolm Fraser|22nd · 1975–1983|Fraser|au
+Bob Hawke|23rd · 1983–1991|Hawke|au
+Paul Keating|24th · 1991–1996|Keating|au
+John Howard|25th · 1996–2007|Howard|au
+Kevin Rudd|26th · 2007–2010, 2013|Rudd|au
+Julia Gillard|27th · 2010–2013|Gillard|au
+Tony Abbott|28th · 2013–2015|Abbott|au
+Malcolm Turnbull|29th · 2015–2018|Turnbull|au
+Scott Morrison|30th · 2018–2022|Morrison|au
+Anthony Albanese|31st · 2022–|Albanese|au
+Lord Salisbury|1895–1902|Salisbury|uk
+Arthur Balfour|1902–1905|Balfour|uk
+Henry Campbell-Bannerman|1905–1908|Campbell-Bannerman;CB|uk
+H. H. Asquith|1908–1916|Asquith;Herbert Asquith|uk
+David Lloyd George|1916–1922|Lloyd George|uk
+Bonar Law|1922–1923|Andrew Bonar Law|uk
+Stanley Baldwin|1923–1924, 1924–1929, 1935–1937|Baldwin|uk
+Ramsay MacDonald|1924, 1929–1935|MacDonald|uk
+Neville Chamberlain|1937–1940|Chamberlain|uk
+Winston Churchill|1940–1945, 1951–1955|Churchill|uk
+Clement Attlee|1945–1951|Attlee|uk
+Anthony Eden|1955–1957|Eden|uk
+Harold Macmillan|1957–1963|Macmillan|uk
+Alec Douglas-Home|1963–1964|Douglas-Home;Lord Home|uk
+Harold Wilson|1964–1970, 1974–1976||uk
+Edward Heath|1970–1974|Heath;Ted Heath|uk
+James Callaghan|1976–1979|Callaghan;Jim Callaghan|uk
+Margaret Thatcher|1979–1990|Thatcher|uk
+John Major|1990–1997|Major|uk
+Tony Blair|1997–2007|Blair|uk
+Gordon Brown|2007–2010|Brown|uk
+David Cameron|2010–2016|Cameron|uk
+Theresa May|2016–2019|May|uk
+Boris Johnson|2019–2022||uk
+Liz Truss|2022, 49 days|Truss|uk
+Rishi Sunak|2022–2024|Sunak|uk
+Keir Starmer|2024–2026|Starmer|uk
+Andy Burnham|2026–|Burnham|uk
+George Washington|1st · 1789–1797|Washington|us
+John Adams|2nd · 1797–1801|Adams|us
+Thomas Jefferson|3rd · 1801–1809|Jefferson|us
+James Madison|4th · 1809–1817|Madison|us
+James Monroe|5th · 1817–1825|Monroe|us
+John Quincy Adams|6th · 1825–1829|JQ Adams;JQA|us
+Andrew Jackson|7th · 1829–1837|Jackson|us
+Martin Van Buren|8th · 1837–1841|Van Buren|us
+William Henry Harrison|9th · 1841, 31 days|Harrison;William Harrison|us
+John Tyler|10th · 1841–1845|Tyler|us
+James K. Polk|11th · 1845–1849|Polk;James Polk|us
+Zachary Taylor|12th · 1849–1850|Taylor|us
+Millard Fillmore|13th · 1850–1853|Fillmore|us
+Franklin Pierce|14th · 1853–1857|Pierce|us
+James Buchanan|15th · 1857–1861|Buchanan|us
+Abraham Lincoln|16th · 1861–1865|Lincoln;Abe Lincoln|us
+Andrew Johnson|17th · 1865–1869||us
+Ulysses S. Grant|18th · 1869–1877|Grant;Ulysses Grant|us
+Rutherford B. Hayes|19th · 1877–1881|Hayes;Rutherford Hayes|us
+James A. Garfield|20th · 1881, shot after 200 days|Garfield;James Garfield|us
+Chester A. Arthur|21st · 1881–1885|Chester Arthur|us
+Grover Cleveland|22nd and 24th · 1885–1889, 1893–1897|Cleveland|us
+Benjamin Harrison|23rd · 1889–1893|Ben Harrison|us
+William McKinley|25th · 1897–1901|McKinley|us
+Theodore Roosevelt|26th · 1901–1909|Teddy Roosevelt;Teddy|us
+William Howard Taft|27th · 1909–1913|Taft;William Taft|us
+Woodrow Wilson|28th · 1913–1921|Woodrow|us
+Warren G. Harding|29th · 1921–1923|Harding;Warren Harding|us
+Calvin Coolidge|30th · 1923–1929|Coolidge|us
+Herbert Hoover|31st · 1929–1933|Hoover|us
+Franklin D. Roosevelt|32nd · 1933–1945|FDR;Franklin Roosevelt|us
+Harry S. Truman|33rd · 1945–1953|Truman;Harry Truman|us
+Dwight D. Eisenhower|34th · 1953–1961|Eisenhower;Ike;Dwight Eisenhower|us
+John F. Kennedy|35th · 1961–1963|Kennedy;JFK;John Kennedy|us
+Lyndon B. Johnson|36th · 1963–1969|Lyndon Johnson;LBJ|us
+Richard Nixon|37th · 1969–1974|Nixon|us
+Gerald Ford|38th · 1974–1977|Gerald R. Ford|us
+Jimmy Carter|39th · 1977–1981|Carter|us
+Ronald Reagan|40th · 1981–1989|Reagan|us
+George H. W. Bush|41st · 1989–1993|George HW Bush;Bush Sr;Bush Senior|us
+Bill Clinton|42nd · 1993–2001|Clinton;William Clinton|us
+George W. Bush|43rd · 2001–2009|George W Bush;Bush Jr;Bush Junior|us
+Barack Obama|44th · 2009–2017|Obama|us
+Donald Trump|45th and 47th · 2017–2021, 2025–|Trump|us
+Joe Biden|46th · 2021–2025|Biden;Joseph Biden|us`,
     "pm",
   ),
-  variants: [tagged("recent", "Since Menzies", 4, true), all(8, "All 31")],
+  variants: [
+    tagged("au", "Australia", 6, true),
+    tagged("uk", "United Kingdom: since 1900", 6),
+    tagged("us", "United States: all presidents", 10),
+    all(20, "All three"),
+  ],
+  groups: [
+    { tag: "au", label: "Australia" },
+    { tag: "uk", label: "UK" },
+    { tag: "us", label: "US" },
+  ],
 });
 
 // ---------------------------------------------------------------- Units & Forces
@@ -428,66 +521,119 @@ export const airlinesDeck: Deck = {
 };
 
 // ---------------------------------------------------------------- Baby animals & group names
-// Flipped: the word is the clue ("A joey is a baby…") and the animal is the answer.
-export const babyDeck = textDeck({
+// A hangman game: the clue is the baby word or group word, the answer is the animal.
+// Lines are "answer|clue|kind (hint 1)|tags". Each clue must point to one answer only.
+function parseWords(table: string, idPrefix: string): Item[] {
+  return table
+    .trim()
+    .split("\n")
+    .map((line, i) => {
+      const [name, clue, kind, tags] = line.split("|");
+      return { id: `${idPrefix}${i}`, name, tags: tags.split(","), data: { clue, kind } };
+    });
+}
+
+const babyItems = parseWords(
+  `Kangaroo|A joey is a baby… (Australia's hopping national symbol)|a marsupial|baby
+Koala|A joey is a baby… (a sleepy, eucalyptus-munching marsupial)|a marsupial|baby
+Wombat|A joey is a baby… (a burrower whose droppings are cube-shaped)|a marsupial|baby
+Echidna|A puggle is a baby… (a spiny, egg-laying Australian)|a monotreme, a mammal that lays eggs|baby
+Platypus|A puggle is a baby… (a duck-billed, beaver-tailed egg layer)|a monotreme, a mammal that lays eggs|baby
+Cat|A kitten is a baby…|a pet that purrs|baby,starter
+Dog|A puppy is a baby…|a pet that barks|baby,starter
+Horse|A foal is a baby… (you can ride it)|a farm animal|baby,starter
+Donkey|A foal is a baby… (long ears and a hee-haw)|a farm animal|baby
+Zebra|A foal is a baby… (striped)|an African grassland animal|baby
+Cow|A calf is a baby… (it moos and gives us milk)|a farm animal|baby,starter
+Elephant|A calf is a baby… (it has a trunk)|the largest land animal|baby
+Giraffe|A calf is a baby… (the tallest animal)|an African grassland animal|baby
+Sheep|A lamb is a baby…|a farm animal|baby,starter
+Goat|A kid is a baby…|a farm animal|baby
+Pig|A piglet is a baby…|a farm animal|baby
+Chicken|A chick is a baby… (it lays eggs for breakfast)|a farm bird|baby,starter
+Penguin|A chick is a baby… (a tuxedo-wearing bird that can't fly)|a bird|baby
+Duck|A duckling is a baby…|a bird|baby,starter
+Swan|A cygnet is a baby…|a bird|baby
+Goose|A gosling is a baby…|a bird|baby
+Owl|An owlet is a baby…|a bird that hunts at night|baby
+Eagle|An eaglet is a baby…|a bird of prey|baby
+Frog|A tadpole is a baby… (it croaks and hops)|an amphibian|baby,starter
+Butterfly|A caterpillar is a baby…|an insect|baby
+Spider|A spiderling is a baby…|an arachnid, with eight legs|baby
+Deer|A fawn is a baby… (Bambi was one)|a forest animal|baby
+Bear|A cub is a baby… (it loves honey and sleeps all winter)|a large mammal|baby,starter
+Lion|A cub is a baby… (the king of the jungle)|a big cat|baby
+Tiger|A cub is a baby… (a big cat with orange and black stripes)|a big cat|baby
+Panda|A cub is a baby… (a black-and-white bamboo eater)|a bear|baby
+Fox|A kit is a baby… (red, with a bushy tail)|a wild dog|baby
+Hare|A leveret is a baby…|a fast mammal with long ears|baby
+Rabbit|A bunny is a baby… (it hops and munches carrots)|a pet with long ears|baby
+Hedgehog|A hoglet is a baby… (it's covered in spikes)|a small spiky mammal|baby
+Seal|A pup is a baby… (it has flippers and whiskers)|a sea mammal|baby
+Whale|A calf is a baby… (the biggest animal in the ocean)|a sea mammal|baby
+Camel|A calf is a baby… (it has humps)|a desert animal|baby
+Hippo|A calf is a baby… (its name means "river horse")|an African river animal|baby`,
+  "b",
+);
+const groupItems = parseWords(
+  `Lions|A pride is a group of…|a big cat|group,starter
+Wolves|A pack is a group of… (they howl at the moon)|a wild dog|group,starter
+Fish|A school is a group of… (they swim together)|an animal that lives in water|group,starter
+Geese|A gaggle is a group of…|a bird|group
+Crows|A murder is a group of…|a black bird|group
+Owls|A parliament is a group of…|a bird that hunts at night|group
+Flamingos|A flamboyance is a group of…|a pink bird|group
+Parrots|A pandemonium is a group of… (colourful, talkative birds)|a bird|group
+Starlings|A murmuration is a group of… (small birds that swirl in the sky)|a bird|group
+Penguins|A waddle is a group of… (tuxedo-wearing birds on the ice)|a bird that can't fly|group
+Sheep|A flock is a group of… (they baa)|a farm animal|group,starter
+Cows|A herd is a group of… (they moo)|a farm animal|group
+Elephants|A herd is a group of… (they have trunks)|the largest land animal|group
+Whales|A pod is a group of… (giants of the sea)|a sea mammal|group
+Dolphins|A pod is a group of… (playful, clicking sea mammals)|a sea mammal|group
+Kangaroos|A mob is a group of…|a marsupial|group
+Bees|A swarm is a group of… (they buzz and make honey)|an insect|group,starter
+Ants|A colony is a group of… (tiny, marching in a line)|an insect|group
+Butterflies|A kaleidoscope is a group of… (colourful winged insects)|an insect|group
+Monkeys|A troop is a group of… (they swing in trees)|a primate|group
+Cats|A clowder is a group of… (they purr)|a pet|group
+Frogs|An army is a group of… (they croak)|an amphibian|group
+Foxes|A skulk is a group of… (red, with bushy tails)|a wild dog|group
+Otters|A raft is a group of… (they float on their backs)|a water animal|group
+Hyenas|A cackle is a group of… (their call sounds like laughing)|an African animal|group
+Zebras|A dazzle is a group of… (striped)|an African grassland animal|group
+Giraffes|A tower is a group of…|the tallest animal|group
+Rhinos|A crash is a group of… (they have horns)|an African animal|group
+Hippos|A bloat is a group of… (they wallow in rivers)|an African river animal|group
+Jellyfish|A smack is a group of…|a sea animal with no bones|group
+Sharks|A shiver is a group of…|a fish|group
+Ferrets|A business is a group of…|a small furry pet|group
+Porcupines|A prickle is a group of…|a spiny rodent|group`,
+  "g",
+);
+
+export const babyDeck: Deck = {
   id: "babies",
   title: "Baby Animals & Group Names",
   subject: "Nature & Animals",
-  blurb: "A joey is a baby… kangaroo. A murder is a group of… crows. Name the animal.",
-  noun: "names",
-  mode: "prompt",
-  wide: true,
-  placeholder: "Which animal?",
-  ask: (i) => promptText(clueOf(i)),
-  items: parse(
-    `Kangaroo|A joey is a baby…|Wallaby;Koala;Wombat;Possum;Roo|baby,starter
-Cat|A kitten is a baby…|Kitty|baby,starter
-Dog|A puppy is a baby…||baby,starter
-Horse|A foal is a baby…|Pony;Donkey;Zebra|baby,starter
-Cow|A calf is a baby…|Whale;Elephant;Giraffe;Hippo;Camel;Buffalo|baby,starter
-Sheep|A lamb is a baby…||baby,starter
-Goat|A kid is a baby…||baby
-Pig|A piglet is a baby…||baby
-Swan|A cygnet is a baby…||baby
-Goose|A gosling is a baby…||baby
-Duck|A duckling is a baby…||baby,starter
-Owl|An owlet is a baby…||baby
-Frog|A tadpole is a baby…|Toad|baby,starter
-Deer|A fawn is a baby…||baby
-Bear|A cub is a baby…|Lion;Tiger;Fox;Wolf;Leopard|baby,starter
-Hare|A leveret is a baby…||baby
-Eagle|An eaglet is a baby…||baby
-Echidna|A puggle is a baby…|Platypus|baby
-Butterfly|A caterpillar is a baby…|Moth|baby
-Lions|A pride is a group of…|Lion|group
-Fish|A school is a group of…|Fishes|group
-Wolves|A pack is a group of…|Wolf;Dogs;Dog|group
-Geese|A gaggle is a group of…|Goose|group
-Crows|A murder is a group of…|Crow|group
-Owls|A parliament is a group of…|Owl|group
-Flamingos|A flamboyance is a group of…|Flamingo|group
-Whales|A pod is a group of…|Whale;Dolphins;Dolphin|group
-Kangaroos|A mob is a group of…|Kangaroo|group
-Bees|A swarm is a group of…|Bee;Insects|group
-Ants|A colony is a group of…|Ant;Bees;Bee|group
-Cows|A herd is a group of…|Cow;Cattle;Elephants;Deer;Horses|group
-Jellyfish|A smack is a group of…||group
-Rhinos|A crash is a group of…|Rhino;Rhinoceros;Rhinoceroses|group
-Hippos|A bloat is a group of…|Hippo;Hippopotamus;Hippopotamuses|group
-Zebras|A dazzle is a group of…|Zebra|group
-Giraffes|A tower is a group of…|Giraffe|group
-Ferrets|A business is a group of…|Ferret|group
-Sharks|A shiver is a group of…|Shark|group
-Porcupines|A prickle is a group of…|Porcupine|group`,
-    "b",
-  ),
-  variants: [tagged("starter", "Baby Basics", 2, true), tagged("baby", "All Baby Animals", 4), tagged("group", "Group Names", 4), all(7)],
-  groups: [
-    { tag: "baby", label: "Baby animals" },
-    { tag: "group", label: "Group names" },
-  ],
-  describe: (i) => `${clueOf(i).replace(/…$/, "")} ${i.name.toLowerCase()}`,
-});
+  blurb: "A joey is a baby… ? Guess the animal letter by letter. Six lives, and up to three hints.",
+  noun: "words",
+  items: [...babyItems, ...groupItems],
+  variants: [],
+  options: [],
+  createBoard: () => {
+    throw new Error("Baby Animals & Group Names uses its own screen");
+  },
+  screen: renderHangman({
+    rounds: [
+      { id: "baby", label: "Baby Animals", starter: true, filter: (i) => i.tags.includes("baby"), note: "A joey is a baby… what?" },
+      { id: "group", label: "Group Names", filter: (i) => i.tags.includes("group"), note: "A pride is a group of… what?" },
+      { id: "all", label: "Both", filter: () => true },
+    ],
+    clue: clueOf,
+    kind: (i) => i.data!.kind as string | undefined,
+  }),
+};
 
 // ---------------------------------------------------------------- Mythology
 export const mythDeck = textDeck({

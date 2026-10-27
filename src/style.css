@@ -738,3 +738,44 @@ a.btn { text-decoration: none; }
 .fly-key.pressed { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); background: var(--accent); color: var(--on-accent); }
 .fly-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
 .fly-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }
+
+/* ---------- hangman (Baby Animals & Group Names) ---------- */
+.hm-card { gap: 10px; width: 100%; }
+.hm-kind { margin: 0; min-height: 1.5em; font-weight: 700; }
+.hm-art { height: 150px; }
+.hm-balloon { height: 100%; width: auto; overflow: visible; }
+.hm-env { fill: var(--missed); stroke: var(--ink); stroke-width: 2; }
+.hm-stripe { fill: var(--accent); stroke: var(--ink); stroke-width: 2; }
+.hm-rope { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+.hm-basket { fill: var(--range); stroke: var(--ink); stroke-width: 2; }
+.hm-sack { fill: var(--land); stroke: var(--ink); stroke-width: 2; }
+.hm-bag { transition: transform 0.6s ease-in, opacity 0.6s; }
+.hm-bag.gone { transform: translateY(26px); opacity: 0; }
+.hm-lives { font: 0.85rem var(--font-pixel); color: var(--muted); }
+.hm-word { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; width: 100%; margin: 6px 0; }
+.hm-box {
+  flex: 1 1 0; min-width: 20px; max-width: 40px; height: 48px; display: grid; place-items: center;
+  border-bottom: 4px solid var(--ink); font: 700 1.6rem/1 var(--font-body); color: var(--ink);
+}
+.hm-box.missed { color: var(--missed); }
+.hm-gap { flex: 0 0 16px; }
+.hm-sep { font: 400 1.5rem var(--font-pixel); align-self: center; }
+.hm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
+.hm-keys { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.hm-key {
+  min-height: 48px; border: 2px solid var(--line); background: var(--panel); color: var(--ink);
+  border-radius: var(--r); font: 700 1.1rem var(--font-body); cursor: pointer;
+}
+.hm-key:hover:not(.right):not(.wrong) { border-color: var(--accent); }
+.hm-key.right { border-color: var(--found); background: color-mix(in srgb, var(--found) 18%, var(--panel)); cursor: default; }
+.hm-key.wrong { color: var(--muted); background: var(--line); opacity: 0.55; text-decoration: line-through; cursor: default; }
+.hm-hint { flex: 0 0 auto; }
+.hm-review li { display: grid; grid-template-columns: 1.4em minmax(0, 1fr); gap: 0 6px; }
+.hm-review li > :nth-child(n + 3) { grid-column: 2; }
+.hm-review .hm-pts { font-size: 0.85rem; }
+.hm-review .ok .hm-mark { color: var(--found); }
+.hm-review .no .hm-mark { color: var(--missed); }
+@media (min-width: 700px) {
+  .hm-keys { grid-template-columns: repeat(13, minmax(0, 1fr)); }
+  .hm-box { height: 56px; font-size: 2rem; }
+}
