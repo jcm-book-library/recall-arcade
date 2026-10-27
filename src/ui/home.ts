@@ -37,6 +37,7 @@ function card(deck: Deck) {
 const ARCADE_GAMES: { id: string; title: string; blurb: string }[] = [
   { id: "pong", title: "Planet Pong", blurb: "Where video games began. Knock the planets past the computer, mind the asteroids." },
   { id: "labyrinth", title: "The Labyrinth", blurb: "Keys, locked doors, bats, and something big that lives in the middle. Find the stairs." },
+  { id: "flyover", title: "Flyover", blurb: "Fly a Cessna, then a jet, then a jumbo across the continents. Pick the right airport code at every stop, and dodge the storms." },
 ];
 
 function arcadeCard(game: (typeof ARCADE_GAMES)[number]) {
