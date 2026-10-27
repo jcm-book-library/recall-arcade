@@ -14,8 +14,10 @@ export interface HangmanSpec {
   rounds: HangmanRound[];
   /** The clue shown above the blanks. The answer is item.name. */
   clue: (item: Item) => string;
-  /** Hint 1: what kind of thing the answer is, e.g. "a marsupial". */
-  kind: (item: Item) => string | undefined;
+  /** Hint 1: what kind of thing the answer is, e.g. "a marsupial". Optional. */
+  kind?: (item: Item) => string | undefined;
+  /** Offer the Hint button? Default true. */
+  hints?: boolean;
   /** Words per game (default 10). */
   count?: number;
 }
@@ -24,6 +26,8 @@ const LIVES = 6;
 const MAX_HINTS = 3;
 const FULL_MARKS = 3;
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+/** Several clues can share an answer (calf, herd), but a game only asks it once. */
+const uniqueWords = (items: Item[]) => new Set(items.map((i) => i.name.toLowerCase())).size;
 const isLetter = (c: string) => /^[a-z]$/i.test(c);
 
 function shuffle<T>(list: T[]): T[] {
@@ -58,6 +62,7 @@ const BALLOON = `<svg class="hm-balloon" viewBox="0 0 120 170" role="img" aria-h
 export function renderHangman(spec: HangmanSpec) {
   return (root: HTMLElement, deck: Deck) => {
     const perGame = spec.count ?? 10;
+    const hintsOn = spec.hints !== false;
     let round = spec.rounds[0];
     let words: Item[] = [];
     let index = 0;
@@ -121,7 +126,7 @@ export function renderHangman(spec: HangmanSpec) {
           h(
             "p",
             { class: "muted tl-how" },
-            `${round.note ? `${round.note} ` : ""}${Math.min(perGame, pool.length)} words from ${pool.length}. Guess the letters, with up to ${LIVES} wrong guesses. Up to ${MAX_HINTS} hints per word, but each one costs a point.`,
+            `${round.note ? `${round.note} ` : ""}${Math.min(perGame, uniqueWords(pool))} words from ${uniqueWords(pool)}. Guess the letters, with up to ${LIVES} wrong guesses.${hintsOn ? ` Up to ${MAX_HINTS} hints per word, but each one costs a point.` : " No hints."}`,
           ),
           h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
           h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
@@ -161,6 +166,7 @@ export function renderHangman(spec: HangmanSpec) {
       // Spoken version of the blanks (the visual boxes are hidden from screen readers).
       const spoken = h("p", { class: "hm-sr", "aria-live": "polite", role: "status" });
       const hintBtn = h("button", { type: "button", class: "btn ghost hm-hint", onclick: useHint });
+      hintBtn.hidden = !hintsOn;
       const next = h("button", { type: "button", class: "btn primary" }, index + 1 < total ? "Next word ▸" : "See results ▸");
       next.hidden = true;
       next.addEventListener("click", advance);
@@ -271,7 +277,7 @@ export function renderHangman(spec: HangmanSpec) {
       function useHint() {
         if (over || hints >= MAX_HINTS) return;
         hints++;
-        const kind = spec.kind(item);
+        const kind = spec.kind?.(item);
         if (hints === 1 && kind) {
           kindEl.textContent = `Hint: it's ${kind}.`;
           say(`Hint: it's ${kind}.`);
@@ -322,7 +328,7 @@ export function renderHangman(spec: HangmanSpec) {
           h(
             "div",
             {},
-            h("p", { class: "verdict" }, score === total ? "Perfect game, no hints." : `${solved} of ${log.length} words solved in ${formatTime(seconds)}.`),
+            h("p", { class: "verdict" }, score === total ? (hintsOn ? "Perfect game, no hints." : "Perfect game.") : `${solved} of ${log.length} words solved in ${formatTime(seconds)}.`),
             h("p", { class: "muted" }, !prev || score / total > prev.score / prev.total ? "That's your best for this round." : `Your best is ${prev.score}/${prev.total}.`),
           ),
           h(
