@@ -18,7 +18,7 @@ import { timezonesDeck, currenciesDeck } from "./decks/travel-maps";
 import { natoDeck, pmDeck, unitsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
 import { lifeDeck } from "./decks/choice-decks";
 import { famousForDeck, mythPairsDeck } from "./decks/pairs-decks";
-import { ausAnimalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/picture-decks";
+import { ausAnimalsDeck, petsDeck, landmarksDeck, dinosaursDeck, spotterDeck } from "./decks/picture-decks";
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
@@ -34,7 +34,7 @@ const DECKS: Deck[] = [
   // History
   historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
   // Travel & Transport
-  airportsDeck, airlinesDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
+  airportsDeck, airlinesDeck, spotterDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
   // Nature & Animals
   ausAnimalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music

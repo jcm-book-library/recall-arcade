@@ -61,7 +61,7 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
         { class: "subject-head" },
         // The pixel font's "&" looks like a "$", so spell it out in headings.
         h("h2", {}, s.name.replace(" & ", " and ")),
-        h("span", { class: "subject-count" }, `${built.length} of 6`),
+        h("span", { class: "subject-count" }, `${built.length} of ${Math.max(6, built.length)}`),
       ),
       h(
         "div",
