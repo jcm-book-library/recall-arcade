@@ -8,7 +8,13 @@ Written down so they don't get lost.
    Teaches the game loop, movement, bouncing and collisions. Prototype on the home page under
    "The Arcade (preview)".
 2. **The Labyrinth:** a maze level. Teaches grid movement, walls and simple enemy chasing.
-3. Then the pixel character (owner draws it in Piskel/Aseprite) and the Overworld that links
+3. **Flyover:** a side-scrolling flight in three legs (Cessna, little jet, jumbo). Built, under
+   "The Arcade (preview)". Fly through the gate with the right airport code, and go round storms,
+   birds and mountains. Teaches smooth movement (speed, momentum and drag instead of grid steps),
+   a scrolling world with parallax, hitboxes smaller than the picture, obstacles generated from an
+   editable list (`src/arcade/flyover-data.ts`) and checkpoints. A small script,
+   `node scripts/check-flyover.mjs`, checks the lists stay fair.
+4. Then the pixel character (owner draws it in Piskel/Aseprite) and the Overworld that links
    the levels, with movement code explained step by step.
 
 ## The big picture

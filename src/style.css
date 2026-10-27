@@ -707,6 +707,38 @@ a.btn { text-decoration: none; }
 .lab-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
 .lab-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }
 
+/* ---------- arcade: Flyover ---------- */
+.flyover { width: 100%; max-width: 964px; margin-inline: auto; min-width: 0; }
+.fly-hud {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px;
+  font: 0.8rem/1.4 var(--font-pixel); text-transform: uppercase;
+}
+.fly-comfort { color: #d9a41e; letter-spacing: 1px; }
+.fly-screen {
+  width: 100%; border: 2px solid var(--line); border-radius: var(--r); overflow: hidden;
+  background: var(--space); box-shadow: 4px 4px 0 var(--line); line-height: 0;
+}
+/* Small 320x180 picture, scaled up with hard square pixels. */
+.fly-canvas {
+  display: block; width: 100%; height: auto; aspect-ratio: 16 / 9;
+  image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: pixelated;
+  touch-action: none; /* a finger held on the game steers the plane, it does not scroll the page */
+}
+/* Two big buttons for phones and other touch screens (or narrow windows). */
+.fly-pad {
+  display: none; grid-template-columns: 1fr 1fr; gap: 10px;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+@media (pointer: coarse), (max-width: 700px) { .fly-pad { display: grid; } }
+.fly-key {
+  min-width: 0; height: 76px; padding: 0; font-size: 2rem; line-height: 1; cursor: pointer;
+  border: 2px solid var(--ink); border-radius: var(--r); background: var(--panel); color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); touch-action: none; -webkit-tap-highlight-color: transparent;
+}
+.fly-key.pressed { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); background: var(--accent); color: var(--on-accent); }
+.fly-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.fly-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }
+
 /* ---------- hangman (Baby Animals & Group Names) ---------- */
 .hm-card { gap: 10px; width: 100%; }
 .hm-kind { margin: 0; min-height: 1.5em; font-weight: 700; }
