@@ -182,34 +182,34 @@ Tony Abbott|28th · 2013–2015|Abbott|au
 Malcolm Turnbull|29th · 2015–2018|Turnbull|au
 Scott Morrison|30th · 2018–2022|Morrison|au
 Anthony Albanese|31st · 2022–|Albanese|au
-Lord Salisbury|27th · 1895–1902|Salisbury|uk
-Arthur Balfour|28th · 1902–1905|Balfour|uk
-Henry Campbell-Bannerman|29th · 1905–1908|Campbell-Bannerman;CB|uk
-H. H. Asquith|30th · 1908–1916|Asquith;Herbert Asquith|uk
-David Lloyd George|31st · 1916–1922|Lloyd George|uk
-Bonar Law|32nd · 1922–1923|Andrew Bonar Law|uk
-Stanley Baldwin|33rd, 35th and 37th · 1923–1924, 1924–1929, 1935–1937|Baldwin|uk
-Ramsay MacDonald|34th and 36th · 1924, 1929–1935|MacDonald|uk
-Neville Chamberlain|38th · 1937–1940|Chamberlain|uk
-Winston Churchill|39th and 41st · 1940–1945, 1951–1955|Churchill|uk
-Clement Attlee|40th · 1945–1951|Attlee|uk
-Anthony Eden|42nd · 1955–1957|Eden|uk
-Harold Macmillan|43rd · 1957–1963|Macmillan|uk
-Alec Douglas-Home|44th · 1963–1964|Douglas-Home;Lord Home|uk
-Harold Wilson|45th and 47th · 1964–1970, 1974–1976||uk
-Edward Heath|46th · 1970–1974|Heath;Ted Heath|uk
-James Callaghan|48th · 1976–1979|Callaghan;Jim Callaghan|uk
-Margaret Thatcher|49th · 1979–1990|Thatcher|uk
-John Major|50th · 1990–1997|Major|uk
-Tony Blair|51st · 1997–2007|Blair|uk
-Gordon Brown|52nd · 2007–2010|Brown|uk
-David Cameron|53rd · 2010–2016|Cameron|uk
-Theresa May|54th · 2016–2019|May|uk
-Boris Johnson|55th · 2019–2022||uk
-Liz Truss|56th · 2022, 49 days|Truss|uk
-Rishi Sunak|57th · 2022–2024|Sunak|uk
-Keir Starmer|58th · 2024–2026|Starmer|uk
-Andy Burnham|59th · 2026–|Burnham|uk
+Lord Salisbury|1895–1902|Salisbury|uk
+Arthur Balfour|1902–1905|Balfour|uk
+Henry Campbell-Bannerman|1905–1908|Campbell-Bannerman;CB|uk
+H. H. Asquith|1908–1916|Asquith;Herbert Asquith|uk
+David Lloyd George|1916–1922|Lloyd George|uk
+Bonar Law|1922–1923|Andrew Bonar Law|uk
+Stanley Baldwin|1923–1924, 1924–1929, 1935–1937|Baldwin|uk
+Ramsay MacDonald|1924, 1929–1935|MacDonald|uk
+Neville Chamberlain|1937–1940|Chamberlain|uk
+Winston Churchill|1940–1945, 1951–1955|Churchill|uk
+Clement Attlee|1945–1951|Attlee|uk
+Anthony Eden|1955–1957|Eden|uk
+Harold Macmillan|1957–1963|Macmillan|uk
+Alec Douglas-Home|1963–1964|Douglas-Home;Lord Home|uk
+Harold Wilson|1964–1970, 1974–1976||uk
+Edward Heath|1970–1974|Heath;Ted Heath|uk
+James Callaghan|1976–1979|Callaghan;Jim Callaghan|uk
+Margaret Thatcher|1979–1990|Thatcher|uk
+John Major|1990–1997|Major|uk
+Tony Blair|1997–2007|Blair|uk
+Gordon Brown|2007–2010|Brown|uk
+David Cameron|2010–2016|Cameron|uk
+Theresa May|2016–2019|May|uk
+Boris Johnson|2019–2022||uk
+Liz Truss|2022, 49 days|Truss|uk
+Rishi Sunak|2022–2024|Sunak|uk
+Keir Starmer|2024–2026|Starmer|uk
+Andy Burnham|2026–|Burnham|uk
 George Washington|1st · 1789–1797|Washington|us
 John Adams|2nd · 1797–1801|Adams|us
 Thomas Jefferson|3rd · 1801–1809|Jefferson|us
