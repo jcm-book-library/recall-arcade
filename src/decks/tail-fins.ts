@@ -16,6 +16,7 @@ alitalia.jpg|Alitalia|ITA Airways;ITA|Italy's flag carrier, now ITA Airways|
 all-nippon-pokemon.jpg|All Nippon Airways|ANA;All Nippon|Special livery: Pikachu|special
 Bangladesh-Airlines.jpg|Biman Bangladesh Airlines|Biman;Bangladesh Airlines;Biman Bangladesh||
 bhutan.jpg|Drukair|Druk Air;Royal Bhutan Airlines;Bhutan Airlines;Bhutan|The tail shows the Thunder Dragon|
+brazil.jpg|Azul|Azul Brazilian Airlines;Azul Linhas Aereas;Azul Airlines|A Brazilian airline||
 british-airways.jpg|British Airways|BA||starter
 cathay-pacific.jpg|Cathay Pacific|Cathay||starter
 china-eastern.jpg|China Eastern|China Eastern Airlines||
