@@ -9,7 +9,7 @@ Thirty-four quizzes across six subjects, plus a memory game inside Mythology. â˜
 - **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours, Mountains
 - **Science:** Infinity & Beyond, Periodic Table, Cells & Life, The Human Body, Units & Forces
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology (with Greek & Roman Pairs, a memory game), Famous For
-- **Travel & Transport:** Airport Codes, Airline Codes, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
+- **Travel & Transport:** Airport Codes, Airline Codes, Spot the Airline, Tail Fins, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
 - **Nature & Animals:** Australian Animals, Classifying Life, Pet Breeds, Baby Animals & Group Names, Dinosaurs
 - **Music:** The Piano Keyboard, Treble Clef, Bass Clef, Rhythm & Note Lengths, Keys & Symbols, Ear Training
 
