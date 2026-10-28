@@ -24,6 +24,8 @@ export interface Variant {
   sample?: number;
   /** Marks the small starter round for the Easy track. */
   starter?: boolean;
+  /** A small heading shown above this round's button, and the ones after it, on the setup screen. */
+  heading?: string;
 }
 
 export interface DeckOption {

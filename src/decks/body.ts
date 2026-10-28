@@ -1,6 +1,7 @@
 import type { Deck, Item } from "../engine/types";
 import { createDiagramBoard, svgEl, type DiagramLabel } from "../boards/diagramBoard";
 import { createSkeletonBoard } from "../boards/skeletonBoard";
+import { pictureBoard } from "../boards/pictureBoard";
 
 // id | name | other accepted answers | in the starter round?
 const BONES: [string, string, string[], boolean][] = [
@@ -86,10 +87,143 @@ const BONE_GROUPS: Record<string, string[]> = {
   manubrium: ["manubrium"],
 };
 
+// ---------- rounds by body system, each with its own real diagram ----------
+// A system's parts are groups in its picture (src/assets/organs/<system>.svg, made by
+// scripts/build-organs.mjs). Each group has the same id as the quiz item it lights up.
+// Parts that are already organs above (stomach, lungs, ...) are reused: they only gain the system's tag.
+
+// id | name | other accepted answers | system. New parts only.
+const SYSTEM_PARTS: [string, string, string[], string][] = [
+  ["duodenum", "Duodenum", [], "digestive"],
+  ["parotid", "Parotid gland", ["Parotid", "Parotid glands"], "digestive"],
+  ["sublingual", "Sublingual gland", ["Sublingual", "Sublingual glands"], "digestive"],
+  ["submandibular", "Submandibular gland", ["Submandibular", "Submandibular glands"], "digestive"],
+  ["nasal", "Nasal cavity", ["Nose", "Nasal passage", "Nasal passages", "Nasal"], "breathing"],
+  ["larynx", "Larynx", ["Voice box", "Voicebox"], "breathing"],
+  ["bronchi", "Bronchi", ["Bronchus", "Bronchial tubes", "Main bronchi", "Primary bronchi"], "breathing"],
+  ["diaphragm", "Diaphragm", [], "breathing"],
+  ["right-atrium", "Right atrium", ["Right auricle"], "heart"],
+  ["left-atrium", "Left atrium", ["Left auricle"], "heart"],
+  ["right-ventricle", "Right ventricle", [], "heart"],
+  ["left-ventricle", "Left ventricle", [], "heart"],
+  ["aorta", "Aorta", [], "heart"],
+  ["superior-vena-cava", "Superior vena cava", ["Superior vena cavae", "Upper vena cava", "SVC"], "heart"],
+  ["inferior-vena-cava", "Inferior vena cava", ["Inferior vena cavae", "Lower vena cava", "IVC"], "heart"],
+  ["pulmonary-artery", "Pulmonary artery", ["Pulmonary arteries"], "heart"],
+  ["pulmonary-veins", "Pulmonary veins", ["Pulmonary vein"], "heart"],
+  ["tricuspid-valve", "Tricuspid valve", ["Tricuspid", "Right atrioventricular valve"], "heart"],
+  ["mitral-valve", "Mitral valve", ["Mitral", "Bicuspid valve", "Left atrioventricular valve"], "heart"],
+  ["cerebellum", "Cerebellum", [], "nervous"],
+  ["spinal-cord", "Spinal cord", [], "nervous"],
+  ["nerves", "Nerves", ["Nerve", "Peripheral nerves", "Peripheral nerve", "Nervous system"], "nervous"],
+  ["ureters", "Ureters", ["Ureter"], "urinary"],
+  ["urethra", "Urethra", [], "urinary"],
+  ["adrenals", "Adrenal glands", ["Adrenal gland", "Adrenals", "Suprarenal glands", "Suprarenal gland"], "urinary"],
+  ["ovaries", "Ovaries", ["Ovary"], "female"],
+  ["tubes", "Fallopian tubes", ["Fallopian tube", "Uterine tubes", "Uterine tube", "Oviducts", "Oviduct"], "female"],
+  ["uterus", "Uterus", ["Womb"], "female"],
+  ["cervix", "Cervix", [], "female"],
+  ["vagina", "Vagina", [], "female"],
+];
+
+// The organs above that also appear in a system's picture, by system.
+const REUSED: Record<string, string[]> = {
+  digestive: ["oesophagus", "stomach", "liver", "gallbladder", "pancreas", "smallint", "largeint"],
+  breathing: ["trachea", "lungs"],
+  nervous: ["brain"],
+  urinary: ["kidneys", "bladder"],
+};
+
+const FINGERTIP = 12; // pixels a click can miss a thin part by (nerves, valves)
+
+// One entry for each round by body system. The picture is only loaded when the round is played.
+const SYSTEMS: { id: string; label: string; minutes: number; starter?: boolean; board: ReturnType<typeof pictureBoard> }[] = [
+  {
+    id: "digestive",
+    label: "Digestive System",
+    minutes: 4,
+    board: pictureBoard({
+      load: () => import("../assets/organs/digestive.svg?raw"),
+      label: "The digestive system",
+      credit: "Digestive system diagram: Mariana Ruiz Villarreal (LadyofHats) and Jmarchn, public domain, via Wikimedia Commons",
+      sides: { parotid: "R", sublingual: "L", submandibular: "L" },
+    }),
+  },
+  {
+    id: "breathing",
+    label: "Breathing",
+    minutes: 3,
+    starter: true,
+    board: pictureBoard({
+      load: () => import("../assets/organs/respiratory.svg?raw"),
+      label: "The respiratory system",
+      credit: "Respiratory system diagram: Mariana Ruiz Villarreal (LadyofHats) and Jmarchn, public domain, via Wikimedia Commons",
+    }),
+  },
+  {
+    id: "heart",
+    label: "Heart & Blood",
+    minutes: 4,
+    board: pictureBoard({
+      load: () => import("../assets/organs/heart.svg?raw"),
+      label: "The human heart, front view",
+      reach: FINGERTIP,
+      credit: "Heart diagram: Wapcaplet, CC BY-SA 3.0, via Wikimedia Commons; adapted: labels removed and parts separated",
+      // The heart is drawn as you would see it facing someone, so the right side is on the left of the page.
+      sides: {
+        "right-atrium": "L", "right-ventricle": "L", "superior-vena-cava": "L", "inferior-vena-cava": "L", "tricuspid-valve": "L",
+        "left-atrium": "R", "left-ventricle": "R", "mitral-valve": "R", aorta: "R", "pulmonary-artery": "R",
+      },
+    }),
+  },
+  {
+    id: "nervous",
+    label: "Brain & Nerves",
+    minutes: 3,
+    board: pictureBoard({
+      load: () => import("../assets/organs/nervous.svg?raw"),
+      label: "The nervous system",
+      reach: FINGERTIP,
+      credit: "Nervous system diagram: \"TE-Nervous system diagram.svg\", CC BY 3.0, via Wikimedia Commons (author as named on its Commons page); adapted: labels removed and parts separated",
+    }),
+  },
+  {
+    id: "urinary",
+    label: "Kidneys & Bladder",
+    minutes: 3,
+    board: pictureBoard({
+      load: () => import("../assets/organs/urinary.svg?raw"),
+      label: "The urinary system",
+      credit: "Urinary system diagram: Jordi March i Nogué, CC BY-SA 3.0, via Wikimedia Commons; adapted: labels removed and parts separated",
+    }),
+  },
+  {
+    id: "female",
+    label: "Reproductive System, Female",
+    minutes: 3,
+    board: pictureBoard({
+      load: () => import("../assets/organs/female.svg?raw"),
+      label: "The female reproductive system",
+      credit: "Female reproductive system diagram: CDC and Mysid, public domain, via Wikimedia Commons",
+    }),
+  },
+];
+const systemTag = (id: string) => `sys-${id}`;
+
 const items: Item[] = [
   ...BONES.map(([id, name, aliases, starter]) => ({ id, name, aliases, tags: ["bones", ...(starter ? ["starter"] : [])] })),
   ...BONE_DETAIL.map(([id, name, aliases]) => ({ id, name, aliases, tags: ["bone-detail"] })),
-  ...ORGANS.map(([id, name, aliases, starter]) => ({ id, name, aliases, tags: ["organs", ...(starter ? ["starter"] : [])] })),
+  ...ORGANS.map(([id, name, aliases, starter]) => ({
+    id,
+    name,
+    aliases,
+    tags: [
+      "organs",
+      ...(starter ? ["starter"] : []),
+      ...Object.keys(REUSED).filter((sys) => REUSED[sys].includes(id)).map(systemTag),
+    ],
+  })),
+  ...SYSTEM_PARTS.map(([id, name, aliases, system]) => ({ id, name, aliases, tags: [systemTag(system)] })),
 ];
 
 // Organ labels down the left and right of the body outline.
@@ -171,6 +305,14 @@ export const bodyDeck: Deck = {
     { id: "spine", label: "Spine & Chest Detail", minutes: 3, filter: (i) => i.tags.includes("bone-detail") },
     { id: "bigorgans", label: "Major Organs", minutes: 3, starter: true, filter: (i) => i.tags.includes("organs") && i.tags.includes("starter") },
     { id: "organs", label: "All Organs", minutes: 5, filter: (i) => i.tags.includes("organs") },
+    ...SYSTEMS.map((sys, n) => ({
+      id: systemTag(sys.id),
+      label: sys.label,
+      minutes: sys.minutes,
+      starter: sys.starter,
+      heading: n === 0 ? "By body system" : undefined,
+      filter: (i: Item) => i.tags.includes(systemTag(sys.id)),
+    })),
   ],
   options: [{ id: "click", label: "Click the part instead", hint: "See the name, click it on the body", default: false }],
   renderPrompt: (item, how) => {
@@ -180,11 +322,14 @@ export const bodyDeck: Deck = {
       p.innerHTML = "Click the <strong></strong>";
       p.querySelector("strong")!.textContent = item.name.toLowerCase();
     } else {
-      p.textContent = item.tags.includes("organs") ? "Which organ is lit up?" : "Which bone is lit up?";
+      const organ = item.tags.includes("organs") || item.tags.some((t) => t.startsWith("sys-"));
+      p.textContent = item.tags.includes("organs") ? "Which organ is lit up?" : organ ? "Which part is lit up?" : "Which bone is lit up?";
     }
     return p;
   },
   createBoard: ({ container, items: playing, variant }) => {
+    const system = SYSTEMS.find((sys) => systemTag(sys.id) === variant.id);
+    if (system) return system.board(container, playing.map((i) => ({ id: i.id, name: i.name, groups: [i.id] })));
     if (variant.id.includes("organs")) {
       return createDiagramBoard(
         container,

@@ -51,4 +51,12 @@ Photos (animals, pets, landmarks, dinosaurs, Greek and Roman gods): each Wikiped
 
 Skeleton drawing (The Human Body): "Human skeleton front en.svg" by LadyofHats (Mariana Ruiz Villarreal), public domain, via Wikimedia Commons, cleaned up by `scripts/build-skeleton.mjs`.
 
+Organ diagrams (The Human Body, the rounds "By body system"), all from Wikimedia Commons, cleaned up and cut into named parts by `scripts/build-organs.mjs` (the downloaded originals are not kept in the repo). Labels, label lines and backgrounds are removed. The CC BY and CC BY-SA diagrams are adapted this way, and carry that note in the credit line shown under each one:
+- Digestive system: "Digestive system diagram en.svg" by Mariana Ruiz Villarreal (LadyofHats) and Jmarchn, public domain.
+- Respiratory system: "Respiratory system complete en.svg" by LadyofHats and Jmarchn, public domain.
+- Heart: "Diagram of the human heart (cropped).svg" by Wapcaplet, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- Urinary system: "Urinary system.svg" by Jordi March i Nogué, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- Nervous system: "TE-Nervous system diagram.svg", [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The author's name is on the file's Commons page; it could not be looked up from the build machine, so add it here.
+- Female reproductive system: "Scheme female reproductive system-en.svg" by the CDC and Mysid, public domain.
+
 Plans and ideas live in [docs/](docs/).
