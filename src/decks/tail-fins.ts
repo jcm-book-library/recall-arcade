@@ -17,6 +17,24 @@ all-nippon-pokemon.jpg|All Nippon Airways|ANA;All Nippon|Special livery: Pikachu
 Bangladesh-Airlines.jpg|Biman Bangladesh Airlines|Biman;Bangladesh Airlines;Biman Bangladesh||
 bhutan.jpg|Drukair|Druk Air;Royal Bhutan Airlines;Bhutan Airlines;Bhutan|The tail shows the Thunder Dragon|
 brazil.jpg|Azul|Azul Brazilian Airlines;Azul Linhas Aereas;Azul Airlines|A Brazilian airline||
+aeroflot.jpg|Aeroflot|Aeroflot Russian Airlines||
+aeromexico.jpg|Aeroméxico|Aeromexico;Aero Mexico|The Eagle Knight, an Aztec warrior|
+air-astana.jpg|Air Astana|Astana||
+air-india.jpg|Air India|||
+american-airlines.jpg|American Airlines|American||starter
+emirates.jpg|Emirates|Emirates Airline|The UAE flag on the tail|starter
+ethiopian-airlines.jpg|Ethiopian Airlines|Ethiopian|Green, yellow and red, like Ethiopia's flag|
+etihad.jpg|Etihad Airways|Etihad||
+fiji-airways.jpg|Fiji Airways|Air Pacific|Patterns from traditional masi cloth|
+finnair.jpg|Finnair|||
+garuda.jpg|Garuda Indonesia|Garuda||
+kenya-airways.jpg|Kenya Airways|KQ|The Pride of Africa|
+latam.jpg|LATAM|LATAM Airlines;LAN;LAN Airlines|Formed when LAN and TAM merged|
+malaysia-airlines.jpg|Malaysia Airlines|Malaysia;MAS|The wau, a traditional Malaysian kite|
+philippine-airlines.jpg|Philippine Airlines|PAL||
+qatar-airways.jpg|Qatar Airways|Qatar|The oryx|starter
+ryanair.jpg|Ryanair|Ryan Air|The golden harp|starter
+sri-lankan-airlines.jpg|SriLankan Airlines|Sri Lankan Airlines;Sri Lankan;SriLankan|The peacock|
 british-airways.jpg|British Airways|BA||starter
 cathay-pacific.jpg|Cathay Pacific|Cathay||starter
 china-eastern.jpg|China Eastern|China Eastern Airlines||
