@@ -20,6 +20,7 @@ import { lifeDeck } from "./decks/choice-decks";
 import { famousForDeck, mythPairsDeck } from "./decks/pairs-decks";
 import { ausAnimalsDeck, petsDeck, landmarksDeck, dinosaursDeck, spotterDeck } from "./decks/picture-decks";
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
+import { tailFinsDeck } from "./decks/tail-fins";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 import { renderPong } from "./arcade/pong";
@@ -35,7 +36,7 @@ const DECKS: Deck[] = [
   // History
   historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
   // Travel & Transport
-  airportsDeck, airlinesDeck, spotterDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
+  airportsDeck, airlinesDeck, spotterDeck, tailFinsDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
   // Nature & Animals
   ausAnimalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
