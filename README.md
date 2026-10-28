@@ -9,7 +9,7 @@ Thirty-four quizzes across six subjects, plus a memory game inside Mythology. ‚ò
 - **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours, Mountains
 - **Science:** Infinity & Beyond, Periodic Table, Cells & Life, The Human Body, Units & Forces
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology (with Greek & Roman Pairs, a memory game), Famous For
-- **Travel & Transport:** Airport Codes, Airline Codes, Spot the Airline, Tail Fins, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
+- **Travel & Transport:** Airport Codes, Airline Codes, Tail Fins, NATO Alphabet, Currencies, Landmarks & Wonders
 - **Nature & Animals:** Australian Animals, Classifying Life, Pet Breeds, Baby Animals & Group Names, Dinosaurs
 - **Music:** The Piano Keyboard, Treble Clef, Bass Clef, Rhythm & Note Lengths, Keys & Symbols, Ear Training
 
@@ -17,7 +17,7 @@ Thirty-four quizzes across six subjects, plus a memory game inside Mythology. ‚ò
 | Style | Where |
 |---|---|
 | Type in any order | Countries, Periodic Table, Infinity & Beyond, NATO, Prime Ministers, Neighbours, Empires Through Time |
-| One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Time Zones, Units, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
+| One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Units, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
 | One at a time, clicked | Seas Lakes & Rivers, Mountains, Pet Breeds (and Cells / Human Body with "click instead") |
 | Labelled diagram | Cells & Life, The Human Body |
 | Timeline | Big Moments, Who Lived When? |
@@ -48,5 +48,7 @@ Seas, lakes and rivers: Natural Earth (public domain), cut down by `scripts/buil
 Mountain ranges: Natural Earth geography regions (public domain), cut down by `scripts/build-ranges.mjs`. Peak heights and positions are typed in `src/decks/mountains-data.ts`.
 Historical borders (323 BC to 1914): [historical-basemaps](https://github.com/aourednik/historical-basemaps) by Andr√© Ourednik (GPL-3.0), loaded from GitHub at play time, not copied here.
 Photos (animals, pets, landmarks, dinosaurs, Greek and Roman gods): each Wikipedia article's main image, freely licensed only, loaded at play time and shown with its photographer and licence.
+
+Skeleton drawing (The Human Body): "Human skeleton front en.svg" by LadyofHats (Mariana Ruiz Villarreal), public domain, via Wikimedia Commons, cleaned up by `scripts/build-skeleton.mjs`.
 
 Plans and ideas live in [docs/](docs/).

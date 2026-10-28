@@ -14,11 +14,11 @@ import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
 import { empiresDeck } from "./decks/history-maps";
 import { airportsDeck } from "./decks/airports";
-import { timezonesDeck, currenciesDeck } from "./decks/travel-maps";
+import { currenciesDeck } from "./decks/travel-maps";
 import { natoDeck, pmDeck, unitsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
 import { lifeDeck } from "./decks/choice-decks";
 import { famousForDeck, mythPairsDeck } from "./decks/pairs-decks";
-import { animalsDeck, petsDeck, landmarksDeck, dinosaursDeck, spotterDeck } from "./decks/picture-decks";
+import { animalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/picture-decks";
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
 import { tailFinsDeck } from "./decks/tail-fins";
 import { renderHome } from "./ui/home";
@@ -36,7 +36,7 @@ const DECKS: Deck[] = [
   // History
   historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
   // Travel & Transport
-  airportsDeck, airlinesDeck, spotterDeck, tailFinsDeck, natoDeck, currenciesDeck, timezonesDeck, landmarksDeck,
+  airportsDeck, airlinesDeck, tailFinsDeck, natoDeck, currenciesDeck, landmarksDeck,
   // Nature & Animals
   animalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
