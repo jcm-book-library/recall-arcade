@@ -528,87 +528,87 @@ function parseWords(table: string, idPrefix: string): Item[] {
     .trim()
     .split("\n")
     .map((line, i) => {
-      const [name, clue, kind, tags] = line.split("|");
-      return { id: `${idPrefix}${i}`, name, tags: tags.split(","), data: { clue, kind } };
+      const [name, clue, tags] = line.split("|");
+      return { id: `${idPrefix}${i}`, name, tags: tags.split(","), data: { clue } };
     });
 }
 
 const babyItems = parseWords(
-  `Kangaroo|A joey is a baby… (Australia's hopping national symbol)|a marsupial|baby
-Koala|A joey is a baby… (a sleepy, eucalyptus-munching marsupial)|a marsupial|baby
-Wombat|A joey is a baby… (a burrower whose droppings are cube-shaped)|a marsupial|baby
-Echidna|A puggle is a baby… (a spiny, egg-laying Australian)|a monotreme, a mammal that lays eggs|baby
-Platypus|A puggle is a baby… (a duck-billed, beaver-tailed egg layer)|a monotreme, a mammal that lays eggs|baby
-Cat|A kitten is a baby…|a pet that purrs|baby,starter
-Dog|A puppy is a baby…|a pet that barks|baby,starter
-Horse|A foal is a baby… (you can ride it)|a farm animal|baby,starter
-Donkey|A foal is a baby… (long ears and a hee-haw)|a farm animal|baby
-Zebra|A foal is a baby… (striped)|an African grassland animal|baby
-Cow|A calf is a baby… (it moos and gives us milk)|a farm animal|baby,starter
-Elephant|A calf is a baby… (it has a trunk)|the largest land animal|baby
-Giraffe|A calf is a baby… (the tallest animal)|an African grassland animal|baby
-Sheep|A lamb is a baby…|a farm animal|baby,starter
-Goat|A kid is a baby…|a farm animal|baby
-Pig|A piglet is a baby…|a farm animal|baby
-Chicken|A chick is a baby… (it lays eggs for breakfast)|a farm bird|baby,starter
-Penguin|A chick is a baby… (a tuxedo-wearing bird that can't fly)|a bird|baby
-Duck|A duckling is a baby…|a bird|baby,starter
-Swan|A cygnet is a baby…|a bird|baby
-Goose|A gosling is a baby…|a bird|baby
-Owl|An owlet is a baby…|a bird that hunts at night|baby
-Eagle|An eaglet is a baby…|a bird of prey|baby
-Frog|A tadpole is a baby… (it croaks and hops)|an amphibian|baby,starter
-Butterfly|A caterpillar is a baby…|an insect|baby
-Spider|A spiderling is a baby…|an arachnid, with eight legs|baby
-Deer|A fawn is a baby… (Bambi was one)|a forest animal|baby
-Bear|A cub is a baby… (it loves honey and sleeps all winter)|a large mammal|baby,starter
-Lion|A cub is a baby… (the king of the jungle)|a big cat|baby
-Tiger|A cub is a baby… (a big cat with orange and black stripes)|a big cat|baby
-Panda|A cub is a baby… (a black-and-white bamboo eater)|a bear|baby
-Fox|A kit is a baby… (red, with a bushy tail)|a wild dog|baby
-Hare|A leveret is a baby…|a fast mammal with long ears|baby
-Rabbit|A bunny is a baby… (it hops and munches carrots)|a pet with long ears|baby
-Hedgehog|A hoglet is a baby… (it's covered in spikes)|a small spiky mammal|baby
-Seal|A pup is a baby… (it has flippers and whiskers)|a sea mammal|baby
-Whale|A calf is a baby… (the biggest animal in the ocean)|a sea mammal|baby
-Camel|A calf is a baby… (it has humps)|a desert animal|baby
-Hippo|A calf is a baby… (its name means "river horse")|an African river animal|baby`,
+  `Joey|A baby kangaroo is called…|baby
+Joey|A baby koala is called…|baby
+Joey|A baby wombat is called…|baby
+Puggle|A baby echidna is called…|baby
+Puggle|A baby platypus is called…|baby
+Kitten|A baby cat is called…|baby
+Puppy|A baby dog is called…|baby
+Foal|A baby horse is called…|baby
+Foal|A baby donkey is called…|baby
+Foal|A baby zebra is called…|baby
+Calf|A baby cow is called…|baby
+Calf|A baby elephant is called…|baby
+Calf|A baby giraffe is called…|baby
+Lamb|A baby sheep is called…|baby
+Kid|A baby goat is called…|baby
+Piglet|A baby pig is called…|baby
+Chick|A baby chicken is called…|baby
+Chick|A baby penguin is called…|baby
+Duckling|A baby duck is called…|baby
+Cygnet|A baby swan is called…|baby
+Gosling|A baby goose is called…|baby
+Owlet|A baby owl is called…|baby
+Eaglet|A baby eagle is called…|baby
+Tadpole|A baby frog is called…|baby
+Caterpillar|A baby butterfly is called…|baby
+Spiderling|A baby spider is called…|baby
+Fawn|A baby deer is called…|baby
+Cub|A baby bear is called…|baby
+Cub|A baby lion is called…|baby
+Cub|A baby tiger is called…|baby
+Cub|A baby panda is called…|baby
+Kit|A baby fox is called…|baby
+Leveret|A baby hare is called…|baby
+Bunny|A baby rabbit is called…|baby
+Hoglet|A baby hedgehog is called…|baby
+Pup|A baby seal is called…|baby
+Calf|A baby whale is called…|baby
+Calf|A baby camel is called…|baby
+Calf|A baby hippo is called…|baby`,
   "b",
 );
 const groupItems = parseWords(
-  `Lions|A pride is a group of…|a big cat|group,starter
-Wolves|A pack is a group of… (they howl at the moon)|a wild dog|group,starter
-Fish|A school is a group of… (they swim together)|an animal that lives in water|group,starter
-Geese|A gaggle is a group of…|a bird|group
-Crows|A murder is a group of…|a black bird|group
-Owls|A parliament is a group of…|a bird that hunts at night|group
-Flamingos|A flamboyance is a group of…|a pink bird|group
-Parrots|A pandemonium is a group of… (colourful, talkative birds)|a bird|group
-Starlings|A murmuration is a group of… (small birds that swirl in the sky)|a bird|group
-Penguins|A waddle is a group of… (tuxedo-wearing birds on the ice)|a bird that can't fly|group
-Sheep|A flock is a group of… (they baa)|a farm animal|group,starter
-Cows|A herd is a group of… (they moo)|a farm animal|group
-Elephants|A herd is a group of… (they have trunks)|the largest land animal|group
-Whales|A pod is a group of… (giants of the sea)|a sea mammal|group
-Dolphins|A pod is a group of… (playful, clicking sea mammals)|a sea mammal|group
-Kangaroos|A mob is a group of…|a marsupial|group
-Bees|A swarm is a group of… (they buzz and make honey)|an insect|group,starter
-Ants|A colony is a group of… (tiny, marching in a line)|an insect|group
-Butterflies|A kaleidoscope is a group of… (colourful winged insects)|an insect|group
-Monkeys|A troop is a group of… (they swing in trees)|a primate|group
-Cats|A clowder is a group of… (they purr)|a pet|group
-Frogs|An army is a group of… (they croak)|an amphibian|group
-Foxes|A skulk is a group of… (red, with bushy tails)|a wild dog|group
-Otters|A raft is a group of… (they float on their backs)|a water animal|group
-Hyenas|A cackle is a group of… (their call sounds like laughing)|an African animal|group
-Zebras|A dazzle is a group of… (striped)|an African grassland animal|group
-Giraffes|A tower is a group of…|the tallest animal|group
-Rhinos|A crash is a group of… (they have horns)|an African animal|group
-Hippos|A bloat is a group of… (they wallow in rivers)|an African river animal|group
-Jellyfish|A smack is a group of…|a sea animal with no bones|group
-Sharks|A shiver is a group of…|a fish|group
-Ferrets|A business is a group of…|a small furry pet|group
-Porcupines|A prickle is a group of…|a spiny rodent|group`,
+  `Pride|A group of lions is called…|group
+Pack|A group of wolves is called…|group
+School|A group of fish is called…|group
+Gaggle|A group of geese is called…|group
+Murder|A group of crows is called…|group
+Parliament|A group of owls is called…|group
+Flamboyance|A group of flamingos is called…|group
+Pandemonium|A group of parrots is called…|group
+Murmuration|A group of starlings is called…|group
+Waddle|A group of penguins is called…|group
+Flock|A group of sheep is called…|group
+Herd|A group of cows is called…|group
+Herd|A group of elephants is called…|group
+Pod|A group of whales is called…|group
+Pod|A group of dolphins is called…|group
+Mob|A group of kangaroos is called…|group
+Swarm|A group of bees is called…|group
+Colony|A group of ants is called…|group
+Kaleidoscope|A group of butterflies is called…|group
+Troop|A group of monkeys is called…|group
+Clowder|A group of cats is called…|group
+Army|A group of frogs is called…|group
+Skulk|A group of foxes is called…|group
+Raft|A group of otters is called…|group
+Cackle|A group of hyenas is called…|group
+Dazzle|A group of zebras is called…|group
+Tower|A group of giraffes is called…|group
+Crash|A group of rhinos is called…|group
+Bloat|A group of hippos is called…|group
+Smack|A group of jellyfish is called…|group
+Shiver|A group of sharks is called…|group
+Business|A group of ferrets is called…|group
+Prickle|A group of porcupines is called…|group`,
   "g",
 );
 
@@ -616,7 +616,7 @@ export const babyDeck: Deck = {
   id: "babies",
   title: "Baby Animals & Group Names",
   subject: "Nature & Animals",
-  blurb: "A joey is a baby… ? Guess the animal letter by letter. Six lives, and up to three hints.",
+  blurb: "A baby kangaroo is called a… ? Guess the word letter by letter. Six lives, no hints.",
   noun: "words",
   items: [...babyItems, ...groupItems],
   variants: [],
@@ -626,12 +626,12 @@ export const babyDeck: Deck = {
   },
   screen: renderHangman({
     rounds: [
-      { id: "baby", label: "Baby Animals", starter: true, filter: (i) => i.tags.includes("baby"), note: "A joey is a baby… what?" },
-      { id: "group", label: "Group Names", filter: (i) => i.tags.includes("group"), note: "A pride is a group of… what?" },
+      { id: "baby", label: "Baby Animals", starter: true, filter: (i) => i.tags.includes("baby"), note: "A baby kangaroo is called a… what?" },
+      { id: "group", label: "Group Names", filter: (i) => i.tags.includes("group"), note: "A group of lions is called a… what?" },
       { id: "all", label: "Both", filter: () => true },
     ],
     clue: clueOf,
-    kind: (i) => i.data!.kind as string | undefined,
+    hints: false,
   }),
 };
 
