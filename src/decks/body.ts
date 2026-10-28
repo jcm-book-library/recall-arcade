@@ -1,5 +1,6 @@
 import type { Deck, Item } from "../engine/types";
 import { createDiagramBoard, svgEl, type DiagramLabel } from "../boards/diagramBoard";
+import { createSkeletonBoard } from "../boards/skeletonBoard";
 
 // id | name | other accepted answers | in the starter round?
 const BONES: [string, string, string[], boolean][] = [
@@ -45,41 +46,55 @@ const ORGANS: [string, string, string[], boolean][] = [
   ["bladder", "Bladder", ["Urinary bladder"], true],
 ];
 
+// Extra bones, only in the "Spine & Chest Detail" round. Same columns, without the starter flag.
+const BONE_DETAIL: [string, string, string[]][] = [
+  ["cervical", "Cervical vertebrae", ["Cervical vertebra", "Cervical spine", "Neck vertebrae", "Neck bones", "Cervical"]],
+  ["thoracic", "Thoracic vertebrae", ["Thoracic vertebra", "Thoracic spine", "Thoracic", "Chest vertebrae", "Upper back vertebrae"]],
+  ["lumbar", "Lumbar vertebrae", ["Lumbar vertebra", "Lumbar spine", "Lumbar", "Lower back vertebrae"]],
+  ["coccyx", "Coccyx", ["Tailbone", "Tail bone"]],
+  ["manubrium", "Manubrium", ["Manubrium of the sternum", "Top of the breastbone"]],
+];
+
+// Which parts of the skeleton picture (ids in src/assets/skeleton-front.svg) each bone lights up.
+// Left and right sides are one item.
+const BONE_GROUPS: Record<string, string[]> = {
+  skull: ["cranium", "face"],
+  mandible: ["mandible"],
+  vertebrae: ["cervical", "thoracic", "lumbar"],
+  clavicle: ["clavicle-l", "clavicle-r"],
+  scapula: ["scapula"],
+  sternum: ["sternum", "manubrium"],
+  ribs: ["ribs"],
+  humerus: ["humerus-l", "humerus-r"],
+  radius: ["radius-l", "radius-r"],
+  ulna: ["ulna-l", "ulna-r"],
+  carpals: ["carpals-l", "carpals-r"],
+  metacarpals: ["metacarpals-l", "metacarpals-r"],
+  phalanges: ["phalanges-l", "phalanges-r", "toes-l", "toes-r"],
+  pelvis: ["pelvis"],
+  sacrum: ["sacrum"],
+  femur: ["femur-l", "femur-r"],
+  patella: ["patella-l", "patella-r"],
+  tibia: ["tibia-l", "tibia-r"],
+  fibula: ["fibula-l", "fibula-r"],
+  tarsals: ["tarsals-l", "tarsals-r"],
+  metatarsals: ["metatarsals-l", "metatarsals-r"],
+  cervical: ["cervical"],
+  thoracic: ["thoracic"],
+  lumbar: ["lumbar"],
+  coccyx: ["coccyx"],
+  manubrium: ["manubrium"],
+};
+
 const items: Item[] = [
   ...BONES.map(([id, name, aliases, starter]) => ({ id, name, aliases, tags: ["bones", ...(starter ? ["starter"] : [])] })),
+  ...BONE_DETAIL.map(([id, name, aliases]) => ({ id, name, aliases, tags: ["bone-detail"] })),
   ...ORGANS.map(([id, name, aliases, starter]) => ({ id, name, aliases, tags: ["organs", ...(starter ? ["starter"] : [])] })),
 ];
 
-const W = 800;
-const mirror = (x: number) => W - x;
-
-// Labels down the left and right; leader lines point at the left- or right-hand bone.
+// Organ labels down the left and right of the body outline.
 const L = (y: number, to: [number, number], text: string): DiagramLabel => ({ x: 215, y, to, anchor: "end", text });
 const R = (y: number, to: [number, number], text: string): DiagramLabel => ({ x: 585, y, to, anchor: "start", text });
-const LABELS: Record<string, DiagramLabel> = {
-  skull: L(62, [362, 58], "Skull"),
-  clavicle: L(168, [352, 177], "Clavicle"),
-  scapula: L(214, [345, 212], "Scapula"),
-  humerus: L(256, [334, 250], "Humerus"),
-  radius: L(345, [312, 360], "Radius"),
-  ulna: L(385, [327, 380], "Ulna"),
-  carpals: L(425, [309, 422], "Carpals"),
-  metacarpals: L(455, [303, 450], "Metacarpals"),
-  phalanges: L(495, [300, 486], "Phalanges"),
-  femur: L(565, [371, 560], "Femur"),
-  patella: L(652, [370, 652], "Patella"),
-  mandible: R(120, [430, 112], "Mandible"),
-  vertebrae: R(158, [406, 158], "Vertebrae"),
-  sternum: R(232, [407, 226], "Sternum"),
-  ribs: R(282, [452, 280], "Ribs"),
-  pelvis: R(440, [452, 450], "Pelvis"),
-  sacrum: R(478, [404, 446], "Sacrum"),
-  tibia: R(720, [mirror(381), 720], "Tibia"),
-  fibula: R(752, [mirror(368), 745], "Fibula"),
-  tarsals: R(800, [mirror(378), 803], "Tarsals"),
-  metatarsals: R(832, [mirror(375), 826], "Metatarsals"),
-};
-
 const ORGAN_LABELS: Record<string, DiagramLabel> = {
   brain: L(62, [372, 60], "Brain"),
   trachea: L(170, [396, 172], "Trachea"),
@@ -140,103 +155,6 @@ function drawOrgans(svg: SVGSVGElement) {
   svgEl("path", { d: "M388 470 C386 486 392 496 400 496 C408 496 414 486 412 470 C406 466 394 466 388 470 Z", class: "o-bladder" }, bladder);
 }
 
-function drawSkeleton(svg: SVGSVGElement) {
-  const g = svgEl("g", { class: "skeleton" }, svg);
-  const group = (part: string) => svgEl("g", { "data-part": part }, g);
-
-  /** A long bone: a thick rounded line with a darker outline. */
-  const bone = (part: SVGGElement, x1: number, y1: number, x2: number, y2: number, w: number) => {
-    for (const [x, xx] of [[x1, x2], [mirror(x1), mirror(x2)]]) {
-      svgEl("line", { x1: x, y1, x2: xx, y2, "stroke-width": w + 3, class: "bone-edge" }, part);
-      svgEl("line", { x1: x, y1, x2: xx, y2, "stroke-width": w, class: "bone" }, part);
-    }
-  };
-  const both = (part: SVGGElement, make: (m: (x: number) => number) => void) => {
-    make((x) => x);
-    make(mirror);
-  };
-
-  // Spine first, so the ribs and pelvis sit on top of it.
-  const spine = group("vertebrae");
-  for (let y = 126; y < 440; y += 13) svgEl("rect", { x: 394, y, width: 12, height: 10, rx: 2, class: "bone-fill" }, spine);
-
-  const scap = group("scapula");
-  both(scap, (m) => svgEl("path", { d: `M${m(336)} 178 L${m(362)} 186 L${m(349)} 244 Z`, class: "bone-fill" }, scap));
-
-  const ribs = group("ribs");
-  for (let i = 0; i < 7; i++) {
-    const y = 196 + i * 15;
-    const out = 346 + i * 1.5;
-    both(ribs, (m) =>
-      svgEl("path", { d: `M${m(397)} ${y} Q${m(out - 4)} ${y - 2} ${m(out)} ${y + 22}`, class: "bone-line", "stroke-width": 5 }, ribs),
-    );
-  }
-
-  const sternum = group("sternum");
-  svgEl("rect", { x: 393, y: 186, width: 14, height: 80, rx: 5, class: "bone-fill" }, sternum);
-
-  const clav = group("clavicle");
-  bone(clav, 394, 182, 344, 174, 7);
-
-  const skull = group("skull");
-  svgEl("path", { d: "M356 88 C350 40 375 20 400 20 C425 20 450 40 444 88 C440 104 430 110 400 112 C370 110 360 104 356 88 Z", class: "bone-fill" }, skull);
-  for (const x of [384, 416]) svgEl("ellipse", { cx: x, cy: 78, rx: 10, ry: 8, class: "hole" }, skull);
-  svgEl("path", { d: "M400 86 L394 100 L406 100 Z", class: "hole" }, skull);
-
-  const jaw = group("mandible");
-  svgEl("path", { d: "M368 100 Q372 136 400 140 Q428 136 432 100", class: "bone-line", "stroke-width": 9 }, jaw);
-
-  const hum = group("humerus");
-  bone(hum, 342, 190, 327, 300, 13);
-  const rad = group("radius");
-  bone(rad, 321, 306, 306, 410, 7);
-  const uln = group("ulna");
-  bone(uln, 333, 306, 322, 412, 7);
-
-  const carp = group("carpals");
-  both(carp, (m) => {
-    for (const [x, y] of [[308, 420], [318, 418], [313, 428], [323, 427]]) svgEl("circle", { cx: m(x), cy: y, r: 4.5, class: "bone-fill" }, carp);
-  });
-  const metac = group("metacarpals");
-  const phal = group("phalanges");
-  const handTop = [300, 307, 314, 321, 328];
-  const handMid = [295, 303, 312, 321, 331];
-  const handEnd: [number, number][] = [[290, 480], [300, 494], [311, 499], [322, 494], [334, 484]];
-  handTop.forEach((x, i) => {
-    bone(metac, x, 434, handMid[i], 462, 3.5);
-    bone(phal, handMid[i], 466, handEnd[i][0], handEnd[i][1], 3);
-  });
-
-  const pelvis = group("pelvis");
-  both(pelvis, (m) =>
-    svgEl("path", { d: `M${m(396)} 420 C${m(358)} 408 ${m(338)} 424 ${m(344)} 456 C${m(350)} 482 ${m(376)} 492 ${m(397)} 478 Z`, class: "bone-fill" }, pelvis),
-  );
-  both(pelvis, (m) => svgEl("ellipse", { cx: m(374), cy: 466, rx: 8, ry: 6, class: "hole" }, pelvis));
-  const sacrum = group("sacrum");
-  svgEl("path", { d: "M386 424 L414 424 L400 472 Z", class: "bone-fill" }, sacrum);
-
-  const femur = group("femur");
-  bone(femur, 368, 480, 376, 640, 15);
-  const patella = group("patella");
-  both(patella, (m) => svgEl("ellipse", { cx: m(377), cy: 652, rx: 8, ry: 9, class: "bone-fill" }, patella));
-  const tibia = group("tibia");
-  bone(tibia, 380, 664, 382, 790, 11);
-  const fibula = group("fibula");
-  bone(fibula, 366, 666, 370, 786, 6);
-
-  const tars = group("tarsals");
-  both(tars, (m) => {
-    for (const [x, y] of [[371, 800], [382, 798], [376, 808], [388, 806]]) svgEl("circle", { cx: m(x), cy: y, r: 5, class: "bone-fill" }, tars);
-  });
-  const metat = group("metatarsals");
-  const footTop = [364, 370, 377, 384, 391];
-  const footMid = [358, 365, 373, 382, 391];
-  footTop.forEach((x, i) => {
-    bone(metat, x, 814, footMid[i], 838, 3.5);
-    bone(phal, footMid[i], 842, footMid[i] - 2, 856, 3);
-  });
-}
-
 export const bodyDeck: Deck = {
   id: "body",
   title: "The Human Body",
@@ -250,6 +168,7 @@ export const bodyDeck: Deck = {
   variants: [
     { id: "bigbones", label: "The Big Bones", minutes: 3, starter: true, filter: (i) => i.tags.includes("bones") && i.tags.includes("starter") },
     { id: "bones", label: "Full Skeleton", minutes: 5, filter: (i) => i.tags.includes("bones") },
+    { id: "spine", label: "Spine & Chest Detail", minutes: 3, filter: (i) => i.tags.includes("bone-detail") },
     { id: "bigorgans", label: "Major Organs", minutes: 3, starter: true, filter: (i) => i.tags.includes("organs") && i.tags.includes("starter") },
     { id: "organs", label: "All Organs", minutes: 5, filter: (i) => i.tags.includes("organs") },
   ],
@@ -261,18 +180,18 @@ export const bodyDeck: Deck = {
       p.innerHTML = "Click the <strong></strong>";
       p.querySelector("strong")!.textContent = item.name.toLowerCase();
     } else {
-      p.textContent = item.tags.includes("bones") ? "Which bone is lit up?" : "Which organ is lit up?";
+      p.textContent = item.tags.includes("organs") ? "Which organ is lit up?" : "Which bone is lit up?";
     }
     return p;
   },
   createBoard: ({ container, items: playing, variant }) => {
-    const organs = variant.id.includes("organs");
-    return createDiagramBoard(
-      container,
-      organs
-        ? { viewBox: "60 0 680 520", draw: drawOrgans, labels: ORGAN_LABELS, ariaLabel: "Human body showing the organs" }
-        : { viewBox: "60 0 680 870", draw: drawSkeleton, labels: LABELS, ariaLabel: "Human skeleton, front view" },
-      new Set(playing.map((i) => i.id)),
-    );
+    if (variant.id.includes("organs")) {
+      return createDiagramBoard(
+        container,
+        { viewBox: "60 0 680 520", draw: drawOrgans, labels: ORGAN_LABELS, ariaLabel: "Human body showing the organs" },
+        new Set(playing.map((i) => i.id)),
+      );
+    }
+    return createSkeletonBoard(container, playing.map((i) => ({ id: i.id, name: i.name, groups: BONE_GROUPS[i.id] })));
   },
 };
