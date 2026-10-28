@@ -18,7 +18,7 @@ import { currenciesDeck } from "./decks/travel-maps";
 import { natoDeck, pmDeck, unitsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
 import { lifeDeck } from "./decks/choice-decks";
 import { famousForDeck, mythPairsDeck } from "./decks/pairs-decks";
-import { ausAnimalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/picture-decks";
+import { animalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/picture-decks";
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
 import { tailFinsDeck } from "./decks/tail-fins";
 import { renderHome } from "./ui/home";
@@ -38,7 +38,7 @@ const DECKS: Deck[] = [
   // Travel & Transport
   airportsDeck, airlinesDeck, tailFinsDeck, natoDeck, currenciesDeck, landmarksDeck,
   // Nature & Animals
-  ausAnimalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
+  animalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
   // Not on the home page: reached from Mythology, or at #mythpairs
