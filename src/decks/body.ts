@@ -184,7 +184,7 @@ const SYSTEMS: { id: string; label: string; minutes: number; starter?: boolean; 
       load: () => import("../assets/organs/nervous.svg?raw"),
       label: "The nervous system",
       reach: FINGERTIP,
-      credit: "Nervous system diagram: \"TE-Nervous system diagram.svg\", CC BY 3.0, via Wikimedia Commons (author as named on its Commons page); adapted: labels removed and parts separated",
+      credit: "Nervous system diagram: The Emirr, CC BY 3.0, via Wikimedia Commons; adapted: labels removed and parts separated",
     }),
   },
   {

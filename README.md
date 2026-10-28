@@ -56,7 +56,7 @@ Organ diagrams (The Human Body, the rounds "By body system"), all from Wikimedia
 - Respiratory system: "Respiratory system complete en.svg" by LadyofHats and Jmarchn, public domain.
 - Heart: "Diagram of the human heart (cropped).svg" by Wapcaplet, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
 - Urinary system: "Urinary system.svg" by Jordi March i Nogué, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
-- Nervous system: "TE-Nervous system diagram.svg", [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The author's name is on the file's Commons page; it could not be looked up from the build machine, so add it here.
+- Nervous system: "TE-Nervous system diagram.svg" by The Emirr (Wikimedia Commons), [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Adapted: labels removed and parts separated.
 - Female reproductive system: "Scheme female reproductive system-en.svg" by the CDC and Mysid, public domain.
 
 Plans and ideas live in [docs/](docs/).
