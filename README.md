@@ -49,4 +49,6 @@ Mountain ranges: Natural Earth geography regions (public domain), cut down by `s
 Historical borders (323 BC to 1914): [historical-basemaps](https://github.com/aourednik/historical-basemaps) by André Ourednik (GPL-3.0), loaded from GitHub at play time, not copied here.
 Photos (animals, pets, landmarks, dinosaurs, Greek and Roman gods): each Wikipedia article's main image, freely licensed only, loaded at play time and shown with its photographer and licence.
 
+Skeleton drawing (The Human Body): "Human skeleton front en.svg" by LadyofHats (Mariana Ruiz Villarreal), public domain, via Wikimedia Commons, cleaned up by `scripts/build-skeleton.mjs`.
+
 Plans and ideas live in [docs/](docs/).
