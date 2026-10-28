@@ -17,7 +17,7 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 | Flags | Periodic Table | Who Lived When? (timeline) | Airline Codes | Classifying Life (4 zoom-in levels) |
 | Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Pet Breeds (click the photo; dogs and cats) |
 | Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Empires Through Time (6 maps, 323 BC–1914) | Currencies | *(Where Animals Live removed: too many look-alike trick questions)* |
-| Mountains (peaks + ranges; territories are a tickbox in Countries) | Units & Forces + Conversions | Mythology (+ Greek & Roman Pairs memory game, linked from its setup screen) | Time Zones | Baby Animals & Group Names (name the animal) |
+| Mountains (peaks + ranges; territories are a tickbox in Countries) | Units & Forces + Conversions | Mythology (+ Greek & Roman Pairs memory game, linked from its setup screen) | *(Time Zones removed 28 Oct 26; idea kept: odd time zones and time differences)* | Baby Animals & Group Names (name the animal) |
 | Neighbours | *(Famous Scientists moved to History as Famous For)* | Famous For (match people to what they did; scientists + Who Lived When? people) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
 
 ### Music (skill learning: reading music, on piano)
@@ -63,7 +63,7 @@ Countries of the World, freeing a slot.
   (images kept in Google Drive, as in other projects).
 - NATO Alphabet: great but small.
 - Currencies: widen to more currency and economics questions.
-- Time Zones: too tough as is. Rework around odd time zones (Nepal +5:45, India +5:30,
+- Time Zones: removed from the game for now. Rework around odd time zones (Nepal +5:45, India +5:30,
   Chatham Islands) and "time difference between two places".
 - Landmarks & Wonders: needs more.
 

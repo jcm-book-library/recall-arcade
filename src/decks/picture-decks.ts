@@ -218,70 +218,7 @@ apostles|Twelve Apostles|The Twelve Apostles;12 Apostles|Great Ocean Road, Victo
 alhambra|Alhambra|The Alhambra|Granada, Spain|`),
 });
 
-// ---------------------------------------------------------------- Spot the Airline
-// Photos are aircraft (or public-domain logos) from each airline's Wikipedia article.
-export const spotterDeck = pictureDeck({
-  id: "spotter",
-  set: "airlines",
-  title: "Spot the Airline",
-  subject: "Travel & Transport",
-  blurb: "A plane in airline colours appears. Type the airline's name.",
-  noun: "airlines",
-  question: "Which airline is this?",
-  tip: "Look at the colours on the tail and the body, and any words on the plane.",
-  starterLabel: "Big Names",
-  allLabel: "Around the World",
-  items: parse(`qantas|Qantas|Qantas Airways|Australia|s
-lufthansa|Lufthansa|Deutsche Lufthansa|Germany|s
-emirates|Emirates|Emirates Airline|Dubai, UAE|s
-singapore|Singapore Airlines|SIA;Singapore|Singapore|s
-airnz|Air New Zealand|Air NZ|New Zealand|s
-ba|British Airways|BA|United Kingdom|s
-klm|KLM|KLM Royal Dutch Airlines;Royal Dutch Airlines|Netherlands|s
-virginaus|Virgin Australia|Virgin Blue|Australia|s
-qatar|Qatar Airways|Qatar|Doha, Qatar|s
-cathay|Cathay Pacific|Cathay|Hong Kong|s
-delta|Delta Air Lines|Delta;Delta Airlines|Atlanta, USA|s
-airfrance|Air France||France|s
-etihad|Etihad Airways|Etihad|Abu Dhabi, UAE|s
-jal|Japan Airlines|JAL|Japan|s
-turkish|Turkish Airlines|Turkish;THY|Türkiye|s
-ryanair|Ryanair||Ireland|s
-southwest|Southwest Airlines|Southwest|USA|s
-jetstar|Jetstar|Jetstar Airways|Australia|s
-alaska|Alaska Airlines|Alaska|Seattle, USA|s
-finnair|Finnair||Finland|s
-iberia|Iberia|Iberia Airlines|Spain|
-united|United Airlines|United|Chicago, USA|
-american|American Airlines|American|Fort Worth, USA|
-aircanada|Air Canada||Canada|
-virginatl|Virgin Atlantic|Virgin Atlantic Airways|United Kingdom|
-easyjet|easyJet|Easy Jet|United Kingdom|
-aerlingus|Aer Lingus||Ireland|
-swiss|Swiss|Swiss International Air Lines;Swiss Air|Switzerland|
-austrian|Austrian Airlines|Austrian|Austria|
-sas|SAS|Scandinavian Airlines|Scandinavia|
-korean|Korean Air||South Korea|
-ana|All Nippon Airways|ANA|Japan|
-eva|EVA Air|EVA|Taiwan|
-thai|Thai Airways|Thai;Thai Airways International|Thailand|
-malaysia|Malaysia Airlines|Malaysia;MAS|Malaysia|
-garuda|Garuda Indonesia|Garuda|Indonesia|
-airindia|Air India||India|
-ethiopian|Ethiopian Airlines|Ethiopian|Ethiopia|
-saa|South African Airways|SAA|South Africa|
-hawaiian|Hawaiian Airlines|Hawaiian|Hawaii, USA|
-jetblue|JetBlue|Jet Blue;JetBlue Airways|New York, USA|
-latam|LATAM|LATAM Airlines|South America|
-fiji|Fiji Airways|Air Pacific|Fiji|
-scoot|Scoot||Singapore|
-tap|TAP Air Portugal|TAP;TAP Portugal|Portugal|
-norwegian|Norwegian|Norwegian Air Shuttle;Norwegian Air|Norway|
-icelandair|Icelandair||Iceland|
-elal|El Al|El Al Israel Airlines|Israel|
-wizz|Wizz Air|Wizzair|Hungary|
-rex|Rex|Regional Express;Regional Express Airlines;Rex Airlines|Australia|`),
-});
+
 
 // ---------------------------------------------------------------- Pet breeds (click the photo)
 const dogItems = parse(`labrador|Labrador Retriever|Labrador;Lab||s
