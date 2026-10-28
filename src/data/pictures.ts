@@ -4,7 +4,10 @@
 import TITLES from "./picture-titles.json";
 
 export interface Picture {
+  /** The full-size photo (500px wide), for the question. */
   src: string;
+  /** A smaller copy (320px wide) for the picture wall, so a big wall stays light. */
+  thumb: string;
   artist: string;
   license: string;
   /** The image's page on Wikimedia, for the credit link. */
@@ -16,12 +19,22 @@ const strip = (html: string | undefined) => (html ?? "").replace(/<[^>]*>/g, "")
 
 async function query(params: Record<string, string>) {
   const url = `${API}?${new URLSearchParams({ action: "query", format: "json", formatversion: "2", origin: "*", ...params })}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Wikipedia returned ${res.status}`);
-  return res.json();
+  // If Wikipedia says "too many requests", wait a moment and try again (twice at most).
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url);
+    if (res.status === 429 && attempt < 2) {
+      await new Promise((done) => setTimeout(done, 3000));
+      continue;
+    }
+    if (!res.ok) throw new Error(`Wikipedia returned ${res.status}`);
+    return res.json();
+  }
 }
 
 const cache = new Map<string, Promise<Map<string, Picture>>>();
+
+/** The same Wikipedia thumbnail, asked for at 320px wide instead of 500px. */
+const smallerThumb = (src: string) => src.replace(/\/([^/]*?)500px-([^/]*)$/, "/$1320px-$2");
 
 /** Look up the pictures for one quiz ("animals", "dogs" or "landmarks"). */
 export function loadPictures(set: keyof typeof TITLES): Promise<Map<string, Picture>> {
@@ -80,7 +93,7 @@ async function fetchSet(set: keyof typeof TITLES) {
   }
   for (const [id, v] of pageInfo) {
     const m = meta.get(v.file.replace(/ /g, "_"));
-    out.set(id, { src: v.thumb, artist: m?.artist ?? "Unknown", license: m?.license ?? "Free licence", page: m?.page ?? "" });
+    out.set(id, { src: v.thumb, thumb: smallerThumb(v.thumb), artist: m?.artist ?? "Unknown", license: m?.license ?? "Free licence", page: m?.page ?? "" });
   }
   return out;
 }

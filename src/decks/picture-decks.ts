@@ -1,18 +1,22 @@
 // Picture quizzes: a photo appears and you name it. Photos come from Wikipedia at play time.
-import type { Deck, Item } from "../engine/types";
+import type { Deck, Item, ProgressGroup, Variant } from "../engine/types";
 import { createMapBoard, type MapShape } from "../boards/mapBoard";
 import { backgroundLand, countryItems } from "./countries";
 import { createFlagBoard } from "../boards/flagBoard";
 import { loadPictures, type Picture } from "../data/pictures";
 
-/** "id|name|aliases;more|where (optional)|starter" lines. */
+/**
+ * "id|name|aliases;more|where (optional)|tags" lines. The tags are separated by spaces;
+ * "s" marks a starter and anything else becomes a tag of its own (e.g. "rare mammal").
+ */
 function parse(table: string): Item[] {
   return table
     .trim()
     .split("\n")
     .map((line) => {
-      const [id, name, aliases, where, starter] = line.split("|");
-      return { id, name, aliases: aliases ? aliases.split(";") : [], tags: starter ? ["starter"] : [], data: { where } };
+      const [id, name, aliases, where, tagText] = line.split("|");
+      const tags = (tagText ?? "").split(" ").filter(Boolean).map((t) => (t === "s" ? "starter" : t));
+      return { id, name, aliases: aliases ? aliases.split(";") : [], tags, data: { where } };
     });
 }
 
@@ -78,6 +82,10 @@ function pictureDeck(cfg: {
   tip?: string;
   starterLabel?: string;
   allLabel?: string;
+  /** Replaces the two standard rounds (for a quiz with more rounds). */
+  variants?: Variant[];
+  /** Progress panel groups, which also split the picture wall into headed sections. */
+  progressGroups?: ProgressGroup[];
 }): Deck {
   return {
     id: cfg.id,
@@ -88,10 +96,11 @@ function pictureDeck(cfg: {
     mode: "prompt",
     placeholder: "Name it…",
     items: cfg.items,
-    variants: [
+    variants: cfg.variants ?? [
       { id: "starter", label: cfg.starterLabel ?? "The Famous Ones", minutes: 2, starter: true, filter: (i) => i.tags.includes("starter") },
       { id: "all", label: cfg.allLabel ?? `All ${cfg.items.length}`, minutes: 6, filter: () => true },
     ],
+    progressGroups: cfg.progressGroups,
     options: [],
     tip: cfg.tip ?? "Photos come from Wikipedia and are shown with their photographer and licence.",
     describe: (i) => (i.data!.where ? `${i.name} (${i.data!.where})` : i.name),
@@ -132,7 +141,8 @@ function pictureDeck(cfg: {
         container.append(warn);
       }
       loaded.set(cfg.set, pics);
-      return createFlagBoard(container, playing, (i) => pics.get(i.id)?.src ?? "", [], "photos", (i) => {
+      // The wall uses the small copy of each photo, so a wall of 200 stays light.
+      return createFlagBoard(container, playing, (i) => pics.get(i.id)?.thumb ?? "", cfg.progressGroups ?? [], "photos", (i) => {
         const p = pics.get(i.id);
         return p ? `Photo: ${p.artist} · ${p.license}` : "";
       });
@@ -140,40 +150,248 @@ function pictureDeck(cfg: {
   };
 }
 
-export const ausAnimalsDeck = pictureDeck({
-  id: "ausanimals",
+// ---------------------------------------------------------------- Animals (from all over the world)
+// One entry for each group of look-alikes ("Elephant", "Zebra"), with the specific names as aliases.
+// Tags: how well known (s = common, less, rare) and which class (mammal, bird, herp, sea, bug).
+const COMMON_ANIMALS = `lion|Lion|Lioness;African lion|Africa|s mammal
+tiger|Tiger|Bengal tiger;Siberian tiger;Sumatran tiger|Asia|s mammal
+elephant|Elephant|African elephant;Asian elephant;Indian elephant|Africa, Asia|s mammal
+giraffe|Giraffe||Africa|s mammal
+zebra|Zebra|Plains zebra;Grevy's zebra;Mountain zebra|Africa|s mammal
+hippo|Hippopotamus|Hippo|Africa|s mammal
+rhino|Rhinoceros|Rhino;White rhino;Black rhino;Indian rhino|Africa, Asia|s mammal
+cheetah|Cheetah||Africa|s mammal
+gorilla|Gorilla|Western gorilla;Mountain gorilla|Africa|s mammal
+chimp|Chimpanzee|Chimp|Africa|s mammal
+panda|Giant panda|Panda;Panda bear|China|s mammal
+polarbear|Polar bear|Ice bear;White bear|Arctic|s mammal
+brownbear|Brown bear|Bear;Grizzly;Grizzly bear;Kodiak bear|Europe, Asia, North America|s mammal
+fox|Fox|Red fox|Europe, Asia, North America|s mammal
+cow|Cow|Cattle;Bull;Ox;Dairy cow|Farm animal|s mammal
+pig|Pig|Hog;Swine;Domestic pig|Farm animal|s mammal
+horse|Horse|Stallion;Mare|Farm animal|s mammal
+sheep|Sheep|Lamb;Ram|Farm animal|s mammal
+goat|Goat|Billy goat|Farm animal|s mammal
+rabbit|Rabbit|Bunny;European rabbit|Europe|s mammal
+camel|Camel|Dromedary;Bactrian camel|Africa, Asia|s mammal
+kangaroo|Kangaroo|Red kangaroo;Roo|Australia|s mammal
+koala|Koala||Australia|s mammal
+dolphin|Dolphin|Bottlenose dolphin;Porpoise|Oceans|s mammal
+whale|Whale|Humpback whale;Blue whale;Sperm whale|Oceans|s mammal
+seal|Seal|Sea lion;Harbour seal;Harbor seal;Fur seal|Oceans|s mammal
+penguin|Penguin|Emperor penguin;King penguin;Little penguin;Fairy penguin;Little blue penguin|Antarctica, Southern Hemisphere|s bird
+owl|Owl|Barn owl;Snowy owl;Great horned owl|Worldwide|s bird
+eagle|Eagle|Bald eagle;Golden eagle|Worldwide|s bird
+macaw|Macaw|Parrot;Scarlet macaw|South America|s bird
+flamingo|Flamingo|Greater flamingo|Africa, Americas|s bird
+peacock|Peacock|Peafowl;Peahen;Indian peafowl|Asia|s bird
+swan|Swan|Mute swan|Europe|s bird
+duck|Duck|Mallard|Worldwide|s bird
+chicken|Chicken|Hen;Cockerel|Farm animal|s bird
+ostrich|Ostrich|Common ostrich|Africa|s bird
+croc|Crocodile|Saltwater crocodile;Saltie;Croc;Nile crocodile;Alligator|Worldwide|s herp
+snake|Snake||Worldwide|s herp
+turtle|Turtle|Sea turtle;Green turtle;Green sea turtle;Tortoise|Oceans|s herp
+frog|Frog|Common frog|Worldwide|s herp
+shark|Shark|Great white shark;Great white|Oceans|s sea
+jellyfish|Jellyfish|Jelly;Jellies|Oceans|s sea
+octopus|Octopus|Common octopus|Oceans|s sea
+starfish|Starfish|Sea star|Oceans|s sea
+crab|Crab||Worldwide|s sea
+clownfish|Clownfish|Clown fish;Anemonefish;Nemo|Indo-Pacific|s sea
+seahorse|Seahorse|Sea horse|Oceans|s sea
+butterfly|Butterfly|Monarch butterfly;Monarch|Worldwide|s bug
+bee|Bee|Honey bee;Honeybee;Bumblebee|Worldwide|s bug
+ladybird|Ladybird|Ladybug;Lady beetle;Ladybird beetle|Worldwide|s bug
+spider|Spider||Worldwide|s bug
+ant|Ant|Ants|Worldwide|s bug`;
+
+const LESS_COMMON_ANIMALS = `wombat|Wombat|Common wombat|Australia|less mammal
+platypus|Platypus||Australia|less mammal
+echidna|Echidna|Short-beaked echidna;Spiny anteater|Australia|less mammal
+quokka|Quokka||Australia|less mammal
+dingo|Dingo||Australia|less mammal
+wallaby|Wallaby|Red-necked wallaby|Australia|less mammal
+glider|Sugar glider|Glider|Australia|less mammal
+possum|Brushtail possum|Possum;Common brushtail possum|Australia|less mammal
+devil|Tasmanian devil|Devil|Australia|less mammal
+numbat|Numbat||Australia|less mammal
+bilby|Bilby|Greater bilby|Australia|less mammal
+meerkat|Meerkat||Africa|less mammal
+lemur|Lemur|Ring-tailed lemur;Ringtail lemur|Madagascar|less mammal
+okapi|Okapi||Africa|less mammal
+tapir|Tapir|Malayan tapir;Brazilian tapir|South America, Asia|less mammal
+pangolin|Pangolin|Scaly anteater|Africa, Asia|less mammal
+sloth|Sloth|Three-toed sloth;Two-toed sloth|Central & South America|less mammal
+redpanda|Red panda|Lesser panda|Asia|less mammal
+bison|Bison|American bison;Buffalo;Wisent|North America|less mammal
+moose|Moose||North America, Europe|less mammal
+llama|Llama|Alpaca|South America|less mammal
+capybara|Capybara||South America|less mammal
+otter|Otter|Sea otter;River otter|Worldwide|less mammal
+beaver|Beaver|North American beaver;Eurasian beaver|North America, Europe|less mammal
+porcupine|Porcupine|Crested porcupine|Africa, Asia, Americas|less mammal
+hedgehog|Hedgehog|European hedgehog|Europe|less mammal
+armadillo|Armadillo|Nine-banded armadillo|Americas|less mammal
+anteater|Giant anteater||South America|less mammal
+raccoon|Raccoon|Racoon|North America|less mammal
+warthog|Warthog|Common warthog|Africa|less mammal
+wildebeest|Wildebeest|Gnu;Blue wildebeest|Africa|less mammal
+mandrill|Mandrill||Africa|less mammal
+gibbon|Gibbon|Lar gibbon;White-handed gibbon|Asia|less mammal
+orangutan|Orangutan|Orang-utan;Orangutang;Orang utan|Borneo, Sumatra|less mammal
+walrus|Walrus||Arctic|less mammal
+beluga|Beluga|Beluga whale;White whale|Arctic|less mammal
+narwhal|Narwhal||Arctic|less mammal
+orca|Orca|Killer whale|Oceans|less mammal
+bat|Bat|Fruit bat;Flying fox|Worldwide|less mammal
+hyena|Hyena|Spotted hyena;Hyaena|Africa|less mammal
+fennec|Fennec fox|Fennec|Africa|less mammal
+emu|Emu||Australia|less bird
+kookaburra|Kookaburra|Laughing kookaburra|Australia|less bird
+cassowary|Cassowary|Southern cassowary|Australia, New Guinea|less bird
+cockatoo|Sulphur-crested cockatoo|Cockatoo|Australia|less bird
+galah|Galah|Rose-breasted cockatoo|Australia|less bird
+lyrebird|Lyrebird|Superb lyrebird|Australia|less bird
+puffin|Puffin|Atlantic puffin|North Atlantic|less bird
+kiwi|Kiwi|Kiwi bird|New Zealand|less bird
+toucan|Toucan|Toco toucan|South America|less bird
+hummingbird|Hummingbird||Americas|less bird
+pelican|Pelican||Worldwide|less bird
+seagull|Seagull|Gull|Worldwide|less bird
+crow|Crow|Raven|Worldwide|less bird
+woodpecker|Woodpecker||Worldwide|less bird
+hornbill|Hornbill|Great hornbill|Asia, Africa|less bird
+birdofparadise|Bird-of-paradise|Bird of paradise|New Guinea|less bird
+booby|Blue-footed booby|Booby|Galápagos|less bird
+heron|Heron|Grey heron;Great blue heron|Worldwide|less bird
+turkey|Turkey|Wild turkey|North America|less bird
+budgie|Budgerigar|Budgie|Australia|less bird
+frillneck|Frill-necked lizard|Frilled lizard;Frillneck;Frilled-neck lizard;Frill neck lizard|Australia|less herp
+bluetongue|Blue-tongued lizard|Blue-tongue;Blue tongue;Blue-tongued skink;Bluey|Australia|less herp
+chameleon|Chameleon|Veiled chameleon;Panther chameleon|Africa, Madagascar|less herp
+iguana|Iguana|Green iguana|Americas|less herp
+komodo|Komodo dragon|Komodo;Komodo monitor|Indonesia|less herp
+gecko|Gecko|House gecko|Worldwide|less herp
+beardie|Bearded dragon|Beardie;Central bearded dragon|Australia|less herp
+cobra|Cobra|King cobra;Indian cobra|Asia, Africa|less herp
+dartfrog|Poison dart frog|Dart frog;Poison arrow frog|Central & South America|less herp
+treefrog|Red-eyed tree frog|Red eyed tree frog;Tree frog|Central America|less herp
+axolotl|Axolotl||Mexico|less herp
+salamander|Fire salamander|Salamander|Europe|less herp
+goldfish|Goldfish||Pet|less sea
+puffer|Pufferfish|Puffer fish;Blowfish;Puffer|Oceans|less sea
+swordfish|Swordfish||Oceans|less sea
+moray|Moray eel|Moray|Oceans|less sea
+hammerhead|Hammerhead shark|Hammerhead|Oceans|less sea
+whaleshark|Whale shark||Oceans|less sea
+manta|Manta ray|Manta|Oceans|less sea
+lobster|Lobster|American lobster|Oceans|less sea
+urchin|Sea urchin|Urchin|Oceans|less sea
+anemone|Sea anemone||Oceans|less sea
+cuttlefish|Cuttlefish|Common cuttlefish|Oceans|less sea
+piranha|Piranha|Red-bellied piranha|South America|less sea
+salmon|Salmon|Atlantic salmon|Rivers & seas|less sea
+nautilus|Nautilus|Chambered nautilus|Indo-Pacific|less sea
+dragonfly|Dragonfly||Worldwide|less bug
+grasshopper|Grasshopper|Locust|Worldwide|less bug
+mantis|Praying mantis|Mantis|Worldwide|less bug
+stickinsect|Stick insect|Walking stick;Phasmid|Worldwide|less bug
+scorpion|Scorpion||Worldwide|less bug
+snail|Snail|Garden snail|Worldwide|less bug
+stagbeetle|Stag beetle|Stag-beetle|Europe|less bug
+firefly|Firefly|Lightning bug|Worldwide|less bug
+cicada|Cicada||Worldwide|less bug
+centipede|Centipede||Worldwide|less bug
+earthworm|Earthworm|Worm|Worldwide|less bug
+tarantula|Tarantula||Americas|less bug
+mosquito|Mosquito|Mozzie|Worldwide|less bug`;
+
+const RARE_ANIMALS = `ayeaye|Aye-aye|Aye aye|Madagascar|rare mammal
+saola|Saola||Vietnam, Laos|rare mammal
+fossa|Fossa||Madagascar|rare mammal
+takin|Takin||Bhutan, China, Himalayas|rare mammal
+quoll|Quoll|Spotted-tailed quoll|Australia|rare mammal
+dugong|Dugong|Sea cow;Manatee|Australia, Indo-Pacific|rare mammal
+tarsier|Tarsier|Philippine tarsier|Southeast Asia|rare mammal
+proboscis|Proboscis monkey||Borneo|rare mammal
+aardvark|Aardvark||Africa|rare mammal
+binturong|Binturong||Southeast Asia|rare mammal
+starnose|Star-nosed mole|Star nosed mole|North America|rare mammal
+molerat|Naked mole-rat|Naked mole rat;Mole-rat;Mole rat|Africa|rare mammal
+saiga|Saiga|Saiga antelope|Central Asia|rare mammal
+markhor|Markhor||Central Asia|rare mammal
+manedwolf|Maned wolf||South America|rare mammal
+tamarin|Golden lion tamarin||Brazil|rare mammal
+kinkajou|Kinkajou||Central & South America|rare mammal
+babirusa|Babirusa||Indonesia|rare mammal
+kakapo|Kakapo||New Zealand|rare bird
+shoebill|Shoebill||Africa|rare bird
+hoatzin|Hoatzin||South America|rare bird
+secretary|Secretarybird|Secretary bird|Africa|rare bird
+quetzal|Resplendent quetzal|Quetzal|Central America|rare bird
+roller|Lilac-breasted roller||Africa|rare bird
+takahe|Takahe||New Zealand|rare bird
+rooster|Andean cock-of-the-rock|Cock-of-the-rock;Cock of the rock|South America|rare bird
+hamerkop|Hamerkop||Africa|rare bird
+kea|Kea||New Zealand|rare bird
+condor|Andean condor|Condor|South America|rare bird
+gharial|Gharial|Gavial|India|rare herp
+giantsal|Chinese giant salamander|Giant salamander|China|rare herp
+gila|Gila monster||North America|rare herp
+tuatara|Tuatara||New Zealand|rare herp
+thornydevil|Thorny devil|Thorny dragon|Australia|rare herp
+matamata|Matamata|Mata mata|South America|rare herp
+glassfrog|Glass frog|Glassfrog|Central & South America|rare herp
+basilisk|Basilisk|Jesus Christ lizard;Jesus lizard|Central America|rare herp
+sunfish|Ocean sunfish|Mola;Sunfish;Mola mola|Oceans|rare sea
+wrasse|Humphead wrasse|Napoleon wrasse;Napoleon fish;Maori wrasse|Indo-Pacific|rare sea
+coelacanth|Coelacanth||Indian Ocean|rare sea
+seadragon|Leafy sea dragon|Seadragon;Leafy seadragon;Sea dragon|Australia|rare sea
+nudibranch|Nudibranch|Sea slug|Oceans|rare sea
+manowar|Portuguese man o' war|Man o' war;Man of war;Portuguese man of war|Oceans|rare sea
+sawfish|Sawfish||Oceans|rare sea
+giantclam|Giant clam||Indo-Pacific|rare sea
+hercules|Hercules beetle||Central & South America|rare bug
+weta|Giant weta|Weta|New Zealand|rare bug
+luna|Luna moth|Moth|North America|rare bug
+dungbeetle|Dung beetle|Scarab|Worldwide|rare bug`;
+
+const animalRound = (id: string, label: string, minutes: number, tag: string, starter = false): Variant => ({
+  id,
+  label,
+  minutes,
+  starter,
+  filter: (i) => i.tags.includes(tag),
+});
+
+export const animalsDeck = pictureDeck({
+  id: "ausanimals", // kept from when this was Australian Animals, so saved best scores survive
   set: "animals",
-  title: "Australian Animals",
+  title: "Animals",
   subject: "Nature & Animals",
-  blurb: "From quokkas to cassowaries. A photo appears: name the animal.",
+  blurb: "Animals from all over the world, from lions to aye-ayes. A photo appears: name the animal.",
   noun: "animals",
   question: "What's this animal?",
-  items: parse(`koala|Koala|||s
-kangaroo|Kangaroo|Red kangaroo;Roo||s
-wombat|Wombat|Common wombat||s
-platypus|Platypus|||s
-echidna|Echidna|Short-beaked echidna;Spiny anteater||s
-emu|Emu|||s
-kookaburra|Kookaburra|Laughing kookaburra||s
-devil|Tasmanian devil|Devil||s
-quokka|Quokka|||s
-dingo|Dingo|||s
-cassowary|Cassowary|Southern cassowary||
-glider|Sugar glider|Glider||
-wallaby|Wallaby|Red-necked wallaby||
-numbat|Numbat|||
-bilby|Bilby|Greater bilby||
-frillneck|Frill-necked lizard|Frilled lizard;Frillneck;Frilled-neck lizard;Frill neck lizard||
-croc|Saltwater crocodile|Crocodile;Saltie;Croc;Estuarine crocodile||
-cockatoo|Sulphur-crested cockatoo|Cockatoo||
-lyrebird|Lyrebird|Superb lyrebird||
-penguin|Little penguin|Fairy penguin;Penguin;Little blue penguin||
-thornydevil|Thorny devil|Thorny dragon||
-galah|Galah|||
-quoll|Quoll|Spotted-tailed quoll;Tiger quoll||
-possum|Brushtail possum|Possum;Common brushtail possum||
-bluetongue|Blue-tongued lizard|Blue-tongue;Blue tongue;Blue-tongued skink;Bluey||
-dugong|Dugong|Sea cow||`),
+  items: parse([COMMON_ANIMALS, LESS_COMMON_ANIMALS, RARE_ANIMALS].join("\n")),
+  variants: [
+    animalRound("starter", "Common Animals", 4, "starter", true),
+    animalRound("less", "Less Common", 10, "less"),
+    animalRound("rare", "Rare & Unusual", 6, "rare"),
+    animalRound("mammal", "Mammals", 10, "mammal"),
+    animalRound("bird", "Birds", 6, "bird"),
+    animalRound("herp", "Reptiles & Amphibians", 4, "herp"),
+    animalRound("sea", "Fish & Sea Life", 4, "sea"),
+    animalRound("bug", "Insects & Bugs", 4, "bug"),
+    { id: "all", label: "Everything", minutes: 20, filter: () => true },
+  ],
+  progressGroups: [
+    { tag: "mammal", label: "Mammals" },
+    { tag: "bird", label: "Birds" },
+    { tag: "herp", label: "Reptiles & Amphibians" },
+    { tag: "sea", label: "Fish & Sea Life" },
+    { tag: "bug", label: "Insects & Bugs" },
+  ],
 });
 
 export const landmarksDeck = pictureDeck({
@@ -218,70 +436,7 @@ apostles|Twelve Apostles|The Twelve Apostles;12 Apostles|Great Ocean Road, Victo
 alhambra|Alhambra|The Alhambra|Granada, Spain|`),
 });
 
-// ---------------------------------------------------------------- Spot the Airline
-// Photos are aircraft (or public-domain logos) from each airline's Wikipedia article.
-export const spotterDeck = pictureDeck({
-  id: "spotter",
-  set: "airlines",
-  title: "Spot the Airline",
-  subject: "Travel & Transport",
-  blurb: "A plane in airline colours appears. Type the airline's name.",
-  noun: "airlines",
-  question: "Which airline is this?",
-  tip: "Look at the colours on the tail and the body, and any words on the plane.",
-  starterLabel: "Big Names",
-  allLabel: "Around the World",
-  items: parse(`qantas|Qantas|Qantas Airways|Australia|s
-lufthansa|Lufthansa|Deutsche Lufthansa|Germany|s
-emirates|Emirates|Emirates Airline|Dubai, UAE|s
-singapore|Singapore Airlines|SIA;Singapore|Singapore|s
-airnz|Air New Zealand|Air NZ|New Zealand|s
-ba|British Airways|BA|United Kingdom|s
-klm|KLM|KLM Royal Dutch Airlines;Royal Dutch Airlines|Netherlands|s
-virginaus|Virgin Australia|Virgin Blue|Australia|s
-qatar|Qatar Airways|Qatar|Doha, Qatar|s
-cathay|Cathay Pacific|Cathay|Hong Kong|s
-delta|Delta Air Lines|Delta;Delta Airlines|Atlanta, USA|s
-airfrance|Air France||France|s
-etihad|Etihad Airways|Etihad|Abu Dhabi, UAE|s
-jal|Japan Airlines|JAL|Japan|s
-turkish|Turkish Airlines|Turkish;THY|Türkiye|s
-ryanair|Ryanair||Ireland|s
-southwest|Southwest Airlines|Southwest|USA|s
-jetstar|Jetstar|Jetstar Airways|Australia|s
-alaska|Alaska Airlines|Alaska|Seattle, USA|s
-finnair|Finnair||Finland|s
-iberia|Iberia|Iberia Airlines|Spain|
-united|United Airlines|United|Chicago, USA|
-american|American Airlines|American|Fort Worth, USA|
-aircanada|Air Canada||Canada|
-virginatl|Virgin Atlantic|Virgin Atlantic Airways|United Kingdom|
-easyjet|easyJet|Easy Jet|United Kingdom|
-aerlingus|Aer Lingus||Ireland|
-swiss|Swiss|Swiss International Air Lines;Swiss Air|Switzerland|
-austrian|Austrian Airlines|Austrian|Austria|
-sas|SAS|Scandinavian Airlines|Scandinavia|
-korean|Korean Air||South Korea|
-ana|All Nippon Airways|ANA|Japan|
-eva|EVA Air|EVA|Taiwan|
-thai|Thai Airways|Thai;Thai Airways International|Thailand|
-malaysia|Malaysia Airlines|Malaysia;MAS|Malaysia|
-garuda|Garuda Indonesia|Garuda|Indonesia|
-airindia|Air India||India|
-ethiopian|Ethiopian Airlines|Ethiopian|Ethiopia|
-saa|South African Airways|SAA|South Africa|
-hawaiian|Hawaiian Airlines|Hawaiian|Hawaii, USA|
-jetblue|JetBlue|Jet Blue;JetBlue Airways|New York, USA|
-latam|LATAM|LATAM Airlines|South America|
-fiji|Fiji Airways|Air Pacific|Fiji|
-scoot|Scoot||Singapore|
-tap|TAP Air Portugal|TAP;TAP Portugal|Portugal|
-norwegian|Norwegian|Norwegian Air Shuttle;Norwegian Air|Norway|
-icelandair|Icelandair||Iceland|
-elal|El Al|El Al Israel Airlines|Israel|
-wizz|Wizz Air|Wizzair|Hungary|
-rex|Rex|Regional Express;Regional Express Airlines;Rex Airlines|Australia|`),
-});
+
 
 // ---------------------------------------------------------------- Pet breeds (click the photo)
 const dogItems = parse(`labrador|Labrador Retriever|Labrador;Lab||s

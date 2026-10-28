@@ -9,7 +9,7 @@ Thirty-four quizzes across six subjects, plus a memory game inside Mythology. â˜
 - **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours, Mountains
 - **Science:** Infinity & Beyond, Periodic Table, Cells & Life, The Human Body, Units & Forces
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology (with Greek & Roman Pairs, a memory game), Famous For
-- **Travel & Transport:** Airport Codes, Airline Codes, Spot the Airline, Tail Fins, NATO Alphabet, Currencies, Time Zones, Landmarks & Wonders
+- **Travel & Transport:** Airport Codes, Airline Codes, Tail Fins, NATO Alphabet, Currencies, Landmarks & Wonders
 - **Nature & Animals:** Australian Animals, Classifying Life, Pet Breeds, Baby Animals & Group Names, Dinosaurs
 - **Music:** The Piano Keyboard, Treble Clef, Bass Clef, Rhythm & Note Lengths, Keys & Symbols, Ear Training
 
@@ -17,7 +17,7 @@ Thirty-four quizzes across six subjects, plus a memory game inside Mythology. â˜
 | Style | Where |
 |---|---|
 | Type in any order | Countries, Periodic Table, Infinity & Beyond, NATO, Prime Ministers, Neighbours, Empires Through Time |
-| One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Time Zones, Units, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
+| One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Units, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
 | One at a time, clicked | Seas Lakes & Rivers, Mountains, Pet Breeds (and Cells / Human Body with "click instead") |
 | Labelled diagram | Cells & Life, The Human Body |
 | Timeline | Big Moments, Who Lived When? |
