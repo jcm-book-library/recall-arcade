@@ -116,6 +116,7 @@ button, input, select { font: inherit; color: inherit; }
   border: 2px solid var(--line); background: var(--panel); border-radius: 999px;
   padding: 6px 14px; cursor: pointer;
 }
+.chip-heading { flex-basis: 100%; margin: 6px 0 0; font-size: 0.8rem; font-weight: 700; color: var(--muted); }
 .chip:hover { border-color: var(--muted); }
 .chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .setup-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
@@ -338,34 +339,35 @@ button, input, select { font: inherit; color: inherit; }
 .zitem.flash .mark { animation: zflash 1s ease-out; }
 @keyframes zflash { 0% { stroke: #ffcf5a; stroke-width: 6; } }
 
-/* ---------- diagrams (cells, skeleton) ---------- */
+/* ---------- diagrams (cells, and the real pictures: skeleton, organs) ---------- */
 .diagram { border: 2px solid var(--line); border-radius: var(--r); background: var(--panel); padding: 8px; }
 .diagram svg { display: block; width: 100%; height: auto; max-height: 78vh; }
 .diagram.pickable .part { cursor: pointer; }
 .diagram .off { opacity: 0.25; }
 .diagram.has-current .part:not(.current) { opacity: 0.35; }
 .diagram .part { transition: opacity 0.25s; }
-/* The skeleton picture: each bone is a group; a state flat-fills every shape inside it.
+/* The real pictures: each part is a group; a state flat-fills every shape inside it.
    Bones that aren't in this round keep their own shading, dimmed. */
-.skeleton .skel-art > :not(.part) { opacity: 0.4; }
-.skeleton .part { --tint: var(--bone); }
-.skeleton .part.current { --tint: var(--accent); }
-.skeleton .part.found { --tint: var(--found); }
-.skeleton .part.missed { --tint: var(--missed); }
-.skeleton .part.unseen { --tint: var(--unseen); }
-.skeleton :is(.current, .found, .missed, .unseen, .hover) :is(path, polygon, circle, ellipse, rect):not([fill="none"]) {
+.picture .pic-art > :not(.part) { opacity: 0.4; pointer-events: none; }
+.picture .part { --tint: var(--bone); }
+.picture .part.current { --tint: var(--accent); }
+.picture .part.found { --tint: var(--found); }
+.picture .part.missed { --tint: var(--missed); }
+.picture .part.unseen { --tint: var(--unseen); }
+.picture :is(.current, .found, .missed, .unseen, .hover) :is(path, polygon, circle, ellipse, rect):not([fill="none"]) {
   fill: var(--tint);
   stroke: color-mix(in srgb, var(--tint) 60%, #000);
   stroke-width: 0.4;
+  opacity: 1;
 }
-.skeleton .part.hover { --tint: var(--accent); }
-.skeleton .part.current :is(path, polygon, circle, ellipse, rect):not([fill="none"]) { animation: skelpulse 0.9s ease-in-out infinite alternate; }
+.picture .part.hover { --tint: var(--accent); }
+.picture .part.current :is(path, polygon, circle, ellipse, rect):not([fill="none"]) { animation: skelpulse 0.9s ease-in-out infinite alternate; }
 @keyframes skelpulse { to { fill: color-mix(in srgb, var(--accent) 50%, #fff); } }
-.diagram.skeleton.has-current .part:not(.current) { opacity: 0.8; }
-.diagram.skeleton.has-current .part:is(.found, .missed, .unseen):not(.current) { opacity: 1; }
-.skeleton .dlabel text { font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
-.skeleton .dlabel.hover line { stroke: var(--ink); stroke-width: 1.8; }
-.skeleton .dlabel.hover circle { fill: var(--ink); }
+.diagram.picture.has-current .part:not(.current) { opacity: 0.8; }
+.diagram.picture.has-current .part:is(.found, .missed, .unseen):not(.current) { opacity: 1; }
+.picture .dlabel text { font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+.picture .dlabel.hover line { stroke: var(--ink); stroke-width: 1.8; }
+.picture .dlabel.hover circle { fill: var(--ink); }
 .part.flash { animation: pulse 0.5s 2; }
 .c-cyto { fill: var(--cyto); }
 .c-membrane { fill: none; stroke: var(--membrane); stroke-width: 5; pointer-events: stroke; }

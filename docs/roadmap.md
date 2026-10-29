@@ -100,7 +100,11 @@ More challenges next, e.g. public-domain tunes to read and play as practice.
   Transantarctic Mountains if Antarctica gets its own close-up map (it's too squashed on the world map).
 - **Mythology:** deep enough to become its own subject later (more cultures, heroes, monsters).
 - **Empires Through Time:** the 1815 map includes Aboriginal nations, a possible future round.
-- **The Human Body:** add muscles and body systems as further rounds.
+- **The Human Body:** real skeleton ✅ and rounds by body system ✅ (digestive, breathing, heart, brain and nerves,
+  kidneys and bladder, female reproductive). Still to do: **male reproductive** (Wikimedia has "Male genital system -
+  Front view.svg" and "Sagittal view", both CC BY-SA 4.0; downloads were blocked by rate limits), **blood vessels**
+  (the circulatory diagram's shapes are merged), **glands** (endocrine), muscles, and possibly one combined figure
+  (option a) once the separate systems have been played.
 - **Who Lived When?:** more people, especially pre-1900.
 - **Big Moments:** an Inventions era.
 - **More accurate visuals:** see "Visual accuracy" below.

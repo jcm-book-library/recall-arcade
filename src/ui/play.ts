@@ -117,8 +117,14 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   // ---------- setup controls ----------
   function renderSetup() {
     syncMode();
-    const variantChips = deck.variants.map((v) =>
-      h(
+    let lastHeading = "";
+    const variantChips = deck.variants.flatMap((v) => {
+      const title = v.heading && v.heading !== lastHeading ? [h("p", { class: "chip-heading" }, v.heading)] : [];
+      lastHeading = v.heading ?? lastHeading;
+      return [...title, chip(v)];
+    });
+    function chip(v: Variant) {
+      return h(
         "button",
         {
           type: "button",
@@ -133,8 +139,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
           },
         },
         v.starter ? `★ ${v.label}` : v.label,
-      ),
-    );
+      );
+    }
     const timeSelect = h(
       "select",
       {
