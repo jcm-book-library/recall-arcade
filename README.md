@@ -27,6 +27,8 @@ Thirty-four quizzes across six subjects, plus a memory game inside Mythology. â˜
 | Piano keyboard | The Piano Keyboard, Treble and Bass Clef (name the note, or "answer on the piano") |
 
 ## How it's built
+New to the project? Read [docs/HANDOVER.md](docs/HANDOVER.md) first.
+
 - `src/engine/`: the shared parts every game uses: answer matching, progress saving.
 - `src/decks/`: one file per topic. A deck is a list of items (name + accepted spellings + tags)
   plus the "board" that draws them. Adding a topic means adding a deck.
