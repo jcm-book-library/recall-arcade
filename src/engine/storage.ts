@@ -112,3 +112,8 @@ export function savePrefs(deck: string, prefs: DeckPrefs) {
     /* storage unavailable */
   }
 }
+
+/** Every saved round (the last 200), for working out progress. */
+export function allGames(): GameRecord[] {
+  return load().games;
+}
