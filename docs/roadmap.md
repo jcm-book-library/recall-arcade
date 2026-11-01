@@ -80,6 +80,40 @@ Countries of the World, freeing a slot.
 **Music:** closest to the goal; Dad was impressed with the sound and how accessible the levels are.
 More challenges next, e.g. public-domain tunes to read and play as practice.
 
+### Under discussion (1 Nov 26)
+**City Shapes (Geography), to replace Neighbours.** Neighbours doubles up on Countries of the World
+(regions can already be played there). New idea: a black-and-white outline of a city's water and
+coastline (Melbourne's Port Phillip Bay and the Yarra, Sydney Harbour, London's and Prague's
+winding rivers, Venice, Istanbul's Bosphorus, Hong Kong, San Francisco Bay, Rio, Stockholm). Name
+the city.
+- A second round could use street layouts (Barcelona's grid, Paris's star-shaped roads, Canberra's
+  circles, Manhattan).
+- Data: OpenStreetMap (free, ODbL: credit "© OpenStreetMap contributors"). Its servers are
+  **blocked from the cloud machine**. Options:
+  (a) allow `overpass-api.de` in the cloud environment's network settings, then a build script cuts
+      each city to a small SVG, like `build-water.mjs`;
+  (b) fetch the shapes at play time in the browser, like the historical maps (slower, needs the site
+      to be up);
+  (c) the owner downloads one file per city.
+  (a) is cleanest.
+- Keep Neighbours' id and scores. **Recommended:** make it a round inside Countries rather than
+  deleting it.
+
+**Science: which six quizzes.** Locks: Infinity & Beyond, Periodic Table, Human Body. Cells & Life and
+Units & Forces don't work yet: they can't be learned from scratch and built on. Options (pick
+three, or rework the two):
+- **Inner Space** (biology, replaces Cells & Life): the mirror of Infinity & Beyond. Zoom IN a
+  stage at a time, from a person to an organ, tissue, cell, organelle, DNA and atom. Cells
+  becomes one stage, with the "learn it first" card built in. It reuses the zoom board.
+- **The Scale of Things** (physics, replaces Units & Forces): put things in order on a scale (speeds:
+  snail, cheetah, sound, light; temperatures; sizes; masses; energies). It reuses the timeline
+  screen as a number line. It builds a feel for size and speed, which is what physics needs first.
+- **Earth & Sky** (earth science, the free sixth slot): layers of the Earth, rock types, plate
+  boundaries and volcanoes on the map, cloud types from photos, weather symbols. It reuses the map,
+  diagram and photo-wall boards.
+- Also considered: chemistry (common formulas, hazard symbols, lab kit), inventions (overlaps
+  History), the senses and illusions.
+
 ### New game styles to reach for
 - **Memory / pairs** (flip two cards to match): mythology pairs ✅ (built, `src/ui/pairs.ts`), flags ↔ countries, logos ↔ airlines.
   The pairs screen also does a two-column "match" style (Famous For ✅), so new pairs games are mostly data.
