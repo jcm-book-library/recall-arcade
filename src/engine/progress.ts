@@ -71,20 +71,43 @@ export const CHALLENGES: Record<string, Challenge> = {
 
 export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music"];
 
+// Ticked challenges are also kept in their own list, because storage.ts only keeps the
+// last 200 rounds and a challenge must never "untick" itself.
+const DONE_KEY = "learning-arcade:challenges";
+function loadDone(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DONE_KEY) ?? "[]") as string[]);
+  } catch {
+    return new Set();
+  }
+}
+function saveDone(done: Set<string>) {
+  try {
+    localStorage.setItem(DONE_KEY, JSON.stringify([...done]));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 /** Has this quiz's challenge been met in any saved round? */
-export function challengeDone(deckId: string, games: GameRecord[] = allGames()): boolean {
+export function challengeDone(deckId: string, games: GameRecord[] = allGames(), done: Set<string> = loadDone()): boolean {
+  if (done.has(deckId)) return true;
   const c = CHALLENGES[deckId];
-  return !!c && games.some((g) => g.deck === deckId && c.met(g));
+  if (!c || !games.some((g) => g.deck === deckId && c.met(g))) return false;
+  done.add(deckId);
+  saveDone(done);
+  return true;
 }
 
 /** The subjects with at least one challenge done. `deckSubjects` maps deck id to subject. */
 export function clearedSubjects(deckSubjects: Record<string, string>): Set<string> {
   const games = allGames();
-  const done = new Set<string>();
+  const ticked = loadDone();
+  const cleared = new Set<string>();
   for (const [id, subject] of Object.entries(deckSubjects)) {
-    if (challengeDone(id, games)) done.add(subject);
+    if (challengeDone(id, games, ticked)) cleared.add(subject);
   }
-  return done;
+  return cleared;
 }
 
 export type Track = "easy" | "intermediate" | "hard";
