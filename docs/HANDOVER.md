@@ -47,6 +47,7 @@ The arcade files are written to be read: their comments explain the game loop, f
 
 ## Where the design notes are (and aren't)
 - `docs/roadmap.md`: the plan, the subject tables, the 26 Oct 2026 review notes for every subject, new game styles and subject ideas, the visual-accuracy plan.
+- `docs/arcade-design.md`: **the latest arcade decisions** (1 Nov 2026): Pong tiers, Labyrinth worlds, Flyover changes, how quizzes unlock the arcade, the island, and the build order. Start here for arcade work.
 - `docs/action-game-ideas.md`: the arcade levels, the Easy / Intermediate / Hard progression and badges, the Overworld idea, the build order.
 - `docs/arcade-art.md`: how to draw the hero sprite (Piskel, 32×64, put it at `public/arcade/hero.png`).
 - **Not written down yet:** a design doc per game type. This file is the map; the details live in the code. Deeper per-type docs are best written in a focused session per type.
