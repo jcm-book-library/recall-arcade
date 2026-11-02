@@ -18,7 +18,7 @@ Arcade level ideas and progression details: [action-game-ideas.md](action-game-i
 | Capitals | Cells & Life (diagram) | Australian Prime Ministers | NATO Alphabet | Pet Breeds (click the photo; dogs and cats) |
 | Seas, Lakes & Rivers (click) | The Human Body: bones, organs (diagram) | Empires Through Time (6 maps, 323 BC–1914) | Currencies | *(Where Animals Live removed: too many look-alike trick questions)* |
 | Mountains (peaks + ranges; territories are a tickbox in Countries) | Units & Forces + Conversions | Mythology (+ Greek & Roman Pairs memory game, linked from its setup screen) | *(Time Zones removed 28 Oct 26; idea kept: odd time zones and time differences)* | Baby Animals & Group Names (name the animal) |
-| Neighbours | *(Famous Scientists moved to History as Famous For)* | Famous For (match people to what they did; scientists + Who Lived When? people) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
+| City Shapes (coasts, rivers, street plans; Neighbours now linked from Countries) | *(Famous Scientists moved to History as Famous For)* | Famous For (match people to what they did; scientists + Who Lived When? people) | Landmarks & Wonders (photos) | Dinosaurs (photo + fossil site) |
 
 ### Music (skill learning: reading music, on piano)
 | Quiz | Rounds |
@@ -81,7 +81,9 @@ Countries of the World, freeing a slot.
 More challenges next, e.g. public-domain tunes to read and play as practice.
 
 ### Under discussion (1 Nov 26)
-**City Shapes (Geography), to replace Neighbours.** Neighbours doubles up on Countries of the World
+**Built (2 Nov 26): City Shapes.** 32 cities' water and coastlines in four rounds (Famous ten ★, Australia & NZ, Europe, Americas, Africa & Asia, plus all of them) and a Street plans round (Barcelona, Paris, Canberra, Manhattan, Washington, Adelaide, Melbourne, Amsterdam, Moscow, Kyoto). The data came by a route not listed below: the Overture Maps release on Amazon S3 (OpenStreetMap data, ODbL) is reachable from the cloud machine, so no network change was needed (`scripts/build-cities.py`). Neighbours keeps its id and scores; it is off the home page and linked from the Countries setup screen. Ideas for later: more cities, coasts-and-streets together, a "which way is north?" twist.
+
+*The original note:* **City Shapes (Geography), to replace Neighbours.** Neighbours doubles up on Countries of the World
 (regions can already be played there). New idea: a black-and-white outline of a city's water and
 coastline (Melbourne's Port Phillip Bay and the Yarra, Sydney Harbour, London's and Prague's
 winding rivers, Venice, Istanbul's Bosphorus, Hong Kong, San Francisco Bay, Rio, Stockholm). Name

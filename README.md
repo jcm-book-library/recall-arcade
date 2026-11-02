@@ -6,7 +6,7 @@ Started with a Sporcle-style "name every country" map quiz.
 ## Games
 Thirty-four quizzes across six subjects, plus a memory game inside Mythology. ★ marks the starter round in each.
 
-- **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, Neighbours, Mountains
+- **Geography:** Countries of the World (territories optional), Flags, Capitals, Seas Lakes & Rivers, City Shapes, Mountains (Neighbours is linked from Countries)
 - **Science:** Infinity & Beyond, Periodic Table, Cells & Life, The Human Body, Units & Forces
 - **History:** Big Moments, Who Lived When?, Australian Prime Ministers, Empires Through Time, Mythology (with Greek & Roman Pairs, a memory game), Famous For
 - **Travel & Transport:** Airport Codes, Airline Codes, Tail Fins, NATO Alphabet, Currencies, Landmarks & Wonders
@@ -17,7 +17,7 @@ Thirty-four quizzes across six subjects, plus a memory game inside Mythology. �
 | Style | Where |
 |---|---|
 | Type in any order | Countries, Periodic Table, Infinity & Beyond, NATO, Prime Ministers, Neighbours, Empires Through Time |
-| One at a time, typed | Flags, Capitals, Airports, Airlines, Currencies, Units, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
+| One at a time, typed | Flags, Capitals, City Shapes, Airports, Airlines, Currencies, Units, Mythology, Baby Animals, Australian Animals, Landmarks, Dinosaurs |
 | One at a time, clicked | Seas Lakes & Rivers, Mountains, Pet Breeds (and Cells / Human Body with "click instead") |
 | Labelled diagram | Cells & Life, The Human Body |
 | Timeline | Big Moments, Who Lived When? |
@@ -47,6 +47,7 @@ npm run build   # makes the finished site in dist/
 Map data: Natural Earth via the `world-atlas` package (public domain).
 Flags: the `flag-icons` package (MIT licence).
 Seas, lakes and rivers: Natural Earth (public domain), cut down by `scripts/build-water.mjs`.
+City Shapes: map data © OpenStreetMap contributors (ODbL, https://www.openstreetmap.org/copyright), read from the Overture Maps release on Amazon S3 and cut down by `scripts/build-cities.py`.
 Mountain ranges: Natural Earth geography regions (public domain), cut down by `scripts/build-ranges.mjs`. Peak heights and positions are typed in `src/decks/mountains-data.ts`.
 Historical borders (323 BC to 1914): [historical-basemaps](https://github.com/aourednik/historical-basemaps) by André Ourednik (GPL-3.0), loaded from GitHub at play time, not copied here.
 Photos (animals, pets, landmarks, dinosaurs, Greek and Roman gods): each Wikipedia article's main image, freely licensed only, loaded at play time and shown with its photographer and licence.

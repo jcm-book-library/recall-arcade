@@ -34,6 +34,7 @@ Live site: https://jcm-book-library.github.io/recall-arcade/ · Repo: github.com
 | Labelled diagrams | `boards/diagramBoard.ts` (drawn in code), `boards/skeletonBoard.ts` + `boards/pictureBoard.ts` (real SVGs) | Cells & Life, Human Body |
 | Real anatomy SVGs | `scripts/build-skeleton.mjs`, `scripts/build-organs.mjs` + `scripts/organ-systems.mjs` (the source SVGs are downloaded and are not in the repo); cleaned output in `src/assets/` | Human Body |
 | Photo walls | `data/pictures.ts` (Wikipedia, free licences, credits), `data/picture-titles.json`, `decks/picture-decks.ts`, `boards/flagBoard.ts` | Animals, Landmarks, Pet Breeds, Dinosaurs |
+| City outlines (prompt + tile wall) | `decks/city-shapes.ts`, `boards/flagBoard.ts`, data builder `scripts/build-cities.py` (Python; reads OpenStreetMap data from the Overture Maps bucket on S3, which the cloud machine can reach), output `src/data/city-shapes.json` (loaded only when the game opens) | City Shapes |
 | Own photos from the repo | `decks/tail-fins.ts`, photos in `public/arcade/spotter/` | Tail Fins |
 | Timelines | `ui/timeline.ts`, `decks/history*.ts`, `decks/people*.ts` | Big Moments, Who Lived When? |
 | Multiple choice | `ui/choice.ts`, `decks/choice-decks.ts` | Classifying Life; Ear Training |
@@ -55,6 +56,7 @@ The arcade files are written to be read: their comments explain the game loop, f
 - **Not built:** the progression system (tracks, targets, badges, unlocks), the Overworld, accounts or a backend. They are designed in the docs above, nothing more.
 
 ## Things that cost time before (read these)
+- **OpenStreetMap from the cloud machine.** `overpass-api.de` and the other OSM servers are blocked, but the Overture Maps bucket (`overturemaps-us-west-2.s3.amazonaws.com`, OSM-based water, land and roads) is reachable. `scripts/build-cities.py` shows how to read just one city's area with pyarrow. The `@geo-maps` packages on npm are reachable too but far too coarse for cities.
 - **Wikipedia from the cloud machine.** Only `en.wikipedia.org/w/api.php` works. `commons.wikimedia.org` and `thumb.wikimedia.org` are blocked, and the shared address gets HTTP 429 often. Files can be downloaded from `upload.wikimedia.org/wikipedia/commons/<md5[0]>/<md5[0:2]>/<File_name>` (the md5 is of the file name with underscores). Space requests out, and retry after a pause. In the owner's browser, photos load at runtime and work fine. Tests mock the API.
 - **Free images only.** `pictures.ts` asks for free licences and shows credits. Check a licence before adding any diagram, and credit it on the page and in the README. CC BY and CC BY-SA need the author's name.
 - Historical maps (`aourednik/historical-basemaps`, GPL) are fetched at runtime, never copied into the repo.
