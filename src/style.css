@@ -857,3 +857,92 @@ a.btn { text-decoration: none; }
 }
 .flagwall.cities .flaggrid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 .flagwall.cities .flag img { aspect-ratio: 1; }
+
+/* ---------- The Scale of Things (ui/scale.ts) ----------
+   Two ways to play: a row of cards to drag into order, and a number line to place things on.
+   Everything uses the page's colour tokens, so it works in light and dark. */
+.sc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sc-label { margin: 6px 0 0; font: 0.8rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.sc-note { margin: 0; font-size: 0.95rem; }
+.sc-game { display: grid; gap: 16px; min-width: 0; }
+.sc-learn h3 { margin: 0 0 6px; }
+.sc-learn h4 { margin: 12px 0 4px; }
+.sc-learn p, .sc-learn ul { margin: 0 0 8px; max-width: 70ch; }
+.sc-learn ul { padding-left: 1.2em; }
+.sc-learn li { margin-bottom: 3px; }
+.sc-ends { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; font-weight: 700; color: var(--muted); }
+.sc-how { margin: 0; font-size: 0.95rem; }
+
+/* Put in order: a wrapping row of big cards */
+.sc-row { display: flex; flex-wrap: wrap; gap: 12px; padding: 14px; background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); }
+.sc-card {
+  position: relative; flex: 1 1 130px; max-width: 220px; min-height: 84px; min-width: 0;
+  display: grid; align-content: center; gap: 4px; justify-items: center; text-align: center;
+  padding: 10px 10px 10px; font: inherit; color: var(--ink); background: var(--bg);
+  border: 2px solid var(--line); border-radius: var(--r); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.sc-card:hover:not(:disabled) { border-color: var(--muted); }
+.sc-card:focus-visible, .sc-track:focus-visible, .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.sc-card.picked { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+.sc-card.dragging { z-index: 5; cursor: grabbing; opacity: 0.92; box-shadow: 4px 4px 0 var(--ink); pointer-events: none; }
+.sc-card:disabled { cursor: default; opacity: 1; color: var(--ink); }
+.sc-card.right { border-color: var(--found); background: color-mix(in srgb, var(--found) 16%, var(--panel)); }
+.sc-card.wrong { border-color: var(--missed); background: color-mix(in srgb, var(--missed) 16%, var(--panel)); }
+.sc-card.drop-before::before, .sc-card.drop-after::after {
+  content: ""; position: absolute; top: -4px; bottom: -4px; width: 5px; border-radius: 3px; background: var(--accent);
+}
+.sc-card.drop-before::before { left: -9px; }
+.sc-card.drop-after::after { right: -9px; }
+.sc-pos { font: 0.75rem var(--font-pixel); color: var(--muted); }
+.sc-name { font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.sc-val { font-size: 0.88rem; color: var(--muted); }
+.sc-reveal { display: grid; gap: 6px; padding: 12px 14px; background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); }
+.sc-order { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.sc-order li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 2px 12px; padding: 5px 8px; border-left: 4px solid var(--line); }
+.sc-order li.good { border-color: var(--found); }
+.sc-order li.ok { border-color: var(--accent); }
+.sc-order li.bad { border-color: var(--missed); }
+.sc-order.numbered li { grid-template-columns: 2em minmax(0, 1fr) minmax(0, 1.3fr); }
+.sc-o-name { font-weight: 700; overflow-wrap: anywhere; }
+.sc-o-val { color: var(--muted); font-size: 0.92rem; overflow-wrap: anywhere; }
+.sc-num { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--ink); color: var(--bg); font: 0.75rem var(--font-pixel); }
+.sc-order-title { margin: 0; font: 0.8rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.sc-review { display: grid; gap: 4px; }
+
+/* Place on the scale: the number line */
+.sc-linebox { padding: 28px 24px 18px; display: grid; gap: 14px; min-width: 0; }
+.sc-wrap { display: grid; gap: 8px; min-width: 0; }
+.sc-track { position: relative; height: 66px; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; --bar: 20px; }
+.sc-track.tall { height: 150px; cursor: default; --bar: 100px; }
+.sc-bar { position: absolute; left: 0; right: 0; top: var(--bar); height: 4px; margin-top: -2px; border-radius: 2px; background: var(--line); }
+.sc-tick { position: absolute; top: calc(var(--bar) - 6px); width: 2px; height: 12px; background: var(--muted); transform: translateX(-1px); }
+.sc-tick span { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; line-height: 1; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sc-dot { position: absolute; top: var(--bar); width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--found); opacity: 0.5; }
+.sc-guess, .sc-actual { position: absolute; top: calc(var(--bar) - 16px); width: 6px; height: 32px; margin-left: -3px; border-radius: 3px; }
+.sc-guess { background: var(--accent); box-shadow: 0 0 0 2px var(--panel); }
+.sc-actual { background: var(--found); box-shadow: 0 0 0 2px var(--panel); }
+.sc-gap { position: absolute; top: calc(var(--bar) - 3px); height: 6px; background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.sc-unit { margin: 0; font-size: 0.85rem; color: var(--muted); text-align: center; }
+.sc-tray { display: flex; justify-content: center; }
+.sc-token {
+  padding: 10px 16px; border-radius: var(--r); border: 2px solid var(--accent); background: var(--accent); color: var(--on-accent);
+  font-weight: 700; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 3px 3px 0 var(--ink);
+}
+.sc-token.dragging { cursor: grabbing; position: relative; z-index: 5; }
+.sc-thing .tl-event { max-width: 40ch; }
+.sc-pin {
+  position: absolute; top: calc(var(--bar) - 14px - var(--row) * 26px); width: 24px; height: 24px; margin-left: -12px;
+  display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--bg); font: 0.7rem var(--font-pixel);
+}
+.sc-pin::after { content: ""; position: absolute; left: 11px; top: 24px; width: 2px; height: calc(var(--row) * 26px + 4px); background: var(--ink); }
+@media (max-width: 600px) {
+  .sc-row { gap: 10px; padding: 10px; }
+  .sc-card { flex: 1 1 calc(50% - 10px); max-width: none; }
+  .sc-linebox { padding: 24px 18px 14px; }
+  .sc-order li, .sc-order.numbered li { grid-template-columns: minmax(0, 1fr); }
+  .sc-order.numbered li { grid-template-columns: 2em minmax(0, 1fr); }
+  .sc-order.numbered .sc-o-val { grid-column: 2; }
+}
+/* The main button changes size as its words change ("Place", then "Next ▸"), and the usual hover nudge can then
+   make it flicker when the pointer sits on its edge. In this game the hover just brightens it instead. */
+.sc-game .btn.primary:hover { transform: none; box-shadow: 3px 3px 0 var(--ink); filter: brightness(1.08); }

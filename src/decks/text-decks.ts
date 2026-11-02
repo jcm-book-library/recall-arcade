@@ -47,6 +47,8 @@ function numberOrWords(text: string): string {
 
 interface TextDeckSpec {
   id: string;
+  /** Reachable by its link but not shown on the home page. */
+  hidden?: boolean;
   title: string;
   subject: string;
   blurb: string;
@@ -69,6 +71,7 @@ function textDeck(s: TextDeckSpec): Deck {
     id: s.id,
     title: s.title,
     subject: s.subject,
+    hidden: s.hidden,
     blurb: s.blurb,
     noun: s.noun,
     items: s.items,
@@ -276,6 +279,7 @@ export const unitsDeck = textDeck({
   id: "units",
   title: "Physics: Units & Forces",
   subject: "Science",
+  hidden: true, // replaced on the home page by The Scale of Things; still reachable at #units
   blurb: "What do scientists measure things in? Name the unit. Then the conversions: miles to km, °F, nautical miles.",
   noun: "units",
   mode: "prompt",

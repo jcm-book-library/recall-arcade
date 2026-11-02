@@ -11,6 +11,7 @@ import { zoomOutDeck } from "./decks/zoomout";
 import { elementsDeck } from "./decks/elements";
 import { cellsDeck } from "./decks/cells";
 import { innerSpaceDeck } from "./decks/innerspace";
+import { scaleDeck } from "./decks/scale";
 import { bodyDeck } from "./decks/body";
 import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
@@ -34,7 +35,7 @@ const DECKS: Deck[] = [
   // Geography
   countriesDeck, flagsDeck, capitalsDeck, waterDeck, cityShapesDeck, mountainsDeck,
   // Science
-  zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, unitsDeck,
+  zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, scaleDeck,
   // History
   historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
   // Travel & Transport
@@ -43,8 +44,9 @@ const DECKS: Deck[] = [
   animalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
-  // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells) or Countries (#neighbours)
-  mythPairsDeck, cellsDeck, neighboursDeck,
+  // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells), Countries (#neighbours)
+  // or The Scale of Things (#units, the old quiz, kept so its saved scores still work)
+  mythPairsDeck, cellsDeck, neighboursDeck, unitsDeck,
 ];
 
 // While developing, catch two items in one game sharing an id (they'd count as one).
