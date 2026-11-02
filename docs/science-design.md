@@ -95,7 +95,9 @@ the existing Hints. **Proposed design:**
    for the hand-written cards.
 2. **Inner Space**: the zoom board, opened up so both zoom quizzes can use it, with a hand-written
    learn-it-first card.
-3. **The Scale of Things:** the drag-to-order screen first, then the number line on Hard.
+3. **The Scale of Things:** the drag-to-order screen first, then the number line on Hard. **Built 2 Nov 2026** (`#scale`): 8 quantities, Easy/Medium/Hard by gap size, "Put in order" and
+   "Place on the scale", and a learn-it-first card. Units & Forces is now hidden, linked from it.
+   Loudness Hard can't have close calls (no two sounds are under 10 dB apart).
 4. **Earth & Sky**, after the owner's refinement.
 
 ## City Shapes (Geography, linked here for the data)
