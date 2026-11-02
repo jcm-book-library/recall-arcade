@@ -62,15 +62,24 @@ Put things in order by size, speed and so on. It builds the feel for numbers tha
 - Drag to order is a new screen, but a small one. It suits other quizzes too (planets by size,
   Prime Ministers in order, rivers by length).
 
-## Earth & Sky (Decided, with refinement to come)
-A draft. The owner chose the water cycle and climate zones for the open slot:
-1. **Inside the Earth:** crust, mantle, outer and inner core (labelled diagram).
-2. **Plates and volcanoes:** the main tectonic plates and famous volcanoes on the world map (map board).
-3. **Rocks:** igneous, sedimentary and metamorphic, from photos (photo wall).
-4. **Clouds:** cumulus, stratus, cirrus and the rest, from photos.
-5. **Weather:** the symbols on a weather map, and wind and storm names.
-6. **The water cycle** (labelled diagram: evaporation, condensation, precipitation, collection and so on)
-   and **climate zones** (on the world map: tropical, dry, temperate, continental, polar).
+## Earth & Sky (Decided 2 Nov 2026: a journey UP, "from the core to the clouds")
+Science now has three journeys: Inner Space goes in, Infinity & Beyond goes out, Earth & Sky goes
+up. Seven stages on the zoom board. Each one leads into the next: the plates make volcanoes, the
+volcanoes make rock, rain wears the rock away, the water rises into clouds, and the clouds make
+weather.
+1. **Inside the Earth** (the cross-section): crust, mantle, outer core, inner core.
+2. **The plates** (a plain world with the real plate edges, from Peter Bird's 2003 model, ODC-BY):
+   the major plates and the Ring of Fire.
+3. **A volcano** (cut-away): magma chamber, vent, crater, lava, ash cloud, side vent.
+4. **The rock cycle**: igneous, sedimentary and metamorphic rock, magma, and the processes between
+   them.
+5. **The water cycle**: evaporation, transpiration, condensation, precipitation, runoff, groundwater.
+6. **Clouds and the air**: cloud types by height, and the layers of the atmosphere.
+7. **Weather and climate**: climate zones as bands by latitude, plus highs, lows and fronts.
+
+Rounds: Down to Earth ★ (1–2), Rock Solid (1–4), All the Way Up (1–7).
+**Later expansion (kept for later):** minerals and gems as a photo round, "Rocks & Gems" (quartz,
+diamond, gold, opal and so on), since photos suit them better than drawings.
 
 ## Learn it first cards (Decided, all hard games)
 For a player who starts knowing nothing, the card is a resource to get going, used together with
