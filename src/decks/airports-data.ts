@@ -18,6 +18,7 @@ TSV|Townsville|Townsville|Australia|AP|-19.25|146.77|
 LST|Launceston|Launceston|Australia|AP|-41.55|147.21|
 ASP|Alice Springs|Alice Springs|Australia|AP|-23.81|133.90|
 AYQ|Uluru|Ayers Rock|Australia|AP|-25.19|130.98|Yulara
+LEA|Learmonth|Learmonth|Australia|AP|-22.24|114.09|Exmouth
 AKL|Auckland|Auckland|New Zealand|AP|-37.01|174.79|
 WLG|Wellington|Wellington|New Zealand|AP|-41.33|174.81|
 CHC|Christchurch|Christchurch|New Zealand|AP|-43.49|172.53|
@@ -26,12 +27,14 @@ NAN|Nadi|Nadi|Fiji|AP|-17.76|177.44|Fiji
 NOU|Nouméa|La Tontouta|New Caledonia|AP|-22.01|166.21|Noumea;New Caledonia
 PPT|Papeete|Faa'a|French Polynesia|AP|-17.55|-149.61|Tahiti
 SIN|Singapore|Changi|Singapore|AS|1.36|103.99|
+BWN|Bandar Seri Begawan|Brunei|Brunei|AS|4.94|114.93|Brunei
 HKG|Hong Kong|Chek Lap Kok|Hong Kong|AS|22.31|113.92|
 HND|Tokyo|Haneda|Japan|AS|35.55|139.78|
 NRT|Tokyo|Narita|Japan|AS|35.77|140.39|
 KIX|Osaka|Kansai|Japan|AS|34.43|135.24|
 ICN|Seoul|Incheon|South Korea|AS|37.46|126.44|
 PEK|Beijing|Capital|China|AS|40.08|116.58|
+UBN|Ulaanbaatar|Chinggis Khaan|Mongolia|AS|47.65|106.82|Ulan Bator;Ulaanbaatar
 PKX|Beijing|Daxing|China|AS|39.51|116.41|
 PVG|Shanghai|Pudong|China|AS|31.14|121.81|
 CAN|Guangzhou|Baiyun|China|AS|23.39|113.30|Canton
@@ -65,6 +68,7 @@ BER|Berlin|Brandenburg|Germany|EU|52.37|13.50|
 ZRH|Zurich|Zurich|Switzerland|EU|47.46|8.55|Zürich
 GVA|Geneva|Geneva|Switzerland|EU|46.24|6.11|
 VIE|Vienna|Vienna|Austria|EU|48.11|16.57|Wien
+BTS|Bratislava|M. R. Štefánik|Slovakia|EU|48.17|17.21|
 BCN|Barcelona|El Prat|Spain|EU|41.30|2.08|
 MAD|Madrid|Barajas|Spain|EU|40.47|-3.56|
 LIS|Lisbon|Humberto Delgado|Portugal|EU|38.77|-9.13|Lisboa
@@ -99,6 +103,7 @@ YYZ|Toronto|Pearson|Canada|AM|43.68|-79.63|
 YVR|Vancouver|Vancouver|Canada|AM|49.19|-123.18|
 YUL|Montreal|Trudeau|Canada|AM|45.47|-73.74|Montréal
 MEX|Mexico City|Benito Juárez|Mexico|AM|19.44|-99.07|
+SJO|San José|Juan Santamaría|Costa Rica|AM|9.99|-84.21|San Jose
 CUN|Cancún|Cancún|Mexico|AM|21.04|-86.87|Cancun
 PTY|Panama City|Tocumen|Panama|AM|9.07|-79.38|Panama
 BOG|Bogotá|El Dorado|Colombia|AM|4.70|-74.15|Bogota
@@ -116,6 +121,7 @@ AMM|Amman|Queen Alia|Jordan|ME|31.72|35.99|
 TLV|Tel Aviv|Ben Gurion|Israel|ME|32.01|34.89|
 CAI|Cairo|Cairo|Egypt|ME|30.12|31.41|
 JNB|Johannesburg|O. R. Tambo|South Africa|ME|-26.14|28.25|Joburg
+WDH|Windhoek|Hosea Kutako|Namibia|ME|-22.48|17.47|
 CPT|Cape Town|Cape Town|South Africa|ME|-33.97|18.60|
 NBO|Nairobi|Jomo Kenyatta|Kenya|ME|-1.32|36.93|
 ADD|Addis Ababa|Bole|Ethiopia|ME|8.98|38.80|
