@@ -1,7 +1,7 @@
 # Arcade design note (1 Nov 2026)
 
 What we decided about the three arcade games, the link to the quizzes, and the island. Start here
-in the next arcade session. The bigger background is in [action-game-ideas.md](action-game-ideas.md).
+in the next arcade session. **Status:** steps 1 to 3 of the build order were built on 1 Nov 2026 (see the end). The bigger background is in [action-game-ideas.md](action-game-ideas.md).
 Labels: **Decided** (the owner said so), **Proposed** (Claude's recommendation, not yet confirmed),
 **Open** (still to settle).
 
@@ -23,16 +23,16 @@ tiers. **Decided** unless marked.
 |---|---|---|---|
 | First to | 5 | 7 | 10 |
 | Planets served | Mercury, Venus, Earth, Mars | adds Jupiter, Saturn, Uranus, Neptune | adds dwarf planets with powers |
-| Asteroids | 1 large | 4 (as now) | 4 that split into 2 small ones when they crack (**Proposed**, instead of 8: eight would clog a 320-pixel court) |
+| Asteroids | 1 large | 4 (as now) | 4 that split into 2 small ones when they crack (**Decided**, instead of 8: eight would clog a 320-pixel court) |
 | Halley's Comet | no | rare | rare |
 
 - **Paddle edges shaded** so you can see that hitting with the edge sends the ball at an angle.
-- **Dwarf planets (Hard).** Drawn bigger than true scale, each with one power. **Proposed** set:
+- **Dwarf planets (Hard).** Drawn bigger than true scale, each with one power. **Decided** set:
   - Ceres (it lives in the asteroid belt): breaks an asteroid in one hit.
   - Haumea (spins fastest): moves at 2× speed.
   - Pluto ("still a planet to us"): a point won with Pluto counts double. Pong has no lives, so this
     replaces the owner's "extra life" idea.
-  - Eris and Makemake: **Open**, pick from: shrinks the computer's paddle; curves in flight.
+  - Eris: shrinks the computer's paddle. Makemake: curves in flight.
 - **Halley's Comet:** a second ball that streaks in mid-rally, at most once a match and not every
   match. Intermediate and Hard only. A small "Halley's Comet!" banner warns you first.
 
@@ -42,8 +42,7 @@ The owner hasn't reached the Minotaur yet, so whether it's too easy stays **Open
 - **A different world on each level (Decided):**
   1. **Garden hedge maze**, outdoors. Its exit is a door down into...
   2. **The dungeon**, much as it looks now.
-  3. **The final level is a change of style**, with corridors closer to Pac-Man. The theme is
-     **Open**. **Proposed: lava.** It suits the flow (going deeper down) and the Minotaur myth, and it
+  3. **The final level is a change of style**, with corridors closer to Pac-Man. **Decided: lava.** It suits the flow (going deeper down) and the Minotaur myth, and it
      stays G/PG as long as touching lava sends you back with a "singed" puff, not a death. The
      neon/Tron look could come back later for a level that leads into the space quizzes.
 - **Gems become a one-shot weapon (Decided in spirit).** **Proposed:** collect every gem on a level to
@@ -68,8 +67,8 @@ The owner hasn't reached the Minotaur yet, so whether it's too easy stays **Open
   `flyover-data.ts`. **Proposed:** the wrong gates should be nearby airports that are believable
   (needs a short "decoys" list per route).
 - **Backgrounds that look like the real place:** later.
-- **Top-down for leg 2, snake-style world maze for leg 3 (Open). Proposed: no, make them separate
-  games.** Three styles in one game triples the work and the testing. The roadmap already has a
+- **Top-down for leg 2, snake-style world maze for leg 3 (Decided: separate games, next on the
+  arcade roadmap after the build order below, so the owner can compare which flying game they prefer).** Three styles in one game triples the work and the testing. The roadmap already has a
   "snake-style flight game over a map" and a top-down Dogfight, so those ideas become their own
   arcade levels later.
 
@@ -80,14 +79,19 @@ The owner hasn't reached the Minotaur yet, so whether it's too easy stays **Open
   easy on Easy. Each quiz needs its own measure, because the games differ. For example, Countries
   starts at about 25 countries, not 50% (which is about 100). Targets get set per quiz once more is
   settled.
-- **Proposed** shape, to confirm:
+- **Decided** shape (built):
   - Pong is open. The Labyrinth opens after challenges in 3 subjects. Flyover opens after 5. Doing
-    all 7 subjects (Music included) finishes the Easy track and opens Intermediate everywhere.
+    all 6 subjects (Music included) finishes the Easy track and opens Intermediate everywhere.
   - Difficulty in each game (Pong's tiers, Labyrinth lives, Flyover fuel) follows your track.
   - Locked games show as a silhouette with "Do a challenge in History to open this". Following "never
     locked behind skill alone", a **Preview** button still lets you have a go.
-- **Next step:** Claude drafts a table with one Easy challenge per quiz (for example "Countries: 25",
-  "Flags: 10 in a row", "Big Moments: 8 placed"). The owner adjusts it.
+- **The Easy challenge for every quiz** is a table in `src/engine/progress.ts` (`CHALLENGES`). Each
+  one is "at least N right in any round" (for example "Name 25 countries") or, for timelines,
+  multiple choice, pairs and hangman, "at least this share of the marks". The owner adjusts the numbers
+  after playing. Intermediate and Hard targets are still to be set, so nobody reaches the Hard track yet.
+- How it works: nothing new is saved per round. The home page works out the ticks from the saved
+  scores, keeps ticked challenges in `learning-arcade:challenges` (so they never drop off), and leaves the
+  current track in `learning-arcade:track` for the arcade games to read.
 
 ## 5. The island (the Overworld)
 **Decided vision:** an island. Each subject is a building, linked by a path, with the arcade games as
@@ -100,7 +104,9 @@ The owner found the Piskel steps overwhelming. **Proposed:** a ready-made starte
 placeholder hero with faint guide lines) to open in Piskel and recolour, plus a picture-by-picture
 guide page. Recolouring an existing hero is far easier than drawing on a blank 32×64 sheet.
 
-## Proposed build order
+## Build order (agreed)
+Steps 1 to 3 were built on 1 Nov 2026. In Pong, every tier can be played; tiers above your track say
+"Preview".
 1. **Quick wins:** shaded Pong paddle edges; Flyover's next stop shown on the game screen.
 2. **Pong's three tiers**, chosen by a button for now, locked to the track later.
 3. **Progression, first version:** the challenge table, saving each challenge as done, locks and
@@ -111,6 +117,8 @@ guide page. Recolouring an existing hero is far easier than drawing on a blank 3
 6. **Flyover:** take-off and landing, fuel, the owner's routes.
 7. **Hero starter sheet and visual guide.**
 8. **The island.**
+9. **The two new flying games**: a top-down flight, and a snake-style flight that works its way
+   around a world map like a maze.
 
 Steps 1, 2 and 5 are well suited to a cheaper helper model working from this note. The lead session
 reviews and plays each one before a pull request.

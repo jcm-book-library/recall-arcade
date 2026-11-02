@@ -790,3 +790,10 @@ a.btn { text-decoration: none; }
   .hm-keys { grid-template-columns: repeat(13, minmax(0, 1fr)); }
   .hm-box { height: 56px; font-size: 2rem; }
 }
+
+/* Quiz challenges and arcade unlocks (engine/progress.ts) */
+.card-challenge { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 8px; }
+.card-challenge.done { color: var(--found); border-left-color: var(--found); }
+.locked-card { opacity: 0.72; border-style: dashed; }
+.locked-card:hover { opacity: 1; }
+.arcade-how { margin: -4px 0 12px; color: var(--muted); max-width: 60ch; }

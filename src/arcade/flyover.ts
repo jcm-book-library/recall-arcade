@@ -811,6 +811,23 @@ export function renderFlyover(root: HTMLElement): () => void {
       px(0, 2, W, 21, "rgba(10,18,48,0.6)");
       text(banner.title, W / 2, 8, 8, banner.colour);
       text(banner.sub, W / 2, 17, 8, "#e8ecff");
+    } else if (gate && state === "playing") {
+      // The next stop, on the game itself, so you don't have to look away to the strip above.
+      const city = cityOf(leg.stops[gate.stop]);
+      const msg = `NEXT STOP: ${city.toUpperCase()}${gate.attempt ? " (GO AROUND)" : ""}`;
+      ctx.font = `8px Silkscreen, "Courier New", monospace`;
+      const bw = Math.ceil(ctx.measureText(msg).width) + 12;
+      px((W - bw) / 2, 2, bw, 12, "rgba(10,18,48,0.7)");
+      text(msg, W / 2, 8, 8, "#7fd0ff");
+    }
+    // The city again, right above the gates as they come in, so the question sits next to the answers.
+    if (gate && state === "playing") {
+      const sx = screenX(gate.x);
+      if (sx > PLANE_X + 20 && sx < W - 10) {
+        // Just right of the top sign: the sky there is kept clear around every checkpoint.
+        const { ys } = gateSlots(ac);
+        text(`${cityOf(leg.stops[gate.stop])}?`, sx + 58, ys[0], 8, "#ffffff", "left");
+      }
     }
 
     const total = legStars.reduce((a, b) => a + b, 0);
