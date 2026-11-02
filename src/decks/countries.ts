@@ -156,6 +156,7 @@ export const countriesDeck: Deck = {
   id: "countries",
   subject: "Geography",
   title: "Countries of the World",
+  related: { href: "#neighbours", label: "Play Neighbours: name every country on one border ▸" },
   blurb: "Type every country you can before the clock runs out. Each one lights up on the map.",
   noun: "places",
   items,

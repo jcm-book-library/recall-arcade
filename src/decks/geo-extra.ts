@@ -37,6 +37,9 @@ const neighbourVariants: Variant[] = HUBS.map(([hub, list, starter]) => ({
 export const neighboursDeck: Deck = {
   id: "neighbours",
   subject: "Geography",
+  // City Shapes took its home-page slot (Nov 26). It's linked from Countries; its id and scores are kept.
+  hidden: true,
+  related: { href: "#countries", label: "◂ Back to Countries of the World" },
   title: "Neighbours",
   blurb: "One country is highlighted. Name every country it shares a land border with. (Australia isn't here. No neighbours. Very restful.)",
   noun: "borders",

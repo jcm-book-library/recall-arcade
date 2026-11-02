@@ -5,6 +5,7 @@ import { flagsDeck } from "./decks/flags";
 import { capitalsDeck } from "./decks/capitals";
 import { waterDeck } from "./decks/water";
 import { neighboursDeck } from "./decks/geo-extra";
+import { cityShapesDeck } from "./decks/city-shapes";
 import { mountainsDeck } from "./decks/mountains";
 import { zoomOutDeck } from "./decks/zoomout";
 import { elementsDeck } from "./decks/elements";
@@ -31,7 +32,7 @@ import { renderFlyover } from "./arcade/flyover";
 // Every game in the arcade, grouped by subject on the home page (up to six each).
 const DECKS: Deck[] = [
   // Geography
-  countriesDeck, flagsDeck, capitalsDeck, waterDeck, neighboursDeck, mountainsDeck,
+  countriesDeck, flagsDeck, capitalsDeck, waterDeck, cityShapesDeck, mountainsDeck,
   // Science
   zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, unitsDeck,
   // History
@@ -42,8 +43,8 @@ const DECKS: Deck[] = [
   animalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
-  // Not on the home page: reached from Mythology (#mythpairs) or from Inner Space (#cells)
-  mythPairsDeck, cellsDeck,
+  // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells) or Countries (#neighbours)
+  mythPairsDeck, cellsDeck, neighboursDeck,
 ];
 
 // While developing, catch two items in one game sharing an id (they'd count as one).
