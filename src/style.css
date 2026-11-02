@@ -946,3 +946,59 @@ a.btn { text-decoration: none; }
 /* The main button changes size as its words change ("Place", then "Next ▸"), and the usual hover nudge can then
    make it flicker when the pointer sits on its edge. In this game the hover just brightens it instead. */
 .sc-game .btn.primary:hover { transform: none; box-shadow: 3px 3px 0 var(--ink); filter: brightness(1.08); }
+
+/* ---------- Earth & Sky: warm earth and sky colours ----------
+   The zoom board is shared with Infinity & Beyond and Inner Space. Each stage paints its own
+   background (space, sea, sky, rock), so this theme only sets the shapes, labels and small notes.
+   Like deep space, it looks the same whether the page is light or dark. */
+.zoom-earth .zviewport { background: #0d1018; }
+.zoom-earth .zitem .mark {
+  fill: var(--unnamed, rgba(240, 228, 205, 0.34)); stroke: rgba(255, 246, 230, 0.8); stroke-width: 1.5;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+}
+.zoom-earth .zitem .mark.plate { stroke: var(--unnamed); stroke-width: 1; filter: none; }
+.zoom-earth .zitem .mark.puff, .zoom-earth .zitem.missed .mark.puff { stroke: none; filter: none; }
+.zoom-earth .zitem .mark.zone, .zoom-earth .zitem .mark.layer { stroke: none; filter: none; }
+.zoom-earth .zitem .mark.line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke: rgba(255, 246, 230, 0.85); }
+.zoom-earth .zitem .mark.fire { stroke-dasharray: 1 13; stroke: rgba(255, 168, 90, 0.9); filter: drop-shadow(0 0 5px rgba(255, 110, 30, 0.9)); }
+.zoom-earth .zitem.found .mark.fire { filter: drop-shadow(0 0 8px rgba(255, 90, 20, 1)); }
+.zoom-earth .zitem .mark.shortcut { stroke-dasharray: 9 9; stroke-linecap: butt; }
+.zoom-earth .zitem .mark.dotted { stroke-dasharray: 1 10; }
+.zoom-earth .zitem .mark.parallel { stroke-dasharray: 10 7; stroke-linecap: butt; }
+.zoom-earth .zitem .mark.isobar { stroke-width: 2.5px !important; opacity: 0.9; }
+.zoom-earth .zitem.missed .mark { stroke: #ff7a6e; }
+.zoom-earth .zitem.missed .mark.line { stroke: #ff7a6e; }
+.zoom-earth .zitem .hit { fill: none; stroke: transparent; pointer-events: stroke; }
+.zoom-earth .zlabel { fill: #fff8ec; font-size: 17px; font-weight: 700; stroke: #1d1411; stroke-width: 5px; stroke-linejoin: round; }
+.zoom-earth .zitem.hinted .zlabel { fill: #ffe9b8; }
+.zoom-earth .zitem.missed .zlabel { fill: #ffb0a6; }
+.zoom-earth .zlead { stroke: #fff4dc; stroke-width: 1.5; opacity: 0.85; visibility: hidden; }
+.zoom-earth .zitem.found .zlead, .zoom-earth .zitem.missed .zlead, .zoom-earth .zitem.hinted .zlead { visibility: visible; }
+.zoom-earth .z-small { fill: #e6dccb; font: 14px var(--font-body); paint-order: stroke; stroke: rgba(10, 8, 6, 0.55); stroke-width: 3px; pointer-events: none; }
+.zoom-earth .z-caption { fill: #e6dccb; pointer-events: none; }
+.zoom-earth .z-left { text-anchor: start; }
+.zoom-earth .z-height { fill: #ffffff; }
+.zoom-earth .z-hl { fill: #ffffff; font: 700 22px var(--font-body); text-anchor: middle; stroke: none; pointer-events: none; }
+.zoom-earth .z-deco { fill: none; stroke: rgba(40, 24, 10, 0.4); stroke-width: 2; pointer-events: none; }
+.zoom-earth .z-crystal { fill: rgba(255, 255, 255, 0.28); stroke: none; pointer-events: none; }
+.zoom-earth .z-layer { fill: none; stroke: rgba(50, 28, 10, 0.4); stroke-width: 3; stroke-linecap: round; pointer-events: none; }
+.zoom-earth .z-bubble { fill: rgba(255, 225, 160, 0.45); stroke: none; pointer-events: none; }
+.zoom-earth .z-heap { fill: #d9b26f; stroke: none; pointer-events: none; }
+.zoom-earth .z-outline { fill: none; stroke: rgba(30, 18, 8, 0.55); stroke-width: 2; pointer-events: none; }
+.zoom-earth .z-wave { fill: none; stroke: rgba(255, 255, 255, 0.4); stroke-width: 2; stroke-linecap: round; }
+.zoom-earth .z-measure { fill: none; stroke: #9aa3c7; stroke-width: 1.5; }
+.zoom-earth .z-layerline { stroke: rgba(255, 255, 255, 0.5); stroke-width: 1; stroke-dasharray: 4 6; }
+.zoom-earth .z-meteor { stroke: #fff6c8; stroke-width: 3; stroke-linecap: round; opacity: 0.9; }
+.zoom-earth .z-aurora { fill: rgba(80, 255, 170, 0.4); stroke: none; }
+.zoom-earth .z-aurora-rays { fill: none; stroke: rgba(130, 255, 205, 0.55); stroke-width: 6; stroke-linecap: round; }
+.zoom-earth .z-landfill { fill: #44543f; stroke: none; }
+.zoom-earth .z-coast { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 0.9; pointer-events: none; }
+.zoom-earth .plate-other { fill: #4a525c; stroke: #4a525c; stroke-width: 1; pointer-events: none; }
+.zoom-earth .z-wx-frame { fill: #1c4a6a; stroke: #cfe6f2; stroke-width: 2; }
+.zoom-earth .z-wx-land { fill: #6f7d55; stroke: rgba(255, 255, 255, 0.55); stroke-width: 0.9; }
+/* Phones: the whole view shrinks to about a third of its size, so the labels grow to stay readable. */
+@media (max-width: 640px) {
+  .zoom-earth .zlabel { font-size: 24px; stroke-width: 7px; }
+  .zoom-earth .z-small { font-size: 18px; stroke-width: 4px; }
+  .zoom-earth .z-hl { font-size: 26px; }
+}

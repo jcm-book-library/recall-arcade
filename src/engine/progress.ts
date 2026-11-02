@@ -41,6 +41,7 @@ export const CHALLENGES: Record<string, Challenge> = {
   body: count(6, "Label 6 body parts"),
   units: count(5, "Get 5 units right"),
   scale: share(0.6, "Get 60% right"),
+  earthsky: count(6, "Name 6 parts of Earth & Sky"),
   // History
   history: share(0.5, "Score half marks on a timeline"),
   people: share(0.5, "Score half marks on a timeline"),
