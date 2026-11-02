@@ -99,6 +99,7 @@ the city.
 - Keep Neighbours' id and scores. **Recommended:** make it a round inside Countries rather than
   deleting it.
 
+**Science: decided 2 Nov 26: all three options below. The plan is in [science-design.md](science-design.md).**
 **Science: which six quizzes.** Locks: Infinity & Beyond, Periodic Table, Human Body. Cells & Life and
 Units & Forces don't work yet: they can't be learned from scratch and built on. Options (pick
 three, or rework the two):
