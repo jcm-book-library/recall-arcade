@@ -267,6 +267,7 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
   }
 
   go(stages[0].n);
+  let exploring = false;
 
   return {
     setState(id: string, s: ItemState) {
@@ -282,7 +283,7 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
       labelText(id);
       renderTabs();
       renderBank();
-      if (s === "found") maybeAdvance();
+      if (s === "found" && !exploring) maybeAdvance(); // studying shouldn't zoom off by itself
     },
     flash(id: string) {
       const grp = groups.get(id);
@@ -294,6 +295,7 @@ export function createZoomBoard(container: HTMLElement, all: Item[], playing: It
       grp.classList.add("flash");
     },
     setExplore(on: boolean) {
+      exploring = on;
       // Every label is shown once the round ends, so the help can go.
       if (on) {
         bank.hidden = true;
