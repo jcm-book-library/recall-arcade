@@ -111,9 +111,9 @@ Steps 1 to 3 were built on 1 Nov 2026. In Pong, every tier can be played; tiers 
 2. **Pong's three tiers**, chosen by a button for now, locked to the track later.
 3. **Progression, first version:** the challenge table, saving each challenge as done, locks and
    Preview on the home page.
-4. **A shared arcade toolkit:** move the loop, pixel art, saving and sounds into one place, so the
+4. **Built 2 Nov 2026:** the toolkit is `src/arcade/kit.ts`, used by the Labyrinth so far; Pong and Flyover move over when next touched. **A shared arcade toolkit:** move the loop, pixel art, saving and sounds into one place, so the
    next steps cost less. Nothing changes on screen.
-5. **Labyrinth:** the three worlds, the gem freeze, the traps.
+5. **Built 2 Nov 2026:** the Garden Maze (wasps, cellar door), the Dungeon (6 trapdoors), the Lava Heart (new looping map, lava, 7 fire jets), ice charges, and `node scripts/check-labyrinth.mjs` to prove the maps can be finished. **Labyrinth:** the three worlds, the gem freeze, the traps.
 6. **Flyover:** take-off and landing, fuel, the owner's routes.
 7. **Hero starter sheet and visual guide.**
 8. **The island.**
