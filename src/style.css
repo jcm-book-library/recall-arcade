@@ -687,6 +687,7 @@ a.btn { text-decoration: none; }
 }
 .lab-keyicon.red { background: #d8402f; }
 .lab-keyicon.blue { background: #3f7fe0; }
+.lab-keyicon.gold { background: #e8b830; }
 .lab-screen {
   width: 100%; border: 2px solid var(--line); border-radius: var(--r); overflow: hidden;
   background: #0d0b09; box-shadow: 4px 4px 0 var(--line); line-height: 0;

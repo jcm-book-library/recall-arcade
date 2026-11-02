@@ -1,5 +1,5 @@
 import { h, formatTime } from "../ui/dom";
-import { LEVELS } from "./labyrinth-maps";
+import { FLIP_COUNT, LEVELS, flipRows } from "./labyrinth-maps";
 import { loadSavedHero, makeHeroSheet } from "./hero-art";
 import { clamp, loadBest, makeBeeper, makeCanvas, noise, paint, saveBest, startLoop } from "./kit";
 import type { Blip } from "./kit";
@@ -13,9 +13,14 @@ import type { Blip } from "./kit";
 //
 // There are three worlds, each with its own look and its own danger:
 //   1. The Garden Maze: hedges and gravel. Wasps. Gentle: no traps.
-//   2. The Dungeon: old stone. Bats, keys and doors, and trapdoors that drop you back to the start.
-//   3. The Lava Heart: a volcanic temple. Lava, jets of fire and the Minotaur.
-// And one weapon: collect EVERY gem on a level to earn a charge of ice, then throw it.
+//   2. The Dungeon: old stone. Bats, keys and doors, and trapdoors that drop you somewhere else.
+//   3. The Lava Heart: a volcanic temple. Lava, jets of fire, trapdoors and the Minotaur.
+// How you get out: collect EVERY gem on a level and the way out opens. In the garden and the
+// dungeon the gems make an EXIT KEY appear; in the Lava Heart they open a GEM DOOR to a little
+// room holding the exit key. The exit is locked until you hold that key.
+// One weapon: ice crystals. You FIND them (one in the dungeon, one in the Lava Heart) and throw them.
+// Getting hurt costs a heart and nudges you back a step, but the game carries on. Lose all three
+// and you start the level again. Every level also starts as one of four random flips of its map.
 
 // ---------- the world ----------
 // GRID COORDINATES vs PIXEL COORDINATES. The map is a grid of tiles, and we say where
@@ -36,19 +41,22 @@ const MINO_WANDER_STEP = 0.32; // ...and ambles when he has lost you
 const CHASE_RANGE = 10; // he only notices you if you are this many steps away along the corridors
 const BUFFER_TIME = 0.25; // how long the game remembers a direction you tapped
 const HIT_SIZE = 0.6; // how close (in tiles) counts as touching
-const HURT_TIME = 0.7; // the short freeze after being caught
-const SAFE_TIME = 1.5; // after coming back you blink for a moment and can't be caught
+const HURT_TIME = 0.3; // how long the screen flashes red after a hit (play carries on underneath)
+const SAFE_TIME = 1.5; // after a hit (or a landing) you blink for a moment and can't be hurt
 const CARD_TIME = 4; // the "level complete" card moves on by itself after this many seconds
 const STORE_KEY = "learning-arcade:labyrinth"; // where the best time is saved. Never change this.
 
 // The new things in worlds 2 and 3.
 const FALL_TIME = 0.55; // how long the hero spends falling through a trapdoor
+const LANDING_GAP = 4; // a random trapdoor landing is at least this many tiles (counted along the grid) from every enemy
+const PUSH_STEP = 0.1; // seconds the hero takes to be nudged back one tile after a hit
+const MINO_WAIT = 2; // seconds the Minotaur stamps and waits after catching you
 const JET_OFF = 2; // a fire jet's timer: 2 seconds quiet...
 const JET_WARN = 0.6; // ...then 0.6 seconds of warning (the nozzle glows and hisses)...
 const JET_ON = 1; // ...then 1 second of flame
 const JET_LEN = 3; // the flame reaches this many tiles along the corridor
 // The ice weapon.
-const MAX_CHARGES = 3; // you can carry up to three ice charges
+const MAX_CHARGES = 3; // you can carry up to three ice charges (each ice crystal you find is one)
 const SHOT_STEP = 1 / 12; // the ice crystal crosses one tile in 1/12 s: about 12 tiles a second
 const FREEZE_TIME = 5; // seconds an enemy stays frozen
 
@@ -61,11 +69,13 @@ const ALL_GEMS = LEVELS.reduce((n, l) => n + l.rows.join("").split("*").length -
 
 // Tile letters used while the game runs (the map file has a few more, like keys and gems, that
 // become items instead): "#" wall, "." floor, "R"/"B" closed doors, "E" exit, "T" a trapdoor,
-// "O" an open trapdoor (a hole), "~" lava, "F" a fire jet (a wall that shoots flame).
-/** Tiles nothing can walk through, ever. (Doors are different: they open with a key.) */
-const isSolid = (tile: string) => tile === "#" || tile === "F" || tile === "~" || tile === "O";
+// "O" an open trapdoor (a hole), "~" lava, "F" a fire jet (a wall that shoots flame),
+// "G" the gem door (shut until you hold every gem; then it turns into "." floor).
+/** Tiles nothing can walk through, ever. (Doors are different: they open with a key. The gem door
+ *  is solid while it is shut, and simply becomes floor when it opens.) */
+const isSolid = (tile: string) => tile === "#" || tile === "F" || tile === "~" || tile === "O" || tile === "G";
 /** Tiles that stop a flying ice crystal. It flies over open trapdoors but not over lava. */
-const stopsIce = (tile: string) => tile === "#" || tile === "F" || tile === "~" || tile === "R" || tile === "B";
+const stopsIce = (tile: string) => tile === "#" || tile === "F" || tile === "~" || tile === "R" || tile === "B" || tile === "G";
 
 // Anything that walks tile to tile. (x, y) is the tile it is leaving, (nx, ny) is the tile it
 // is heading for, and t is how many seconds it has spent on this step. When it isn't moving,
@@ -76,7 +86,9 @@ interface Walker { x: number; y: number; nx: number; ny: number; t: number; dur:
 // the creature shakes free. Nothing else about it changes, which is why a countdown is such a
 // tidy way to do things like freezing, poison or being invisible.
 interface Bat extends Walker { dir: Dir; homeX: number; homeY: number; homeDir: Dir; iced: number }
-interface Minotaur extends Walker { came: Dir | null; chasing: boolean; homeX: number; homeY: number; iced: number }
+// `wait` is the Minotaur's stamping pause after he catches you: while it is above zero he stands
+// still and can't hurt you. It is a countdown, just like `iced`.
+interface Minotaur extends Walker { came: Dir | null; chasing: boolean; homeX: number; homeY: number; iced: number; wait: number }
 // The ice crystal is a walker too: it steps tile to tile, just very fast.
 interface Shot extends Walker { dir: Dir }
 // A fire jet. `offset` shifts its timer so the jets don't all fire together.
@@ -424,6 +436,25 @@ function makeDaylightStairs(floor: HTMLCanvasElement) {
   return c;
 }
 
+/**
+ * The GEM DOOR: a slab of dark stone with a gold edge and a gem-shaped socket in the middle. The
+ * socket is drawn separately every frame (see drawGemDoor), because it fills up with green as you
+ * collect gems, like a counter. This is only the slab.
+ */
+function makeGemDoorSlab(floor: HTMLCanvasElement) {
+  const c = makeCanvas(TILE, TILE);
+  const g = c.getContext("2d")!;
+  g.drawImage(floor, 0, 0);
+  const rect = (x: number, y: number, w: number, hh: number, colour: string) => { g.fillStyle = colour; g.fillRect(x, y, w, hh); };
+  rect(0, 0, TILE, TILE, "#0c070d");
+  rect(1, 1, 14, 14, "#c9a227"); // gold edge
+  rect(2, 2, 12, 12, "#3c3650"); // the slab
+  rect(2, 2, 12, 1, "#5a5278");
+  rect(2, 13, 12, 1, "#262236");
+  for (const [x, y] of [[2, 2], [13, 2], [2, 13], [13, 13]]) rect(x, y, 1, 1, "#ffe27a"); // gold rivets
+  return c;
+}
+
 const KEY_ART = [
   "................",
   "................",
@@ -457,6 +488,70 @@ const GEM_ART = [
   ".....ollmmo.....",
   "......olmo......",
   ".......oo.......",
+  "................",
+  "................",
+];
+// The gem door shows the same gem shape as a counter. Each pixel of the gem is remembered here
+// (column, row, letter) so the door can light them up from the bottom as gems are collected.
+const GEM_CELLS: [number, number, string][] = [];
+GEM_ART.forEach((row, y) => [...row].forEach((letter, x) => { if (letter !== ".") GEM_CELLS.push([x, y, letter]); }));
+const GEM_TOP = 4; // the gem's first and last rows in GEM_ART
+const GEM_BOTTOM = 13;
+
+// The EXIT KEY: golden, with a star-shaped handle, so nobody mistakes it for the red and blue keys.
+const EXIT_KEY_ART = [
+  "................",
+  ".....oo..oo.....",
+  "....okkookko....",
+  "....oklkklko....",
+  ".....okllko.....",
+  "......okko......",
+  "......oklo......",
+  "......okko......",
+  "......oklo......",
+  "......okkooo....",
+  "......okkkko....",
+  "......okko......",
+  "......okkooo....",
+  "......okkkko....",
+  "......oddo......",
+  ".......oo.......",
+];
+// An ICE CRYSTAL lying on the floor: a tall shard with two small ones beside it.
+const ICE_ART = [
+  "................",
+  ".......oo.......",
+  "......owwo......",
+  ".....owwlmo.....",
+  ".....owllmo.oo..",
+  "..oo.owllmoowmo.",
+  ".owwoowllmmolmmo",
+  ".owlmowllmmolmmo",
+  ".olllmollmmolmo.",
+  ".ollmmollmmomo..",
+  "..olmmollmmoo...",
+  "...ommollmmo....",
+  "....ommllmmo....",
+  ".....omlmmo.....",
+  "......ommo......",
+  ".......oo.......",
+];
+// A padlock, drawn over the exit while it is locked.
+const LOCK_ART = [
+  "................",
+  "................",
+  ".....oooooo.....",
+  "....okkkkkko....",
+  "....ok....ko....",
+  "....ok....ko....",
+  "..oooooooooooo..",
+  "..okkkkkkkkkko..",
+  "..okkklkkkkkko..",
+  "..okkkddkkkkko..",
+  "..okkkddkkkkko..",
+  "..okkkkdkkkkko..",
+  "..okkkkkkkkkko..",
+  "..oooooooooooo..",
   "................",
   "................",
 ];
@@ -568,6 +663,7 @@ interface WorldArt {
   cappedWalls?: HTMLCanvasElement[]; // garden only: hedges with a leafy top edge
   wallGlow?: HTMLCanvasElement[]; // lava only: the glowing cracks, drawn on top, pulsing
   exit: HTMLCanvasElement;
+  trap: HTMLCanvasElement[]; // the trapdoor in its four poses (dungeon and Lava Heart only)
   redDoor: HTMLCanvasElement;
   blueDoor: HTMLCanvasElement;
   foes: HTMLCanvasElement[]; // two wing poses
@@ -590,6 +686,7 @@ function makeArt() {
     floors: stoneFloors,
     walls: [0, 1, 2].map(makeWall),
     exit: makeStairs(stoneFloors[0]),
+    trap: [0, 1, 2, 3].map((p) => makeTrap(p, stoneFloors[0])),
     redDoor: makeDoor("#c8402f", "#ff8a70"),
     blueDoor: makeDoor("#3f7fd0", "#9cc8ff"),
     foes: batPair,
@@ -609,6 +706,7 @@ function makeArt() {
     walls: [0, 1, 0, 1, 0, 2].map((v) => makeHedge(v, false)),
     cappedWalls: [0, 1, 0, 1, 0, 2].map((v) => makeHedge(v, true)),
     exit: makeCellar(gravel[0]),
+    trap: [], // the garden has no trapdoors
     redDoor: makeGate("#d8402f", "#ff9a80", gravel[0]),
     blueDoor: makeGate("#3f7fe0", "#9cc8ff", gravel[0]),
     foes: waspPair,
@@ -624,6 +722,7 @@ function makeArt() {
     walls: rock.map((r) => r.wall),
     wallGlow: rock.map((r) => r.glow),
     exit: makeDaylightStairs(basaltFloors[0]),
+    trap: [0, 1, 2, 3].map((p) => makeTrap(p, basaltFloors[0])),
     redDoor: makeDoor("#e0482f", "#ff9a70", ["#4a3340", "#3d2a35"], "#0c070d"),
     blueDoor: makeDoor("#4f8ae0", "#a8d0ff", ["#4a3340", "#3d2a35"], "#0c070d"),
     foes: batPair,
@@ -635,8 +734,11 @@ function makeArt() {
   return {
     worlds: { garden, dungeon, lava },
     lavaFrames: [0, 1, 2, 3].map(makeLava),
-    trap: [0, 1, 2, 3].map((p) => makeTrap(p, stoneFloors[0])),
     redKey: paint(KEY_ART, { o: "#2a0e0a", k: "#d8402f", l: "#ff9a80" }),
+    exitKey: paint(EXIT_KEY_ART, { o: "#2a1c04", k: "#e8b830", l: "#fff0a0", d: "#a87a10" }),
+    ice: paint(ICE_ART, { o: "#0a2a4a", w: "#f4fdff", l: "#9edcff", m: "#4aa8e8" }),
+    lock: paint(LOCK_ART, { o: "#2a1c04", k: "#e8b830", l: "#fff0a0", d: "#3a2a08" }),
+    gemDoor: makeGemDoorSlab(basaltFloors[0]),
     blueKey: paint(KEY_ART, { o: "#0a1a3a", k: "#3f7fe0", l: "#9cc8ff" }),
     gem: paint(GEM_ART, { o: "#06302a", w: "#e8fff6", l: "#4be3a0", m: "#1e9a6a" }),
     minos,
@@ -694,7 +796,7 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     width: String(W),
     height: String(H),
     role: "img",
-    "aria-label": "The Labyrinth: walk three mazes, collect keys and gems, dodge the wasps, bats, fire and the Minotaur, throw ice, and find the way down",
+    "aria-label": "The Labyrinth: walk three mazes, collect every gem to open the way out, find keys and ice, dodge the wasps, bats, fire and the Minotaur, and find the way down",
   });
   const pauseBtn = h("button", { class: "btn ghost", type: "button" }, "Pause");
   const hudLevel = h("span", { class: "lab-stat" });
@@ -722,7 +824,7 @@ export function renderLabyrinth(root: HTMLElement): () => void {
         h(
           "p",
           { class: "lab-howto muted" },
-          "Arrow keys or WASD to walk (or the buttons on a phone). Grab keys to open matching doors, collect gems, dodge the wasps, bats and the Minotaur, and find the way down. Collect every gem on a level to earn ice: Space or F throws it and freezes what it hits. P or Esc pauses.",
+          "Arrow keys or WASD to walk (or the buttons on a phone). Collect every gem on a level to bring out the exit key, then find the way down. Grab keys to open matching doors, and dodge the wasps, bats, fire and the Minotaur: a hit costs a heart, and you have three. Look for ice crystals: Space or F throws one and freezes what it hits. P or Esc pauses.",
         ),
         pauseBtn,
       ),
@@ -755,26 +857,34 @@ export function renderLabyrinth(root: HTMLElement): () => void {
   // For testing a level directly. Only works in the development copy (npm run dev).
   const devLevel = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get("level")) : 0;
   const firstLevel = devLevel >= 1 && devLevel <= LEVELS.length ? devLevel - 1 : 0;
+  // Also for testing: ?flip=0..3 fixes which version of the map you get (instead of a random one).
+  const devFlip = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get("flip") ?? "x") : NaN;
+  let forcedFlip: number | null = Number.isInteger(devFlip) && devFlip >= 0 && devFlip < FLIP_COUNT ? devFlip : null;
 
   let state: State = "ready";
   let stateSince = performance.now();
   let soundOn = false; // browsers only allow sound after the player has pressed something
   let levelIndex = firstLevel;
-  let lives = START_LIVES;
-  let totalTime = 0; // seconds of actual play, whole game
+  let lives = START_LIVES; // hearts. They refill to three at the start of every level
+  let totalTime = 0; // seconds of actual play, whole game (it keeps counting if you restart a level)
   let levelTime = 0;
   let totalGems = 0;
   let gemsGot = 0;
   let gemsInLevel = 0;
   let charges = 0; // ice charges in your pocket (they carry over between levels)
-  let earnedIce = false; // did this level give you an ice charge?
+  let chargesAtStart = 0; // how many you had when this level began (a restart gives you these back)
   let held = { r: 0, b: 0 }; // keys in your pocket
+  let hasExitKey = false; // the golden key that unlocks the exit
+  let exitKeySpot: { x: number; y: number } | null = null; // where the exit key is (or will appear)
+  let hasGemDoor = false; // does this level seal its exit key behind a gem door?
+  let flip = 0; // which version of the map this play is: 0 as drawn, 1 left-right, 2 top-bottom, 3 both
   let best = loadBest(STORE_KEY);
   let newBest = false;
-  let hurtTimer = 0;
+  let hurtTimer = 0; // above zero for a moment after a hit: the screen flashes (play does NOT stop)
   let hurtKind: "foe" | "fire" = "foe";
   let safeTimer = 0;
   let fallTimer = 0; // above zero while the hero is falling through a trapdoor
+  let landing = { x: 1, y: 1, random: false }; // where this fall will end (chosen when the trapdoor opens)
   let cardTimer = 0;
   let bannerText = "";
   let bannerSub = "";
@@ -804,6 +914,9 @@ export function renderLabyrinth(root: HTMLElement): () => void {
 
   const player: Walker = { x: 1, y: 1, nx: 1, ny: 1, t: 0, dur: PLAYER_STEP };
   let facing: Dir = 0;
+  // The tiles the hero stepped off, newest last (the last few only). When something hurts him he
+  // is nudged back along this trail, to the tile he came from.
+  let trail: { x: number; y: number }[] = [];
 
   // Input. `heldDirs` is every direction currently held, newest last. `buffer` remembers the
   // direction you most recently TAPPED, for a short while, so you can press "up" a moment
@@ -824,10 +937,15 @@ export function renderLabyrinth(root: HTMLElement): () => void {
   const indexOf = (x: number, y: number) => y * mapW + x;
   const worldOf = () => LEVELS[levelIndex].world;
 
-  /** Read the letters of a map (see labyrinth-maps.ts) and set up the world. */
-  function loadLevel(n: number) {
+  /**
+   * Read the letters of a map (see labyrinth-maps.ts) and set up the world. Every call is a fresh
+   * start for the level: gems, keys, doors, enemies and hearts are all put back. `flipTo` picks
+   * which version of the map to use (0 to 3, see flipRows). Leave it out for a random one.
+   */
+  function loadLevel(n: number, flipTo?: number) {
     levelIndex = n;
-    const rows = LEVELS[n].rows;
+    flip = flipTo ?? forcedFlip ?? Math.floor(Math.random() * FLIP_COUNT);
+    const rows = flipRows(LEVELS[n].rows, flip);
     mapH = rows.length;
     mapW = Math.max(...rows.map((r) => r.length));
     tiles = [];
@@ -841,23 +959,31 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     puffs = [];
     gemsInLevel = 0;
     gemsGot = 0;
-    earnedIce = false;
     held = { r: 0, b: 0 };
+    hasExitKey = false;
+    exitKeySpot = null;
+    hasGemDoor = false;
+    lives = START_LIVES; // hearts refill at the start of every level
+    chargesAtStart = charges; // remembered, so restarting the level can give them back
+    hurtTimer = 0;
     for (let y = 0; y < mapH; y++) {
       const line: string[] = [];
       for (let x = 0; x < mapW; x++) {
         const letter = rows[y][x] ?? "#";
         let tile = ".";
-        if ("#RBET~F".includes(letter)) tile = letter; // these stay in the tile grid...
+        if ("#RBET~FG".includes(letter)) tile = letter; // these stay in the tile grid...
         if (letter === "r" || letter === "b") items.set(indexOf(x, y), letter); // ...these become items...
         if (letter === "*") { items.set(indexOf(x, y), "*"); gemsInLevel++; }
+        if (letter === "i") items.set(indexOf(x, y), "i"); // an ice crystal
+        if (letter === "G") hasGemDoor = true;
+        if (letter === "x") exitKeySpot = { x, y }; // the exit key: shown now or later, see below
         if (letter === "P") start = { x, y };
         if (letter === "E") stairs = { x, y };
         if (letter === "v" || letter === "h") { // ...and these become creatures
           const dir: Dir = letter === "v" ? (bats.length % 2 ? 0 : 3) : bats.length % 2 ? 1 : 2;
           bats.push({ x, y, nx: x, ny: y, t: 0, dur: BAT_STEP, dir, homeX: x, homeY: y, homeDir: dir, iced: 0 });
         }
-        if (letter === "M") mino = { x, y, nx: x, ny: y, t: 0, dur: MINO_WANDER_STEP, came: null, chasing: false, homeX: x, homeY: y, iced: 0 };
+        if (letter === "M") mino = { x, y, nx: x, ny: y, t: 0, dur: MINO_WANDER_STEP, came: null, chasing: false, homeX: x, homeY: y, iced: 0, wait: 0 };
         line.push(tile);
       }
       tiles.push(line);
@@ -882,6 +1008,9 @@ export function renderLabyrinth(root: HTMLElement): () => void {
         jetAt.set(indexOf(x, y), jet);
       }
     }
+    // The exit key. Behind a gem door it is already lying there. Otherwise it appears on its spot
+    // when the last gem is picked up (see pickUp).
+    if (exitKeySpot && hasGemDoor) items.set(indexOf(exitKeySpot.x, exitKeySpot.y), "X");
     levelTime = 0;
     resetActors();
     bannerText = `Level ${n + 1}: ${LEVELS[n].name}`;
@@ -891,24 +1020,43 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     ambientTimer = 2;
   }
 
-  /** Put the hero back at the start and send the enemies home. Keys, doors and gems stay as they were. */
+  /** Put the hero at the start and every enemy at its home. Only used when a level begins. */
   function resetActors() {
-    Object.assign(player, { x: start.x, y: start.y, nx: start.x, ny: start.y, t: 0 });
+    placeHero(start.x, start.y);
     facing = 0;
+    for (const b of bats) Object.assign(b, { x: b.homeX, y: b.homeY, nx: b.homeX, ny: b.homeY, t: 0, dir: b.homeDir, iced: 0 });
+    if (mino) Object.assign(mino, { x: mino.homeX, y: mino.homeY, nx: mino.homeX, ny: mino.homeY, t: 0, came: null, chasing: false, iced: 0, wait: 0 });
+  }
+
+  /** Put the hero down on a tile (and forget any step he was part way through). The enemies stay where they are. */
+  function placeHero(x: number, y: number) {
+    Object.assign(player, { x, y, nx: x, ny: y, t: 0, dur: PLAYER_STEP });
     buffer = null;
     fallTimer = 0;
     shot = null;
-    for (const b of bats) Object.assign(b, { x: b.homeX, y: b.homeY, nx: b.homeX, ny: b.homeY, t: 0, dir: b.homeDir });
-    if (mino) Object.assign(mino, { x: mino.homeX, y: mino.homeY, nx: mino.homeX, ny: mino.homeY, t: 0, came: null, chasing: false });
+    trail = [];
   }
 
   function newGame() {
-    lives = START_LIVES;
     totalTime = 0;
     totalGems = 0;
     charges = 0;
     newBest = false;
     loadLevel(firstLevel);
+    safeTimer = SAFE_TIME;
+    setState("playing");
+  }
+
+  /**
+   * Out of hearts: start THIS level again, not the whole game. Everything on the level goes back
+   * (gems, keys, doors, enemies, hearts) and so does your ice, to what you carried in. The map
+   * keeps the same flip, so it is the same maze you were just in. The overall clock does NOT
+   * go back: the time you spent still counts.
+   */
+  function restartLevel() {
+    totalGems -= gemsGot; // those gems are lying on the floor again
+    charges = chargesAtStart;
+    loadLevel(levelIndex, flip);
     safeTimer = SAFE_TIME;
     setState("playing");
   }
@@ -929,6 +1077,7 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     if (isSolid(tile)) return false;
     if (tile === "R") return held.r > 0;
     if (tile === "B") return held.b > 0;
+    if (tile === "E") return hasExitKey; // the exit is locked until you hold the exit key
     return true;
   }
 
@@ -964,6 +1113,8 @@ export function renderLabyrinth(root: HTMLElement): () => void {
       const tile = tileAt(player.x + DX[facing], player.y + DY[facing]);
       if (tile === "R") toast(worldOf() === "garden" ? "Locked. You need a red key for the gate." : "Locked. You need a red key.");
       if (tile === "B") toast(worldOf() === "garden" ? "Locked. You need a blue key for the gate." : "Locked. You need a blue key.");
+      if (tile === "E") toast(gemsGot < gemsInLevel ? "Locked. Collect all the gems first." : "Locked. Find the exit key.");
+      if (tile === "G") toast(`Sealed. Collect all the gems first (${gemsGot}/${gemsInLevel}).`);
     }
     return null;
   }
@@ -982,6 +1133,9 @@ export function renderLabyrinth(root: HTMLElement): () => void {
       const what = worldOf() === "garden" ? "gate" : "door";
       toast(tile === "R" ? `The red ${what} opens.` : `The blue ${what} opens.`);
     }
+    trail.push({ x: player.x, y: player.y }); // remember where we stepped from (for being nudged back)
+    if (trail.length > 3) trail.shift();
+    player.dur = PLAYER_STEP; // (a nudge back is quicker, so put the normal speed back)
     player.nx = nx;
     player.ny = ny;
     stepCount++;
@@ -992,22 +1146,44 @@ export function renderLabyrinth(root: HTMLElement): () => void {
   function pickUp(id: number) {
     const item = items.get(id);
     if (!item) return;
+    if (item === "i" && charges >= MAX_CHARGES) {
+      // Already carrying the most. Leave the crystal where it is for later.
+      toast("You can't carry any more ice.");
+      return;
+    }
     items.delete(id);
     if (item === "*") {
       gemsGot++;
       totalGems++;
       beep("gem");
-      // EVERY gem on the level earns one ice charge (up to the most you can carry).
+      // THE LAST GEM opens the way out. With a gem door, the door opens. Without one, the
+      // exit key appears on its spot on the map.
       if (gemsGot === gemsInLevel) {
-        earnedIce = true;
-        if (charges < MAX_CHARGES) {
-          charges++;
-          toast("All the gems! You've earned an ice charge.");
-        } else {
-          toast("All the gems! Your ice is already full.");
-        }
         beep("charge");
+        if (hasGemDoor) {
+          for (let y = 0; y < mapH; y++) {
+            for (let x = 0; x < mapW; x++) {
+              if (tiles[y][x] !== "G") continue;
+              tiles[y][x] = "."; // a shut door is just a tile letter, so opening it is changing the letter
+              puff("fizz", x, y);
+            }
+          }
+          beep("door");
+          toast("All the gems! The gem door has opened.");
+        } else if (exitKeySpot) {
+          items.set(indexOf(exitKeySpot.x, exitKeySpot.y), "X");
+          puff("fizz", exitKeySpot.x, exitKeySpot.y);
+          toast("All the gems! The exit key has appeared.");
+        }
       }
+    } else if (item === "X") {
+      hasExitKey = true;
+      beep("key");
+      toast("You've got the exit key. Find the way down.");
+    } else if (item === "i") {
+      charges++;
+      beep("charge");
+      toast("You found an ice charge! Space or F throws it.");
     } else {
       if (item === "r") held.r++;
       else held.b++;
@@ -1020,23 +1196,65 @@ export function renderLabyrinth(root: HTMLElement): () => void {
   function arrive() {
     pickUp(indexOf(player.x, player.y));
     if (tileAt(player.x, player.y) === "T") springTrapdoor();
-    else if (player.x === stairs.x && player.y === stairs.y) finishLevel();
+    else if (player.x === stairs.x && player.y === stairs.y && hasExitKey) finishLevel();
   }
 
-  /**
-   * A TRAPDOOR. Stepping on it opens it (it creaks, then whooshes) and the hero drops. After the
-   * fall he is put back at the start. No life is lost, the clock keeps running, and keys and gems
-   * are kept. The trapdoor stays open as a hole, and a hole counts as a wall.
-   */
+  // ---------- trapdoors: where do you land? ----------
+  // Stepping on a trapdoor opens it (it creaks, then whooshes) and the hero drops. When the fall
+  // is over he lands somewhere: half the time back at the start, half the time on a random spot.
+  // No heart is lost, the clock keeps running, and keys and gems are kept. The enemies stay
+  // exactly where they were. The trapdoor stays open as a hole, and a hole counts as a wall.
+  //
+  // CHOOSING A RANDOM SPOT. Imagine pouring water in at the start and letting it flow along every
+  // path the hero could really walk: that is a "flood fill" (the ripple idea again, a
+  // breadth-first search). Water stops at walls, lava, fire jets, holes, the shut gem door, any
+  // door still locked, and trapdoors that have not opened yet. Every tile the water reaches is a
+  // place the hero could have walked to, so landing there can never trap him behind a door.
+  // From those tiles we throw out the ones that are bad landings (a pickup lying there, the exit,
+  // flames, or an enemy within LANDING_GAP tiles) and pick one of the rest at random.
+  function chooseLanding(forceRandom = false): { x: number; y: number; random: boolean } {
+    const atStart = { x: start.x, y: start.y, random: false };
+    if (!forceRandom && Math.random() < 0.5) return atStart; // the coin toss: heads, back to the start
+    const wet = new Set<number>([indexOf(start.x, start.y)]);
+    const queue: [number, number][] = [[start.x, start.y]];
+    for (let i = 0; i < queue.length; i++) {
+      const [x, y] = queue[i];
+      for (let d = 0; d < 4; d++) {
+        const tx = x + DX[d];
+        const ty = y + DY[d];
+        const tile = tileAt(tx, ty);
+        if (wet.has(indexOf(tx, ty)) || isSolid(tile) || tile === "R" || tile === "B" || tile === "T") continue;
+        wet.add(indexOf(tx, ty));
+        queue.push([tx, ty]);
+      }
+    }
+    const foes = [...bats, ...(mino ? [mino] : [])].map((e) => ({ x: Math.round(where(e).x), y: Math.round(where(e).y) }));
+    const burning = new Set<number>();
+    for (const j of jets) for (const [fx, fy] of flameTiles(j)) burning.add(indexOf(fx, fy));
+    const choices: { x: number; y: number }[] = [];
+    for (const id of wet) {
+      const x = id % mapW;
+      const y = Math.floor(id / mapW);
+      if (tileAt(x, y) !== "." || items.has(id) || burning.has(id)) continue; // plain floor only
+      if (exitKeySpot && x === exitKeySpot.x && y === exitKeySpot.y) continue; // the exit key's spot
+      if (x === start.x && y === start.y) continue; // (that is the other half of the coin)
+      if (foes.some((f) => Math.abs(f.x - x) + Math.abs(f.y - y) < LANDING_GAP)) continue;
+      choices.push({ x, y });
+    }
+    if (!choices.length) return atStart;
+    return { ...choices[Math.floor(Math.random() * choices.length)], random: true };
+  }
+
   function springTrapdoor() {
     const id = indexOf(player.x, player.y);
     tiles[player.y][player.x] = "O";
     trapAge.set(id, 0);
     fallTimer = FALL_TIME;
     buffer = null;
+    landing = chooseLanding();
     beep("creak");
     beep("whoosh");
-    toast("A trapdoor! Back you go.");
+    toast(landing.random ? "A trapdoor! Where are you now?" : "A trapdoor! Back to the start.");
   }
 
   function finishLevel() {
@@ -1171,7 +1389,7 @@ export function renderLabyrinth(root: HTMLElement): () => void {
         if (near && now === "on") beep("roar");
       }
       // Touching a burning tile = caught. Only while the flame is ON.
-      if (j.phase === "on" && safeTimer <= 0 && fallTimer <= 0 && hurtTimer <= 0) {
+      if (j.phase === "on" && safeTimer <= 0 && fallTimer <= 0) {
         for (const [fx, fy] of flameTiles(j)) {
           if (Math.abs(me.x - fx) < HIT_SIZE && Math.abs(me.y - fy) < HIT_SIZE) { caught("fire"); break; }
         }
@@ -1179,40 +1397,67 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     }
   }
 
-  // ---------- being caught ----------
-  function caught(kind: "foe" | "fire") {
+  // ---------- being hurt ----------
+  // Being caught costs ONE HEART. It does not send you back to the start and it does not reset
+  // the enemies. Three things happen instead:
+  //   1. The hero is nudged back one tile, to the tile he came from (if he can stand there).
+  //   2. He blinks for SAFE_TIME seconds and nothing can hurt him, so he can get away.
+  //   3. If it was the Minotaur, he stamps and waits MINO_WAIT seconds before moving again.
+  // At zero hearts the "Out of hearts" card appears (see restartLevel).
+  function caught(kind: "foe" | "fire", by?: Walker) {
     lives--;
     hurtTimer = HURT_TIME;
     hurtKind = kind;
+    beep(kind === "fire" ? "burn" : "hurt");
     if (kind === "fire") {
       const me = where(player);
       puff("smoke", me.x, me.y);
-      toast("Singed! Back to the start.");
+      toast("Singed! You lose a heart.");
+    } else {
+      toast(by === mino ? "The Minotaur got you! Run while he stamps." : "Ouch! You lose a heart.");
     }
-    beep(kind === "fire" ? "burn" : "hurt");
+    if (lives <= 0) {
+      beep("lose");
+      setState("over");
+      return;
+    }
+    pushBack();
+    safeTimer = SAFE_TIME;
+    if (mino && by === mino) mino.wait = MINO_WAIT;
+  }
+
+  /**
+   * Nudge the hero back to the tile he came from. `trail` remembers the tiles he stepped off. If
+   * he is part way across a step, "the tile he came from" depends on how far he got: past the
+   * half-way mark he came from the tile he left; before it, from the one before that. If that
+   * tile can't be stood on (or there is none yet), he just stays put.
+   */
+  function pushBack() {
+    const moving = isMoving(player);
+    const pastHalf = moving && Math.min(1, player.t / player.dur) >= 0.5;
+    const here = pastHalf ? { x: player.nx, y: player.ny } : { x: player.x, y: player.y };
+    // trail's last entry is the tile he stepped off most recently.
+    const back = moving ? (pastHalf ? trail[trail.length - 1] : trail[trail.length - 2]) : trail[trail.length - 1];
+    const tile = back ? tileAt(back.x, back.y) : "#";
+    if (!back || isSolid(tile) || tile === "R" || tile === "B" || tile === "T" || Math.abs(back.x - here.x) + Math.abs(back.y - here.y) !== 1) return;
+    // Slide him from where he is now to that tile, quickly. (Standing on `here` first, then stepping.)
+    Object.assign(player, { x: here.x, y: here.y, nx: back.x, ny: back.y, t: 0, dur: PUSH_STEP });
+    buffer = null;
+    trail = [];
   }
 
   function checkHits() {
-    if (safeTimer > 0 || fallTimer > 0 || hurtTimer > 0) return;
+    if (safeTimer > 0 || fallTimer > 0) return;
     const me = where(player);
     const foes: (Walker & { iced: number })[] = mino ? [...bats, mino] : bats;
     for (const e of foes) {
       if (e.iced > 0) continue; // a frozen creature can't catch anyone
+      if (e === mino && mino.wait > 0) continue; // nor can a Minotaur who is busy stamping
       const them = where(e);
       if (Math.abs(me.x - them.x) < HIT_SIZE && Math.abs(me.y - them.y) < HIT_SIZE) {
-        caught("foe");
+        caught("foe", e);
         return;
       }
-    }
-  }
-
-  function afterHurt() {
-    if (lives <= 0) {
-      beep("lose");
-      setState("over");
-    } else {
-      resetActors();
-      safeTimer = SAFE_TIME;
     }
   }
 
@@ -1222,10 +1467,10 @@ export function renderLabyrinth(root: HTMLElement): () => void {
   // same "look before you step" idea as the hero. If that tile is a wall, lava or a closed door,
   // the crystal fizzles. Meanwhile, every tiny time slice, we check whether it is touching a creature.
   function throwIce() {
-    if (state !== "playing" || hurtTimer > 0 || fallTimer > 0 || shot) return;
+    if (state !== "playing" || fallTimer > 0 || shot) return;
     if (charges <= 0) {
       beep("empty");
-      toast("No ice. Collect all the gems on a level to earn one.");
+      toast("No ice. Look for the glowing ice crystals.");
       return;
     }
     charges--;
@@ -1285,11 +1530,7 @@ export function renderLabyrinth(root: HTMLElement): () => void {
       ambientTimer = 2.5 + Math.random() * 4;
       beep(AMBIENT[worldOf()]);
     }
-    if (hurtTimer > 0) {
-      hurtTimer -= dt;
-      if (hurtTimer <= 0) afterHurt();
-      return;
-    }
+    if (hurtTimer > 0) hurtTimer -= dt; // only the red flash: the game does not stop
     levelTime += dt;
     totalTime += dt;
     if (safeTimer > 0) safeTimer -= dt;
@@ -1310,7 +1551,10 @@ export function renderLabyrinth(root: HTMLElement): () => void {
       // Falling: the hero can't move. When the fall ends he is back at the start.
       fallTimer -= dt;
       if (fallTimer <= 0) {
-        resetActors();
+        // The enemies kept moving while he fell, so for a random landing check the spot again.
+        if (landing.random) landing = chooseLanding(true);
+        placeHero(landing.x, landing.y);
+        facing = 0;
         safeTimer = SAFE_TIME;
       }
     } else {
@@ -1323,11 +1567,12 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     for (const b of bats) if (b.iced <= 0) advance(b, dt, null, () => patrol(b));
     if (mino && mino.iced <= 0) {
       const m = mino;
-      advance(m, dt, null, () => planMinotaur(m));
+      if (m.wait > 0) m.wait = Math.max(0, m.wait - dt); // still stamping
+      advance(m, dt, null, () => { if (m.wait <= 0) planMinotaur(m); });
     }
     updateShot(dt);
     updateJets();
-    checkHits();
+    if (state === "playing") checkHits(); // (a flame may just have used up the last heart)
   }
 
   // ---------- the game loop ----------
@@ -1351,17 +1596,19 @@ export function renderLabyrinth(root: HTMLElement): () => void {
   let hudSignature = "";
   function updateHud() {
     // Only touch the page when something actually changed.
-    const sig = [levelIndex, lives, held.r, held.b, gemsGot, gemsInLevel, charges, Math.floor(totalTime)].join("|");
+    const sig = [levelIndex, lives, held.r, held.b, hasExitKey, gemsGot, gemsInLevel, charges, Math.floor(totalTime)].join("|");
     if (sig === hudSignature) return;
     hudSignature = sig;
     const pocket: (Node | string)[] = [];
     if (held.r) pocket.push(h("i", { class: "lab-keyicon red", title: "Red key" }));
     if (held.b) pocket.push(h("i", { class: "lab-keyicon blue", title: "Blue key" }));
+    if (hasExitKey) pocket.push(h("i", { class: "lab-keyicon gold", title: "Exit key" }));
     const shownLives = clamp(lives, 0, START_LIVES);
     hudLevel.textContent = `Level ${levelIndex + 1}/${LEVELS.length}`;
     hudLives.textContent = "♥".repeat(shownLives) + "♡".repeat(START_LIVES - shownLives);
     hudLives.setAttribute("aria-label", `Lives: ${shownLives} of ${START_LIVES}`);
     hudKeys.replaceChildren("Keys ", ...(pocket.length ? pocket : ["none"]));
+    hudKeys.setAttribute("aria-label", `Keys: ${held.r ? "red, " : ""}${held.b ? "blue, " : ""}${hasExitKey ? "exit key" : pocket.length ? "" : "none"}`);
     hudGems.textContent = `Gems ${gemsGot}/${gemsInLevel}`;
     hudIce.textContent = `Ice ${charges ? ICE_MARK.repeat(charges) : "none"}`;
     hudIce.setAttribute("aria-label", `Ice charges: ${charges}`);
@@ -1444,6 +1691,23 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     ctx.restore();
   }
 
+  /** The gem door: a stone slab whose gem-shaped socket fills with green, from the bottom, as you collect gems. */
+  function drawGemDoor(sx: number, sy: number) {
+    ctx.drawImage(art.gemDoor, sx, sy);
+    const rowsLit = gemsInLevel ? Math.round(((GEM_BOTTOM - GEM_TOP + 1) * gemsGot) / gemsInLevel) : 0;
+    const lit: Record<string, string> = { o: "#06302a", w: "#e8fff6", l: "#4be3a0", m: "#1e9a6a" };
+    const dull: Record<string, string> = { o: "#0a0810", w: "#2c2745", l: "#1a1628", m: "#14101f" };
+    for (const [gx, gy, letter] of GEM_CELLS) {
+      const on = GEM_BOTTOM - gy < rowsLit && letter !== "o";
+      px(sx + gx, sy + gy, 1, 1, (on ? lit : dull)[letter]);
+    }
+  }
+
+  /** A soft diamond of light, built from rows of pixels (used for the glow round the exit key and ice). */
+  function halo(cx: number, cy: number, r: number, colour: string) {
+    for (let dy = -r; dy <= r; dy++) px(cx - (r - Math.abs(dy)), cy + dy, (r - Math.abs(dy)) * 2 + 1, 1, colour);
+  }
+
   function draw(t: number) {
     const world = worldOf();
     const wArt = art.worlds[world];
@@ -1499,13 +1763,19 @@ export function renderLabyrinth(root: HTMLElement): () => void {
           if (tileAt(tx - 1, ty) === "~") px(sx, sy, 3, TILE, glow);
           if (tileAt(tx + 1, ty) === "~") px(sx + TILE - 3, sy, 3, TILE, glow);
         }
-        if (tile === "E") ctx.drawImage(wArt.exit, sx, sy);
+        if (tile === "E") {
+          ctx.drawImage(wArt.exit, sx, sy);
+          if (!hasExitKey) { // locked: dim it and hang a padlock on it
+            px(sx, sy, TILE, TILE, "rgba(0,0,0,0.4)");
+            ctx.drawImage(art.lock, sx, sy);
+          }
+        } else if (tile === "G") drawGemDoor(sx, sy);
         else if (tile === "R") ctx.drawImage(wArt.redDoor, sx, sy);
         else if (tile === "B") ctx.drawImage(wArt.blueDoor, sx, sy);
-        else if (tile === "T") ctx.drawImage(art.trap[0], sx, sy);
+        else if (tile === "T") ctx.drawImage(wArt.trap[0], sx, sy);
         else if (tile === "O") {
           const age = trapAge.get(indexOf(tx, ty)) ?? 9; // a hole from the start of the game's memory counts as fully open
-          ctx.drawImage(art.trap[age < 0.12 ? 1 : age < 0.25 ? 2 : 3], sx, sy);
+          ctx.drawImage(wArt.trap[age < 0.12 ? 1 : age < 0.25 ? 2 : 3], sx, sy);
         }
       }
     }
@@ -1528,8 +1798,14 @@ export function renderLabyrinth(root: HTMLElement): () => void {
       const sy = ty * TILE - camY;
       shadow(sx, sy);
       const bob = Math.round(Math.sin(t * 4 + tx + ty));
-      ctx.drawImage(item === "*" ? art.gem : item === "r" ? art.redKey : art.blueKey, sx, sy + bob);
+      // The exit key and the ice crystal glow, so they stand out from the other things on the floor.
+      const pulse = 0.5 + 0.5 * Math.sin(t * 4);
+      if (item === "X") halo(sx + 8, sy + 8, 7, `rgba(255,214,80,${0.26 + 0.2 * pulse})`);
+      if (item === "i") halo(sx + 8, sy + 8, 7, `rgba(150,225,255,${0.24 + 0.2 * pulse})`);
+      const sprite = item === "*" ? art.gem : item === "r" ? art.redKey : item === "b" ? art.blueKey : item === "X" ? art.exitKey : art.ice;
+      ctx.drawImage(sprite, sx, sy + bob);
       if (item === "*" && Math.floor(t * 3 + tx) % 4 === 0) px(sx + 4 + ((tx * 5) % 7), sy + 5 + ((ty * 3) % 4), 1, 1, "#ffffff"); // a twinkle
+      if ((item === "X" || item === "i") && Math.floor(t * 4 + tx) % 3 === 0) px(sx + 3 + ((tx * 5) % 9), sy + 3 + ((ty * 3) % 8), 1, 1, "#ffffff");
     }
 
     // The Minotaur, then the bats, then the hero on top.
@@ -1537,12 +1813,21 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     const wobble = (e: { iced: number }) => (e.iced > 0 && e.iced < 1 ? Math.round(Math.sin(t * 60)) : 0);
     if (mino) {
       const p = where(mino);
-      const sx = Math.round(p.x * TILE - camX) + wobble(mino);
-      const sy = Math.round(p.y * TILE - camY);
+      // After catching you he STAMPS: he shakes from side to side, hops on the spot and snorts steam.
+      const stamping = mino.wait > 0 && mino.iced <= 0;
+      const beat = Math.floor(t * 10) % 2;
+      const sx = Math.round(p.x * TILE - camX) + wobble(mino) + (stamping ? (beat ? 1 : -1) : 0);
+      const sy = Math.round(p.y * TILE - camY) - (stamping && beat ? 1 : 0);
       shadow(sx, sy);
       const stride = mino.iced <= 0 && isMoving(mino) && Math.floor(t * (mino.chasing ? 6 : 3)) % 2 ? 1 : 0;
       ctx.drawImage((mino.iced > 0 ? art.minosIce : art.minos)[stride], sx, sy - stride);
-      if (mino.chasing && mino.iced <= 0) text("!", sx + 8, sy - 3, 8, "#ff5030");
+      if (stamping) {
+        for (let k = 0; k < 3; k++) { // little clouds of steam rising from his nose
+          const rise = (t * 12 + k * 3) % 9;
+          px(sx + (k % 2 ? 11 : 3) + k, sy + 6 - rise, 2, 2, `rgba(235,235,235,${0.85 - rise / 11})`);
+        }
+        text("huff!", sx + 8, sy - 4, 8, "#e8dcb8");
+      } else if (mino.chasing && mino.iced <= 0) text("!", sx + 8, sy - 3, 8, "#ff5030");
     }
     for (const b of bats) {
       const p = where(b);
@@ -1563,7 +1848,7 @@ export function renderLabyrinth(root: HTMLElement): () => void {
       ctx.globalAlpha = 1 - f * 0.6;
       ctx.drawImage(heroSheet, 0, facing * heroFrameH, heroFrameW, heroFrameH, sx, sy, size, size);
       ctx.globalAlpha = 1;
-    } else if (!blink && (hurtTimer <= 0 || Math.floor(t * 20) % 2 === 0)) {
+    } else if (!blink) {
       const sx = Math.round(me.x * TILE - camX);
       const sy = Math.round(me.y * TILE - camY);
       shadow(sx, sy);
@@ -1637,7 +1922,8 @@ export function renderLabyrinth(root: HTMLElement): () => void {
         { t: "THE LABYRINTH", size: 16, color: "#d9a441" },
         { t: "Press Space or tap to start", size: 8, color: "#e8dcb8" },
         { t: "Three worlds. Find the way down.", size: 8, color: "#a9a08a" },
-        { t: "Every gem on a level earns ice (Space)", size: 8, color: "#9edcff" },
+        { t: "Every gem brings out the exit key", size: 8, color: "#e8b830" },
+        { t: "Find ice crystals: Space throws one", size: 8, color: "#9edcff" },
         ...(best !== null ? [{ t: `Best time ${formatTime(best)}`, size: 8, color: "#4be3a0" }] : []),
       ]);
     } else if (state === "paused") {
@@ -1646,22 +1932,19 @@ export function renderLabyrinth(root: HTMLElement): () => void {
         { t: "P, Esc, Space or tap to go on", size: 8, color: "#e8dcb8" },
       ]);
     } else if (state === "cleared") {
-      const missed = gemsInLevel - gemsGot;
       panel([
         { t: `LEVEL ${levelIndex + 1} COMPLETE`, size: 16, color: "#4be3a0" },
         { t: LEVELS[levelIndex].name, size: 8, color: WORLD_ACCENT[world] },
         { t: `Time ${formatTime(levelTime)}     Gems ${gemsGot} of ${gemsInLevel}`, size: 8, color: "#e8dcb8" },
-        earnedIce
-          ? { t: "All the gems! You earned ice.", size: 8, color: "#9edcff" }
-          : { t: `${missed} gem${missed === 1 ? "" : "s"} missed: no ice this time`, size: 8, color: "#a9a08a" },
         { t: `Ice charges ${charges} of ${MAX_CHARGES}`, size: 8, color: "#9edcff" },
         { t: "Space or tap to go on", size: 8, color: "#a9a08a" },
       ]);
     } else if (state === "over") {
       panel([
-        { t: "THE LABYRINTH WINS", size: 12, color: "#ff6b5f" },
-        { t: `You got as far as level ${levelIndex + 1}`, size: 8, color: "#e8dcb8" },
-        { t: LEVELS[levelIndex].name, size: 8, color: WORLD_ACCENT[world] },
+        { t: "OUT OF HEARTS", size: 16, color: "#ff6b5f" },
+        { t: `Level ${levelIndex + 1}: ${LEVELS[levelIndex].name}`, size: 8, color: WORLD_ACCENT[world] },
+        { t: "This level starts again.", size: 8, color: "#a9a08a" },
+        { t: "Your clock keeps running.", size: 8, color: "#a9a08a" },
         { t: "Space or tap to try again", size: 8, color: "#e8dcb8" },
       ]);
     } else if (state === "won") {
@@ -1706,7 +1989,8 @@ export function renderLabyrinth(root: HTMLElement): () => void {
       loadLevel(levelIndex + 1);
       safeTimer = SAFE_TIME;
       setState("playing");
-    } else if ((state === "over" || state === "won") && waited > 700) newGame(); // a pause, so a held key doesn't skip the screen
+    } else if (state === "over" && waited > 700) restartLevel(); // out of hearts: this level only. (The pause is so a held key doesn't skip the card.)
+    else if (state === "won" && waited > 700) newGame();
   }
 
   on(window, "keydown", (e: KeyboardEvent) => {
@@ -1788,15 +2072,34 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     (window as any).__labyrinth = {
       info: () => ({
         state, level: levelIndex + 1, world: worldOf(), lives, x: player.x, y: player.y, moving: isMoving(player), facing,
-        gems: gemsGot, gemsInLevel, charges, earnedIce, held: { ...held },
+        gems: gemsGot, gemsInLevel, charges, chargesAtStart, held: { ...held },
+        flip, hasExitKey, exitKeySpot, hasGemDoor, totalTime, totalGems, hurtKind, trail: trail.map((p) => ({ ...p })),
         hurt: hurtTimer, safe: safeTimer, fall: fallTimer, levelTime, toast: toastTimer > 0 ? toastText : "",
-        mino: mino && { x: mino.x, y: mino.y, chasing: mino.chasing, iced: mino.iced },
+        mino: mino && { x: mino.x, y: mino.y, chasing: mino.chasing, iced: mino.iced, wait: mino.wait },
         bats: bats.map((b) => ({ x: b.x, y: b.y, iced: b.iced })),
         shot: shot && { x: shot.x, y: shot.y, dir: shot.dir },
         openTraps: [...trapAge.keys()].map((id) => [id % mapW, Math.floor(id / mapW)]),
       }),
       start: () => newGame(),
-      level: (n: number) => { if (state === "ready") newGame(); loadLevel(n - 1); safeTimer = SAFE_TIME; setState("playing"); },
+      // level(n) loads level n (1 to 3), with a random flip unless you give one (0 to 3).
+      level: (n: number, flipTo?: number) => { if (state === "ready") newGame(); loadLevel(n - 1, flipTo); safeTimer = SAFE_TIME; setState("playing"); },
+      // setFlip(n) fixes the flip for every level that loads from now on (null goes back to random), and reloads this level.
+      setFlip: (n: number | null) => { forcedFlip = n; if (n !== null) loadLevel(levelIndex, n); },
+      restart: () => restartLevel(),
+      hurt: (kind: "foe" | "fire" = "foe") => caught(kind, kind === "foe" ? bats[0] : undefined),
+      hurtByMino: () => { if (mino) caught("foe", mino); },
+      giveHeart: () => { lives = Math.min(START_LIVES, lives + 1); },
+      takeHeart: () => { lives = Math.max(0, lives - 1); },
+      // Where would a trapdoor drop you? Asks `n` times (50/50 start or random spot) and lists the answers.
+      landings: (n: number, forceRandom = false) => Array.from({ length: n }, () => chooseLanding(forceRandom)),
+      find: (letter: string) => {
+        const out: number[][] = [];
+        for (let y = 0; y < mapH; y++) for (let x = 0; x < mapW; x++) if (tiles[y][x] === letter) out.push([x, y]);
+        return out;
+      },
+      items: () => [...items].map(([id, v]) => ({ x: id % mapW, y: Math.floor(id / mapW), item: v })),
+      stairs: () => ({ ...stairs }),
+      startTile: () => ({ ...start }),
       teleport: (x: number, y: number, land = true) => { Object.assign(player, { x, y, nx: x, ny: y, t: 0 }); if (land) arrive(); },
       face: (d: Dir) => { facing = d; },
       give: (key: "r" | "b") => { held[key]++; },
