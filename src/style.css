@@ -1011,3 +1011,28 @@ a.btn { text-decoration: none; }
   .zoom-earth .z-small { font-size: 18px; stroke-width: 4px; }
   .zoom-earth .z-hl { font-size: 26px; }
 }
+
+/* Hero Workshop (arcade/hero-workshop.ts) */
+.hero-workshop .lede { max-width: 65ch; }
+.hw-top { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; margin: 16px 0 24px; }
+.hw-top-side { flex: 1 1 260px; display: grid; gap: 10px; align-content: start; }
+.hw-top-side h2, .hw-top-side h3 { margin: 0; }
+.hw-sheet, .hw-walk, .hw-ideas canvas { image-rendering: pixelated; max-width: 100%; height: auto; }
+.hw-sheet { background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); }
+.hw-swatches { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+.hw-swatches li { display: flex; align-items: center; gap: 8px; }
+.hw-swatch { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--line); flex: none; }
+.hw-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.hw-step { background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 8px; }
+.hw-step h3 { margin: 0; display: flex; align-items: center; gap: 10px; }
+.hw-step p { margin: 0; }
+.hw-num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-pixel); font-size: 0.85rem; flex: none; }
+.hw-ideas { display: flex; flex-wrap: wrap; gap: 16px; }
+.hw-ideas figure { margin: 0; display: grid; justify-items: center; gap: 4px; }
+.hw-ideas figcaption { font-size: 0.85rem; color: var(--muted); }
+.hw-file { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.hw-pick { justify-self: start; cursor: pointer; }
+.hw-file:focus-visible + .hw-walk, .hw-pick:focus-within { outline: 3px solid var(--accent); }
+.hw-status[data-kind="ok"] { color: var(--found); }
+.hw-status[data-kind="warn"] { color: var(--missed); }
+.hw-actions { display: flex; flex-wrap: wrap; gap: 8px; }

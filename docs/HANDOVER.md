@@ -51,7 +51,7 @@ The arcade files are written to be read: their comments explain the game loop, f
 - `docs/arcade-design.md`: **the latest arcade decisions** (1 Nov 2026): Pong tiers, Labyrinth worlds, Flyover changes, how quizzes unlock the arcade, the island, and the build order. Start here for arcade work.
 - `docs/science-design.md`: the Science plan (Inner Space, The Scale of Things, Earth & Sky) and the "learn it first" cards for every hard game.
 - `docs/action-game-ideas.md`: the arcade levels, the Easy / Intermediate / Hard progression and badges, the Overworld idea, the build order.
-- `docs/arcade-art.md`: how to draw the hero sprite (Piskel, 32×64, put it at `public/arcade/hero.png`).
+- `docs/arcade-art.md` and the Hero Workshop (`src/arcade/hero-workshop.ts`, `#hero`; the built-in hero is in `src/arcade/hero-art.ts`): how to draw the hero sprite (Piskel, 32×64, put it at `public/arcade/hero.png`).
 - **Not written down yet:** a design doc per game type. This file is the map; the details live in the code. Deeper per-type docs are best written in a focused session per type.
 - **Not built:** the progression system (tracks, targets, badges, unlocks), the Overworld, accounts or a backend. They are designed in the docs above, nothing more.
 

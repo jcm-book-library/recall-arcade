@@ -1,5 +1,10 @@
 # Drawing your own hero for The Labyrinth
 
+**Easiest way: the Hero Workshop** on the live site (the "Hero Workshop" card in the arcade, or
+`#hero`). It shows the sheet with every box labelled, lets you download the starter hero to
+recolour in Piskel, shows your hero walking, and can put it straight into The Labyrinth on your
+device. The steps below are the same, written out.
+
 The game has a built-in placeholder hero. When you put a picture called `hero.png` in the right
 folder, the game uses yours instead. No code changes needed.
 
