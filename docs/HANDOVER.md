@@ -42,7 +42,7 @@ Live site: https://jcm-book-library.github.io/recall-arcade/ · Repo: github.com
 | Hangman | `ui/hangman.ts`, `babyDeck` in `decks/text-decks.ts` | Baby Animals & Group Names |
 | Space | `boards/zoomBoard.ts`, `decks/zoomout.ts`, `decks/zoomout-data.ts` | Infinity & Beyond (has a two-level Hint) |
 | Music | `src/music/` (note names, a Web Audio piano, the stave), `boards/pianoBoard.ts`, `decks/music.ts` | Keyboard, Treble, Bass, Rhythm, Keys & Symbols, Ear Training |
-| Arcade (real time) | `src/arcade/pong.ts`, `labyrinth.ts` + `labyrinth-maps.ts`, `flyover.ts` + `flyover-data.ts`, `docs/action-game-ideas.md`, `docs/arcade-art.md`, `public/arcade/` | Planet Pong, The Labyrinth, Flyover |
+| Arcade (real time) | `src/arcade/kit.ts` (shared loop, pixel art, saving), `pong.ts`, `labyrinth.ts` + `labyrinth-maps.ts` (check with `node scripts/check-labyrinth.mjs`), `flyover.ts` + `flyover-data.ts`, `docs/action-game-ideas.md`, `docs/arcade-art.md`, `public/arcade/` | Planet Pong, The Labyrinth, Flyover |
 
 The arcade files are written to be read: their comments explain the game loop, fixed timestep, grid movement, collisions, scrolling and so on in plain English.
 
