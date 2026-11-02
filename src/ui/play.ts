@@ -1,9 +1,31 @@
 import type { Board, Deck, Item, Variant } from "../engine/types";
 import { Matcher } from "../engine/matcher";
-import { bestFor, loadPrefs, recordGame, savePrefs, weakSpots } from "../engine/storage";
+import { bestFor, gamesFor, loadPrefs, recordGame, savePrefs, weakSpots } from "../engine/storage";
+import { currentTrack } from "../engine/progress";
 import { formatTime, h } from "./dom";
 
-type Phase = "setup" | "playing" | "over";
+type Phase = "setup" | "study" | "playing" | "over";
+
+// STUDY THE BOARD: before a round, the board can be shown with every name on it, to look over
+// at your own pace. On the Easy track it opens by itself the first time you start a quiz you've
+// never played (unless you've said "don't show this again"). It's always on the setup screen too.
+const STUDY_OFF = "learning-arcade:study-off";
+function studyDismissed(deckId: string): boolean {
+  try {
+    return (JSON.parse(localStorage.getItem(STUDY_OFF) ?? "[]") as string[]).includes(deckId);
+  } catch {
+    return false;
+  }
+}
+function dismissStudy(deckId: string) {
+  try {
+    const list = JSON.parse(localStorage.getItem(STUDY_OFF) ?? "[]") as string[];
+    if (!list.includes(deckId)) list.push(deckId);
+    localStorage.setItem(STUDY_OFF, JSON.stringify(list));
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 const TIME_CHOICES = [2, 4, 6, 10, 15, 20, 0];
 
@@ -83,6 +105,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   hud.hidden = true;
   const results = h("div", { class: "results" });
   results.hidden = true;
+  const studyBar = h("div", { class: "study-bar" });
+  studyBar.hidden = true;
   const boardHost = h("div", { class: "board" });
   const loading = h("div", { class: "board-loading" }, "Loading map…");
   const groups = h("div", { class: "groups" });
@@ -95,6 +119,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
       { class: "play" },
       h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), title),
       setup,
+      studyBar,
       hud,
       results,
       h(
@@ -185,7 +210,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
           { class: "best" },
           best ? `Best: ${best.score}/${best.total} in ${formatTime(best.seconds)}` : `${selectItems().length} to find`,
         ),
-        h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
+        h("button", { type: "button", class: "btn ghost", onclick: () => study(false) }, deck.learn ? "Learn it first" : "Study the board"),
+        h("button", { type: "button", class: "btn primary", onclick: startOrStudy }, "Start ▸"),
       ),
       ...(deck.related ? [h("a", { class: "btn ghost related", href: deck.related.href }, deck.related.label)] : []),
     );
@@ -248,8 +274,53 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     score.textContent = `${found.size}/${playing.length}`;
   }
 
+  // ---------- study the board ----------
+  /** The first Start on the Easy track opens the study view instead, once per quiz. */
+  function startOrStudy() {
+    if (currentTrack() === "easy" && !gamesFor(deck.id).length && !studyDismissed(deck.id)) study(true);
+    else start();
+  }
+
+  async function study(firstTime: boolean) {
+    if (variant.sample) await buildBoard(); // a sampled round shows the set you're about to play
+    if (!board) return;
+    phase = "study";
+    // Every name on show. "found" is the state that labels an item on every board.
+    board.setExplore(true);
+    for (const i of playing) board.setState(i.id, "found");
+    setup.hidden = true;
+    const leave = () => {
+      studyBar.hidden = true;
+      for (const i of playing) board?.setState(i.id, "open");
+      board?.setExplore(false);
+      phase = "setup";
+      setup.hidden = false;
+    };
+    studyBar.replaceChildren(
+      ...(deck.learn ? [h("div", { class: "learn-card" }, deck.learn())] : []),
+      h(
+        "div",
+        { class: "study-row" },
+        h(
+          "p",
+          {},
+          h("strong", {}, firstTime ? "New to this one? Have a look first. " : "Study time. "),
+          "Everything in this round is labelled. Hover or tap to see names, and take as long as you like. The clock starts when you do.",
+        ),
+        h("div", { class: "study-actions" },
+          h("button", { type: "button", class: "btn primary", onclick: () => { studyBar.hidden = true; start(); } }, "Got it, let's play ▸"),
+          firstTime
+            ? h("button", { type: "button", class: "btn ghost", onclick: () => { dismissStudy(deck.id); studyBar.hidden = true; start(); } }, "Don't show this again")
+            : h("button", { type: "button", class: "btn ghost", onclick: leave }, "◂ Back"),
+        ),
+      ),
+    );
+    studyBar.hidden = false;
+  }
+
   // ---------- the round ----------
   async function start() {
+    studyBar.hidden = true;
     const ph = deck.placeholder;
     input.placeholder = (typeof ph === "function" ? ph(options) : ph) ?? "Type a name…";
     // Sampled rounds draw a fresh set of items every time.

@@ -797,3 +797,55 @@ a.btn { text-decoration: none; }
 .locked-card { opacity: 0.72; border-style: dashed; }
 .locked-card:hover { opacity: 1; }
 .arcade-how { margin: -4px 0 12px; color: var(--muted); max-width: 60ch; }
+
+/* Study the board / learn it first (ui/play.ts) */
+.study-bar { display: grid; gap: 12px; margin: 0 0 16px; }
+.study-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+  background: var(--panel); border: 2px solid var(--accent); border-radius: var(--r); padding: 12px 16px; }
+.study-row p { margin: 0; flex: 1 1 280px; }
+.study-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.learn-card { background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+.learn-card h3 { margin: 0 0 6px; }
+.learn-card p { margin: 0 0 8px; }
+
+/* ---------- Inner Space: the microscope look ----------
+   The zoom board is shared with Infinity & Beyond. This theme swaps the deep-space colours for a dark
+   blue-green microscope slide with soft glowing outlines. Like deep space, it stays dark in light mode. */
+.zoom-micro {
+  --space: #05222c;
+  --space-ink: #e4fbf7;
+  --space-dim: #1c5666;
+  --scope-glow: rgba(95, 214, 208, 0.55);
+  --scope-line: #5fd6d0;
+  --scope-text: #8fc9c9;
+}
+.zoom-micro .zviewport { background: radial-gradient(ellipse at 45% 40%, #0e4a58 0%, var(--space) 75%); }
+.zoom-micro .zitem .mark {
+  fill: rgba(70, 160, 172, 0.34); stroke: var(--scope-line); stroke-width: 1.5;
+  filter: drop-shadow(0 0 3px var(--scope-glow));
+}
+.zoom-micro .zitem .mark.line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.zoom-micro .zitem.found .mark { stroke: #b9fff3; }
+.zoom-micro .zitem.found .mark.line { stroke: var(--scope-line); }
+.zoom-micro .zitem.missed .mark { stroke: #ff7a6e; }
+.zoom-micro .zitem.missed .mark.line { stroke: #ff7a6e; }
+.zoom-micro .zitem .hit { fill: none; stroke: transparent; pointer-events: stroke; }
+.zoom-micro .zitem .hit-fill { fill: transparent; stroke: none; pointer-events: all; }
+.zoom-micro .z-small, .zoom-micro .z-caption { fill: var(--scope-text); }
+.zoom-micro .zlabel { font-size: 17px; stroke-width: 5px; }
+.zoom-micro .zitem.hinted .zlabel { fill: var(--scope-text); }
+.zoom-micro .zlead { stroke: var(--scope-line); stroke-width: 1.5; opacity: 0.8; visibility: hidden; }
+.zoom-micro .zitem.found .zlead, .zoom-micro .zitem.missed .zlead, .zoom-micro .zitem.hinted .zlead { visibility: visible; }
+.zoom-micro .z-deco { fill: none; stroke: rgba(150, 240, 230, 0.4); stroke-width: 1.5; pointer-events: none; }
+.zoom-micro .z-lump { fill: #6f56ad; stroke: none; pointer-events: none; }
+.zoom-micro .z-dent { fill: rgba(120, 20, 30, 0.35); stroke: none; pointer-events: none; }
+.zoom-micro .z-stripe { stroke: rgba(70, 20, 30, 0.35); stroke-width: 2; pointer-events: none; }
+.zoom-micro .z-hair { fill: none; stroke: #b08a62; stroke-linecap: round; pointer-events: none; }
+.zoom-micro .z-muscle { fill: #5a2a33; opacity: 0.8; }
+.zoom-micro .z-bgcell { fill: rgba(90, 190, 190, 0.1); stroke: rgba(130, 220, 215, 0.2); stroke-width: 2; }
+.zoom-micro .z-jelly { fill: rgba(60, 150, 160, 0.14); stroke: none; }
+/* Phones: the whole view shrinks to about a third of its size, so the labels grow to stay readable. */
+@media (max-width: 640px) {
+  .zoom-micro .zlabel { font-size: 24px; stroke-width: 7px; }
+  .zoom-micro .z-small { font-size: 18px; }
+}

@@ -114,6 +114,11 @@ export interface Deck {
   placeholder?: string | ((options: Record<string, boolean>) => string);
   /** Custom way to compare answers, e.g. "+5:30" and "UTC+0530" both mean the same offset. */
   answerKey?: (text: string) => string;
+  /**
+   * A hand-written "learn it first" card, shown above the labelled board in study mode.
+   * Only for games that are hard to start cold (Inner Space, The Scale of Things...).
+   */
+  learn?: () => Node;
   /** A short tip shown under the board, e.g. how to zoom. */
   tip?: string;
 }

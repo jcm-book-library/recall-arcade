@@ -9,6 +9,7 @@ import { mountainsDeck } from "./decks/mountains";
 import { zoomOutDeck } from "./decks/zoomout";
 import { elementsDeck } from "./decks/elements";
 import { cellsDeck } from "./decks/cells";
+import { innerSpaceDeck } from "./decks/innerspace";
 import { bodyDeck } from "./decks/body";
 import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
@@ -32,7 +33,7 @@ const DECKS: Deck[] = [
   // Geography
   countriesDeck, flagsDeck, capitalsDeck, waterDeck, neighboursDeck, mountainsDeck,
   // Science
-  zoomOutDeck, elementsDeck, cellsDeck, bodyDeck, unitsDeck,
+  zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, unitsDeck,
   // History
   historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
   // Travel & Transport
@@ -41,8 +42,8 @@ const DECKS: Deck[] = [
   animalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
-  // Not on the home page: reached from Mythology, or at #mythpairs
-  mythPairsDeck,
+  // Not on the home page: reached from Mythology (#mythpairs) or from Inner Space (#cells)
+  mythPairsDeck, cellsDeck,
 ];
 
 // While developing, catch two items in one game sharing an id (they'd count as one).
