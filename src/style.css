@@ -1036,3 +1036,9 @@ a.btn { text-decoration: none; }
 .hw-status[data-kind="ok"] { color: var(--found); }
 .hw-status[data-kind="warn"] { color: var(--missed); }
 .hw-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.flagwall.cities .flag[hidden] { display: none; }
+/* Pick from six: the six shapes in one grid, ignoring the region headings. */
+.flagwall.cities.choosing { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 760px; }
+@media (min-width: 700px) { .flagwall.cities.choosing { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
+.flagwall.cities.choosing h3 { display: none; }
+.flagwall.cities.choosing .flaggrid { display: contents; }
