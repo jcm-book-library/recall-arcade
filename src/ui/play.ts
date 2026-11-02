@@ -386,6 +386,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     wrongClicks = 0;
     // In click games, highlighting the answer would give it away.
     board?.setCurrent?.(clickMode ? null : current?.id ?? null);
+    if (clickMode) board?.showChoices?.(current?.id ?? null);
     promptBox.replaceChildren(current && deck.renderPrompt ? deck.renderPrompt(current, { click: clickMode }) : "");
     // Only the item on screen counts, so answers can't be given out of turn.
     matcher = new Matcher(current ? [current] : [], [], deck.answerKey);
@@ -552,6 +553,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     for (const i of missed) board.setState(i.id, "missed");
     for (const i of unseen) board.setState(i.id, "unseen");
     board.setCurrent?.(null);
+    board.showChoices?.(null);
     current = null;
     promptBox.replaceChildren();
     board.setExplore(true);

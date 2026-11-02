@@ -49,6 +49,11 @@ export interface Board {
   flash(id: string): void;
   /** Highlight the item being asked about (one-at-a-time games). */
   setCurrent?(id: string | null): void;
+  /**
+   * Click games that show only a few choices at a time (City Shapes' "Pick from six"):
+   * called with the item being asked about, and with null to show everything again.
+   */
+  showChoices?(id: string | null): void;
   /** Called when the player clicks an item on the board, to jump to it. */
   onPick?(handler: (id: string) => void): void;
   /** After the game, let the player hover/tap to learn names. */
