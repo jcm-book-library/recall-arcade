@@ -1,5 +1,6 @@
 import type { Deck, Item } from "../engine/types";
 import { createZoomBoard } from "../boards/zoomBoard";
+import { SPACE_SET } from "../boards/zoom-space";
 import { STAGES, STAGE_ORDER, ZOOM_ITEMS, rankOf } from "./zoomout-data";
 
 const items: Item[] = ZOOM_ITEMS.map((z) => ({
@@ -32,5 +33,5 @@ export const zoomOutDeck: Deck = {
   options: [],
   progressGroups: STAGE_ORDER.map((n) => ({ tag: `z${n}`, label: STAGES.find((s) => s.n === n)!.title })),
   createBoard: ({ container, items: playing, variant }) =>
-    createZoomBoard(container, items, playing, DEPTH[variant.id] ?? 1),
+    createZoomBoard(container, items, playing, DEPTH[variant.id] ?? 1, SPACE_SET),
 };

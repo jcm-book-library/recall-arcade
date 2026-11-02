@@ -35,6 +35,7 @@ export const CHALLENGES: Record<string, Challenge> = {
   mountains: count(6, "Find 6 mountains"),
   // Science
   zoomout: count(8, "Name 8 things in space"),
+  innerspace: count(6, "Name 6 things in Inner Space"),
   elements: count(10, "Name 10 elements"),
   cells: count(5, "Label 5 parts of a cell"),
   body: count(6, "Label 6 body parts"),

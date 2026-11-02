@@ -131,6 +131,9 @@ export const cellsDeck: Deck = {
   id: "cells",
   title: "Cells & Life",
   subject: "Science",
+  // Reached from Inner Space; saved scores under "cells" still count.
+  hidden: true,
+  related: { href: "#innerspace", label: "◂ Back to Inner Space" },
   blurb: "Every living thing is made of cells. A part lights up: name it. Or flip it and click the part.",
   noun: "cell parts",
   mode: "prompt",

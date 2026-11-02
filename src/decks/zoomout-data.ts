@@ -2,29 +2,31 @@
 // Each item has a marker drawn on its stage's diagram (1000 x 560 units).
 // Shapes: "body" = a circle, "band" = a thick curved strip, "ring" = a dashed loop,
 // "arm" = a spiral arm of the galaxy, "stars" = a small star cluster.
+// (The ZoomItem and ZoomStage shapes are defined in boards/zoomBoard.ts, shared with Inner Space.)
 
-export interface ZoomItem {
-  id: string;
-  name: string;
-  aliases?: string[];
-  stage: number;
-  shape: "body" | "band" | "ring" | "arm" | "stars";
-  x: number;
-  y: number;
-  r?: number;
-  /** Extra drawing data: path for bands/arms, colour for bodies. */
-  d?: string;
-  color?: string;
-  /** Where the label goes, relative to the marker. */
-  label?: "above" | "below" | "left" | "right";
+import type { ZoomItem, ZoomStage } from "../boards/zoomBoard";
+export type { ZoomItem, ZoomStage };
+
+/** One arm of a spiral galaxy as a smooth path, plus a point to hang its label on. */
+function spiralArm(offset: number, turns = 0.9, inner = 40, growth = 0.33, cx = 500, cy = 280) {
+  const pts: [number, number][] = [];
+  for (let t = 0; t <= turns * Math.PI * 2; t += 0.08) {
+    const r = inner * Math.exp(growth * t);
+    if (r > 270) break;
+    pts.push([cx + Math.cos(t + offset) * r * 1.35, cy + Math.sin(t + offset) * r * 0.82]);
+  }
+  const d = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
+  return { d, label: pts[Math.floor(pts.length * 0.78)] };
 }
 
-export interface ZoomStage {
-  n: number;
-  title: string;
-  scale: string;
-  fact: string;
-}
+export const ARMS: Record<string, { d: string; label: [number, number] }> = {
+  "0": spiralArm(0),
+  "1": spiralArm(Math.PI / 2),
+  "2": spiralArm(Math.PI),
+  "3": spiralArm((3 * Math.PI) / 2),
+  // The Orion Arm is a short spur between two big arms; the Sun sits on it.
+  spur: spiralArm(Math.PI * 0.75, 0.3, 120, 0.25),
+};
 
 export const STAGES: ZoomStage[] = [
   { n: 1, title: "The Planets", scale: "Across this view: about 9 billion km, the Sun to Neptune.", fact: "Sizes are exaggerated and gaps squashed. To scale, the planets would be invisible specks." },
@@ -103,11 +105,11 @@ export const ZOOM_ITEMS: ZoomItem[] = [
 
   // 5. Milky Way: spiral arms drawn by the board; x/y is where each label sits.
   { id: "centre", name: "Galactic Centre", aliases: ["Galactic Center", "Sagittarius A*", "Sagittarius A", "Sgr A*", "The Centre", "Center", "Centre", "Supermassive Black Hole"], stage: 5, shape: "body", x: 500, y: 280, r: 16, color: "#ffe9a8", label: "below" },
-  { id: "perseus", name: "Perseus Arm", aliases: ["Perseus"], stage: 5, shape: "arm", x: 0, y: 0, d: "0" },
-  { id: "sagarm", name: "Sagittarius Arm", aliases: ["Sagittarius-Carina Arm", "Carina-Sagittarius Arm", "Sagittarius Carina", "Carina Arm"], stage: 5, shape: "arm", x: 0, y: 0, d: "1" },
-  { id: "scutum", name: "Scutum-Centaurus Arm", aliases: ["Scutum Centaurus", "Scutum-Crux Arm", "Scutum Arm", "Centaurus Arm"], stage: 5, shape: "arm", x: 0, y: 0, d: "2" },
-  { id: "norma", name: "Norma Arm", aliases: ["Norma"], stage: 5, shape: "arm", x: 0, y: 0, d: "3" },
-  { id: "orionarm", name: "Orion Arm", aliases: ["Orion Spur", "Orion-Cygnus Arm", "Local Arm", "Local Spur"], stage: 5, shape: "arm", x: 0, y: 0, d: "spur" },
+  { id: "perseus", name: "Perseus Arm", aliases: ["Perseus"], stage: 5, shape: "arm", x: ARMS["0"].label[0], y: ARMS["0"].label[1], d: ARMS["0"].d },
+  { id: "sagarm", name: "Sagittarius Arm", aliases: ["Sagittarius-Carina Arm", "Carina-Sagittarius Arm", "Sagittarius Carina", "Carina Arm"], stage: 5, shape: "arm", x: ARMS["1"].label[0], y: ARMS["1"].label[1], d: ARMS["1"].d },
+  { id: "scutum", name: "Scutum-Centaurus Arm", aliases: ["Scutum Centaurus", "Scutum-Crux Arm", "Scutum Arm", "Centaurus Arm"], stage: 5, shape: "arm", x: ARMS["2"].label[0], y: ARMS["2"].label[1], d: ARMS["2"].d },
+  { id: "norma", name: "Norma Arm", aliases: ["Norma"], stage: 5, shape: "arm", x: ARMS["3"].label[0], y: ARMS["3"].label[1], d: ARMS["3"].d },
+  { id: "orionarm", name: "Orion Arm", aliases: ["Orion Spur", "Orion-Cygnus Arm", "Local Arm", "Local Spur"], stage: 5, shape: "arm", x: ARMS["spur"].label[0], y: ARMS["spur"].label[1], d: ARMS["spur"].d, cls: "spur" },
 
   // 6. Galactic neighbours.
   { id: "milkyway", name: "Milky Way", aliases: ["The Milky Way", "Our Galaxy"], stage: 6, shape: "body", x: 330, y: 300, r: 30, color: "#cfd8ff", label: "below" },
