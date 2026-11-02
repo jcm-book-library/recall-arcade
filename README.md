@@ -62,4 +62,6 @@ Organ diagrams (The Human Body, the rounds "By body system"), all from Wikimedia
 - Nervous system: "TE-Nervous system diagram.svg" by The Emirr (Wikimedia Commons), [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Adapted: labels removed and parts separated.
 - Female reproductive system: "Scheme female reproductive system-en.svg" by the CDC and Mysid, public domain.
 
+Plate boundaries (Earth & Sky): Peter Bird (2003), "An updated digital model of plate boundaries", via Hugo Ahlenius's tectonicplates collection, Open Data Commons Attribution License (ODC-BY 1.0). Cut down and grouped into the main plates by `scripts/build-plates.mjs`. Coastlines come from world-atlas (Natural Earth, public domain).
+
 Plans and ideas live in [docs/](docs/).

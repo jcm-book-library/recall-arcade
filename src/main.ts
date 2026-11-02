@@ -12,6 +12,7 @@ import { elementsDeck } from "./decks/elements";
 import { cellsDeck } from "./decks/cells";
 import { innerSpaceDeck } from "./decks/innerspace";
 import { scaleDeck } from "./decks/scale";
+import { earthSkyDeck } from "./decks/earthsky";
 import { bodyDeck } from "./decks/body";
 import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
@@ -35,7 +36,7 @@ const DECKS: Deck[] = [
   // Geography
   countriesDeck, flagsDeck, capitalsDeck, waterDeck, cityShapesDeck, mountainsDeck,
   // Science
-  zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, scaleDeck,
+  zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, scaleDeck, earthSkyDeck,
   // History
   historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
   // Travel & Transport
