@@ -124,26 +124,26 @@ Steps 1, 2 and 5 are well suited to a cheaper helper model working from this not
 reviews and plays each one before a pull request.
 
 ## Play-test round 2 (3 Nov 2026): the Labyrinth and Flyover
-Owner's notes, with Claude's proposals. **Decided** = the owner said so. **Proposed** = waiting for a yes.
+Owner's notes and Claude's proposals. The owner said yes to all of them on 3 Nov. Build order: the Labyrinth first, then Flyover in two pull requests (1: routes, terrain and landings; 2: fuel, transits and stopovers).
 
 ### The Labyrinth
 - **Gems open the way out (Decided).** Levels 1 and 2: collecting every gem makes the exit key
   appear. Level 3: every gem opens a door to the exit key, and that key finishes the game.
-  **Proposed:** a "gem door" tile, shown with a counter ("4 of 9"), so it's clear what the gems are for.
+  **Decided (owner: "all yes"):** a "gem door" tile, shown with a counter ("4 of 9"), so it's clear what the gems are for.
 - **Ice is found, not earned (Decided: an ice pickup in level 2).** Because gems are now needed to
-  leave, "all the gems = ice" would give everyone ice. **Proposed:** one hidden ice pickup in level
+  leave, "all the gems = ice" would give everyone ice. **Decided (owner: "all yes"):** one hidden ice pickup in level
   2, and one in level 3 somewhere risky (near the lair or behind fire jets).
 - **Getting hurt doesn't send you back (Decided).** Bats, wasps and fire jets cost a heart, push
   you back a step, and you blink safe for a moment.
-  **Proposed:**
+  **Decided (owner: "all yes"):**
   - At 0 hearts you restart the **current level**, not the whole game.
   - Hearts refill to 3 at the start of each level.
   - The Minotaur also costs a heart, then stamps and waits 2 seconds, so you can get away.
 - **Trapdoors (Decided):** they drop you at the start **or** a random spot, which may help or
-  hurt. Level 3 gets some too, easy to miss in a panic. **Proposed:** the random spot is any floor
+  hurt. Level 3 gets some too, easy to miss in a panic. **Decided (owner: "all yes"):** the random spot is any floor
   tile you could already walk to with the keys you hold (never sealed behind a locked door), at
   least 4 tiles from any enemy. Half the time it's the start, half the time a random spot.
-- **Fresher levels (Open). Proposed, in two steps:**
+- **Fresher levels (Decided, in two steps):**
   1. Each play flips each map at random (left to right, top to bottom, or both). That gives 4
      versions of every level straight away, all the same length, so best times stay fair.
   2. Later, a second hand-made map for each world. The checker proves every version can be finished.
@@ -182,14 +182,14 @@ Owner's notes, with Claude's proposals. **Decided** = the owner said so. **Propo
 
 - **Three levels of difficulty, one per leg (Decided):**
   - **Leg 1, Easy (Cessna):** 3 strikes and you're diverted, as now, with help.
-    **Proposed help:** on a go-around, the right gate glows.
+    **Decided help:** on a go-around, the right gate glows.
   - **Leg 2, Intermediate (jet):** more weather, and **fuel becomes your life bar**. Climbing burns
     fuel, levelling off burns a little, and gliding down burns none. A strike (a bump or a wrong
-    gate) costs a chunk of fuel. **Proposed:** each correct stop tops the tank up by a third, so
+    gate) costs a chunk of fuel. **Decided (owner: "all yes"):** each correct stop tops the tank up by a third, so
     you only run dry if you hold ↑ the whole time.
   - **Leg 3, Hard (jumbo):** tighter fuel, plus two kinds of stop. A **transit** is a quick stop,
     a 3-second countdown and no fuel. A **stopover** is a rest with a full refuel and a 5-second
-    countdown. Both use a real landing and take-off. **Proposed:** the big hubs on each route are
+    countdown. Both use a real landing and take-off. **Decided (owner: "all yes"):** the big hubs on each route are
     stopovers (for example AUH, DFW, YYZ, DOH, JNB, GRU) and the rest are transits.
-- **Proposed (a lesson from the Labyrinth):** running out of fuel diverts you back to your **last
+- **Decided (a lesson from the Labyrinth):** running out of fuel diverts you back to your **last
   stop**, not the start of the leg.
