@@ -11,15 +11,16 @@ recommendation, not yet confirmed), **Open**.
 | Periodic Table | **The Scale of Things**, replaces Units & Forces |
 | The Human Body | **Earth & Sky**, the free sixth slot |
 
-Keep the old ids (`cells`, `units`) in the saved scores. **Proposed:** Inner Space takes over the
-`cells` deck (same id, new title), so nothing played is lost. Units & Forces stays reachable from a
-link, the way Greek & Roman Pairs is, until The Scale of Things covers it.
+Keep the old ids (`cells`, `units`) in the saved scores. **Decided while building:** Inner Space is a
+new quiz (`innerspace`). Cells & Life (`cells`) leaves the home page but stays as "zoom in further",
+linked both ways from Inner Space, so its detailed cell diagrams and saved scores are kept. Units &
+Forces stays on the home page until The Scale of Things is built.
 
 The three quizzes then link up: Infinity & Beyond zooms out from Earth, Inner Space zooms in to the
 atom, and the atom hands over to the Periodic Table.
 
 ## Inner Space
-**Does it overlap The Human Body? Proposed: keep them separate, with a clear split.**
+**Does it overlap The Human Body? Decided: keep them separate, with a clear split.**
 - **The Human Body** answers "where is it?": a labelled map of bones and organs.
 - **Inner Space** answers "what is it made of?": a journey down in size, one stage per zoom. It
   starts where the Human Body stops, at one organ, so it repeats nothing.
@@ -62,13 +63,14 @@ Put things in order by size, speed and so on. It builds the feel for numbers tha
   Prime Ministers in order, rivers by length).
 
 ## Earth & Sky (Decided, with refinement to come)
-A draft, for the owner to trim:
+A draft. The owner chose the water cycle and climate zones for the open slot:
 1. **Inside the Earth:** crust, mantle, outer and inner core (labelled diagram).
 2. **Plates and volcanoes:** the main tectonic plates and famous volcanoes on the world map (map board).
 3. **Rocks:** igneous, sedimentary and metamorphic, from photos (photo wall).
 4. **Clouds:** cumulus, stratus, cirrus and the rest, from photos.
 5. **Weather:** the symbols on a weather map, and wind and storm names.
-6. **Open:** what to trim or add, for example earthquakes, the water cycle, the seasons, or climate zones.
+6. **The water cycle** (labelled diagram: evaporation, condensation, precipitation, collection and so on)
+   and **climate zones** (on the world map: tropical, dry, temperate, continental, polar).
 
 ## Learn it first cards (Decided, all hard games)
 For a player who starts knowing nothing, the card is a resource to get going, used together with
@@ -85,10 +87,14 @@ the existing Hints. **Proposed design:**
      hard to start cold.
 - **Hints stay** for during the round. The card is for before the round.
 
-## Proposed build order
-1. **Study the board** for every quiz. It's small, it helps everywhere at once, and it is the frame
+## Build order (agreed)
+1. **Study the board** for every quiz. **Built 2 Nov 2026.** On the Easy track it opens by itself
+   the first time you start a quiz, with "Don't show this again". It is always a button on the
+   setup screen. Later improvement: the world map shows names only on hover or tap, so map quizzes
+   could print labels for small regions. It's small, it helps everywhere at once, and it is the frame
    for the hand-written cards.
-2. **Inner Space**, built on the cells deck and the zoom board.
+2. **Inner Space**: the zoom board, opened up so both zoom quizzes can use it, with a hand-written
+   learn-it-first card.
 3. **The Scale of Things:** the drag-to-order screen first, then the number line on Hard.
 4. **Earth & Sky**, after the owner's refinement.
 
