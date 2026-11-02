@@ -193,3 +193,9 @@ Owner's notes and Claude's proposals. The owner said yes to all of them on 3 Nov
     stopovers (for example AUH, DFW, YYZ, DOH, JNB, GRU) and the rest are transits.
 - **Decided (a lesson from the Labyrinth):** running out of fuel diverts you back to your **last
   stop**, not the start of the leg.
+
+**Flyover step 1 built (3 Nov 2026):** random routes from the owner's list, terrain scenery and
+obstacles generated per hop (`src/arcade/flyover-gen.ts`, seeded; `node scripts/check-flyover.mjs`
+tests 200 seeds per route), take-off and landing, the glowing right gate on Easy, and diverting
+to the last stop. Flyover now uses `kit.ts`. Step 2 (fuel, transits, stopovers) is next: the
+take-off and landing functions are ready to call at mid-leg stops.

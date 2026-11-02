@@ -1,7 +1,12 @@
 // FLYOVER: the numbers and lists behind the game. This file has no drawing and no game
-// logic, only DATA, so you can change the routes, the aircraft and the obstacles without
-// touching flyover.ts. (A small check script, scripts/check-flyover.mjs, reads this file
-// too, and warns you if a list becomes unfair or impossible.)
+// logic, only DATA, so you can change the routes, the aircraft and the obstacle recipes
+// without touching flyover.ts. (A small check script, scripts/check-flyover.mjs, builds every
+// route many times over and warns you if anything becomes unfair or impossible.)
+//
+// HOW A LEG IS MADE NOW: each leg has a list of ROUTES you write by hand (the airports, and
+// what the land or sea looks like below each hop). Every play, the leg picks one route at
+// random. The obstacles are NOT written out any more: flyover-gen.ts makes them each time from
+// the RECIPES below ("what lives over a desert?") and the leg's difficulty.
 //
 // Everything is measured in "game pixels" on the 320 x 180 canvas.
 // DISTANCE is how far along the leg you are, counted in pixels from the start of the leg.
@@ -48,59 +53,184 @@ export const AIRCRAFT: Record<AircraftId, Aircraft> = {
   },
 };
 
+// ---------- terrain ----------
+// What lies below one hop (the flight between two stops). It sets the scenery AND the obstacles.
+export type Terrain = "sea" | "coast" | "mountains" | "desert" | "city" | "jungle";
+export const TERRAINS: Terrain[] = ["sea", "coast", "mountains", "desert", "city", "jungle"];
+
 // ---------- obstacles ----------
-// Three kinds, none of them dangerous, just bumpy:
-//   storm    a dark cloud with a little lightning.   y = the HEIGHT of its middle
-//   birds    a flock of small V shapes.              y = the HEIGHT of the middle of the flock
-//   mountain rises up from the ground.               y = how TALL it is (pixels above the bottom)
-export type ObstacleType = "storm" | "birds" | "mountain";
-export interface ObstacleSpec { at: number; type: ObstacleType; y: number }
+// None of them is dangerous, just bumpy. Some FLOAT (y = the HEIGHT of the middle of the thing),
+// some RISE FROM THE GROUND (y = how TALL it is, in pixels above the bottom of the screen).
+//   storm      a dark cloud with a little lightning        floats
+//   dust       a brown swirling dust storm                 floats
+//   gulls      a flock of seagulls                         floats
+//   parrots    a flock of coloured parrots                 floats
+//   mountain   a peak, snowy if tall                       ground
+//   cliff      a low sea cliff, like a small mountain      ground
+//   mesa       a flat-topped rock                          ground
+//   building   a tall building with lit windows            ground (w = how wide, optional)
+export type ObstacleType = "storm" | "dust" | "gulls" | "parrots" | "mountain" | "cliff" | "mesa" | "building";
+export interface ObstacleSpec { at: number; type: ObstacleType; y: number; w?: number }
 export interface Rect { x: number; y: number; w: number; h: number }
 
-export const STORM_SIZE = { w: 36, h: 22 }; // the picture
-export const BIRDS_SIZE = { w: 34, h: 20 };
-export const mountainWidth = (height: number) => Math.round(36 + height * 0.55);
+export const OBSTACLE_INFO: Record<ObstacleType, { ground: boolean; what: string; w?: number; h?: number }> = {
+  storm: { ground: false, what: "A storm cloud", w: 36, h: 22 },
+  dust: { ground: false, what: "A dust storm", w: 40, h: 24 },
+  gulls: { ground: false, what: "A flock of seagulls", w: 34, h: 20 },
+  parrots: { ground: false, what: "A flock of parrots", w: 34, h: 20 },
+  mountain: { ground: true, what: "A mountain" },
+  cliff: { ground: true, what: "A cliff" },
+  mesa: { ground: true, what: "A mesa" },
+  building: { ground: true, what: "A tall building" },
+};
+
+/** How wide a ground obstacle's picture is, from how tall it is. */
+export function groundWidth(o: ObstacleSpec): number {
+  if (o.type === "building") return o.w ?? 24;
+  if (o.type === "cliff") return Math.round(30 + o.y * 0.9);
+  if (o.type === "mesa") return Math.round(40 + o.y * 0.5);
+  return Math.round(36 + o.y * 0.55); // mountain
+}
 
 /** The rectangle the PICTURE covers (x counted from the start of the leg). */
 export function pictureOf(o: ObstacleSpec): Rect {
-  if (o.type === "mountain") {
-    const w = mountainWidth(o.y);
+  const info = OBSTACLE_INFO[o.type];
+  if (info.ground) {
+    const w = groundWidth(o);
     return { x: o.at - w / 2, y: WORLD_H - o.y, w, h: o.y };
   }
-  const s = o.type === "storm" ? STORM_SIZE : BIRDS_SIZE;
-  return { x: o.at - s.w / 2, y: o.y - s.h / 2, w: s.w, h: s.h };
+  return { x: o.at - info.w! / 2, y: o.y - info.h! / 2, w: info.w!, h: info.h! };
 }
 
 /**
- * The HITBOX: a rectangle smaller than the picture. Clouds and birds have soft, empty
- * edges, and a mountain is narrow at the top, so a full-size box would feel unfair.
- * Only the hitbox decides if you bump something.
+ * The HITBOX: a rectangle smaller than the picture. Clouds and birds have soft, empty edges,
+ * a mountain is narrow at the top, so a full-size box would feel unfair. Only the hitbox
+ * decides if you bump something. (A building really is a box, so its hitbox is nearly all of it.)
  */
 export function hitboxOf(o: ObstacleSpec): Rect {
   const p = pictureOf(o);
-  if (o.type === "mountain") return { x: o.at - p.w * 0.2, y: p.y + 6, w: p.w * 0.4, h: p.h - 6 };
-  return { x: p.x + 5, y: p.y + 5, w: p.w - 10, h: p.h - 10 };
+  switch (o.type) {
+    case "mountain": return { x: o.at - p.w * 0.2, y: p.y + 6, w: p.w * 0.4, h: p.h - 6 };
+    case "cliff": return { x: o.at - p.w * 0.3, y: p.y + 4, w: p.w * 0.6, h: p.h - 4 };
+    case "mesa": return { x: o.at - p.w * 0.38, y: p.y + 2, w: p.w * 0.76, h: p.h - 2 };
+    case "building": return { x: p.x + 2, y: p.y + 1, w: p.w - 4, h: p.h - 1 };
+    default: return { x: p.x + 5, y: p.y + 5, w: p.w - 10, h: p.h - 10 };
+  }
+}
+
+// ---------- the recipes: what lives over each terrain ----------
+// For every kind of terrain: which obstacles can appear, how often (`weight`: a bigger number
+// means more often), and how big. For a floating thing `lo`/`hi` are the HEIGHT of its middle;
+// for a ground thing they are how TALL it is. (The generator also trims these to what the
+// leg's aircraft can fly over, so a Cessna never meets a mountain it cannot climb.)
+export interface RecipeItem { type: ObstacleType; weight: number; lo: number; hi: number; wLo?: number; wHi?: number }
+export const RECIPES: Record<Terrain, RecipeItem[]> = {
+  sea: [
+    { type: "storm", weight: 3, lo: 40, hi: 130 },
+    { type: "gulls", weight: 4, lo: 40, hi: 135 },
+  ],
+  coast: [
+    { type: "gulls", weight: 3, lo: 40, hi: 135 },
+    { type: "cliff", weight: 4, lo: 22, hi: 55 },
+  ],
+  mountains: [
+    { type: "mountain", weight: 6, lo: 35, hi: 105 },
+    { type: "storm", weight: 1, lo: 40, hi: 120 },
+  ],
+  desert: [
+    { type: "dust", weight: 4, lo: 45, hi: 135 },
+    { type: "mesa", weight: 3, lo: 30, hi: 75 },
+  ],
+  city: [
+    { type: "building", weight: 1, lo: 35, hi: 110, wLo: 18, wHi: 30 },
+  ],
+  jungle: [
+    { type: "storm", weight: 3, lo: 40, hi: 130 },
+    { type: "parrots", weight: 3, lo: 40, hi: 135 },
+  ],
+};
+
+// ---------- routes ----------
+// One hop = the flight to the next stop. Its terrain is written as one word ("sea"), or two
+// joined by a plus ("coast+mountains"), which means it STARTS as the first and CHANGES to the
+// second halfway.
+export interface Hop { start: Terrain; end: Terrain }
+export interface Route {
+  codes: string[]; // airport codes. The first is where you take off; each one after is a stop (a checkpoint)
+  hops: Hop[]; // one for every stop, so there is always ONE MORE code than hops
+}
+
+/** Write a route the easy way:  route("HBA MEL SYD", "sea, mountains")  */
+function route(codes: string, terrain: string): Route {
+  return {
+    codes: codes.trim().split(/\s+/),
+    hops: terrain.split(",").map((t) => {
+      const [start, end] = t.trim().split("+");
+      return { start: start as Terrain, end: (end ?? start) as Terrain };
+    }),
+  };
 }
 
 // ---------- the legs ----------
 export interface Leg {
   aircraft: AircraftId;
-  from: string; // airport code you take off from
+  level: string; // shown on the leg card
   spacing: number; // distance between one checkpoint and the next
-  stops: string[]; // the 8 checkpoints, in order (airport codes from decks/airports-data.ts)
-  obstacles: ObstacleSpec[]; // keep this list sorted by `at`
+  routes: Route[]; // the leg picks one of these at random each play
+  perHop: [number, number]; // how many obstacle groups to make in each hop (fewest, most)
+  pairChance: number; // chance (0 to 1) that a group is a PAIR: two obstacles close together
+  glowRight: boolean; // after a go-around, does the right gate glow? (Easy help)
 }
 
-// Rules about where gates are, shared by the game and the check script.
+export const LEGS: Leg[] = [
+  // LEG 1: the Cessna, around Australia. EASY: one thing at a time, nothing tricky, and the
+  // right gate glows after a go-around.
+  {
+    aircraft: "cessna", level: "Easy", spacing: 600, perHop: [2, 2], pairChance: 0, glowRight: true,
+    routes: [
+      route("HBA MEL SYD BNE CNS", "sea, mountains, coast, coast"),
+      route("SYD MEL ADL PER LEA", "mountains, coast, desert, coast"),
+      route("CNS DRW ADL MEL HBA", "sea, desert, coast, sea"),
+      route("PER AYQ ADL MEL AKL", "desert, desert, coast, sea"),
+    ],
+  },
+  // LEG 2: the little jet, from Australia out into the world. INTERMEDIATE: busier, some pairs.
+  {
+    aircraft: "jet", level: "Intermediate", spacing: 700, perHop: [2, 3], pairChance: 0.3, glowRight: false,
+    routes: [
+      route("MEL CNS MNL HND PEK UBN", "coast+mountains, sea, sea, city, desert"),
+      route("PER MRU CPT WDH LOS", "sea, coast, desert, sea"),
+      route("SYD BWN DXB LHR BTS", "desert+sea, mountains, city, sea+city"),
+      route("BNE AKL SCL GIG SJO", "sea, sea, mountains, jungle"),
+    ],
+  },
+  // LEG 3: the jumbo, around the world. HARD: more of everything, including pairs, with wide
+  // gaps because the jumbo is slow to turn.
+  {
+    aircraft: "jumbo", level: "Hard", spacing: 780, perHop: [3, 3], pairChance: 0.4, glowRight: false,
+    routes: [
+      route("MEL HKT AUH FCO DFW AKL BNE", "desert, sea, desert, sea, sea, sea"),
+      route("SYD LAX YYZ HEL DOH CAN ADL", "sea, mountains, sea, mountains, mountains, desert"),
+      route("PER JNB CAI CDG GRU SCL MEL", "sea, jungle+desert, mountains, sea, mountains, sea"),
+    ],
+  },
+];
+
+// ---------- rules about where things are, shared by the game, the generator and the checker ----------
 export const GATE_CLEAR_BEFORE = 70; // nothing in the way this close BEFORE a gate...
 export const GATE_RETRY = 150; // a go-around puts the gates this much further on...
 export const GATE_CLEAR_AFTER = 200; // ...so keep the sky tidy until here AFTER the checkpoint
-export const LEG_RUNOUT = 120; // flying on after the last checkpoint before the leg is done
-export const FIRST_OBSTACLE = 120; // nothing in the first stretch, while you take off
+export const TAKEOFF_LEN = 170; // distance the plane rolls and climbs before you are in control
+export const FIRST_OBSTACLE = 260; // nothing in the first stretch, while you take off
+export const MIN_GROUP_GAP = 100; // obstacle groups are at least this far apart
+export const LAND_AFTER_GATE = GATE_RETRY + 260; // the landing runway starts this far past the last checkpoint
+export const ROLL_OUT = 110; // how far the plane rolls along the runway after touching down
+export const RUNWAY_END_PAD = 40; // bare runway beyond where the roll ends
 
-/** Where the gate group for stop number `i` (0 to 7) sits, from the start of the leg. */
+/** Where the gate group for stop number `i` (0 for the first stop) sits, from the start of the leg. */
 export const checkpointAt = (leg: Leg, i: number) => leg.spacing * (i + 1);
-export const legLength = (leg: Leg) => leg.spacing * leg.stops.length + LEG_RUNOUT;
+/** How far the leg reaches, to the end of the landing runway. */
+export const legLength = (leg: Leg, stops: number) => checkpointAt(leg, stops - 1) + LAND_AFTER_GATE + ROLL_OUT + RUNWAY_END_PAD;
 
 /** The three heights the gate rings sit at, and how tall each ring opening is. */
 export function gateSlots(ac: Aircraft) {
@@ -110,95 +240,3 @@ export function gateSlots(ac: Aircraft) {
     half: Math.floor(range * 0.35) / 2 - 1, // half the height of one ring opening
   };
 }
-
-export const LEGS: Leg[] = [
-  // LEG 1: the Cessna, around Australia. Gentle: one thing at a time, nothing tricky.
-  {
-    aircraft: "cessna", from: "SYD", spacing: 600,
-    stops: ["CBR", "MEL", "HBA", "ADL", "PER", "DRW", "CNS", "BNE"],
-    obstacles: [
-      { at: 300, type: "storm", y: 100 },
-      { at: 440, type: "mountain", y: 38 },
-      { at: 880, type: "birds", y: 110 },
-      { at: 1030, type: "mountain", y: 50 },
-      { at: 1470, type: "storm", y: 85 },
-      { at: 1620, type: "birds", y: 120 },
-      { at: 2060, type: "mountain", y: 60 },
-      { at: 2200, type: "storm", y: 115 },
-      { at: 2660, type: "storm", y: 80 },
-      { at: 2780, type: "birds", y: 100 },
-      { at: 2880, type: "mountain", y: 45 },
-      { at: 3250, type: "mountain", y: 70 },
-      { at: 3400, type: "storm", y: 90 },
-      { at: 3860, type: "birds", y: 95 },
-      { at: 3990, type: "storm", y: 120 },
-      { at: 4450, type: "storm", y: 75 },
-      { at: 4580, type: "mountain", y: 55 },
-    ],
-  },
-  // LEG 2: the little jet, from Australia up through Asia. A bit busier, some in pairs.
-  {
-    aircraft: "jet", from: "BNE", spacing: 700,
-    stops: ["AKL", "NAN", "NOU", "DPS", "SIN", "BKK", "HKG", "HND"],
-    obstacles: [
-      { at: 300, type: "storm", y: 60 },
-      { at: 420, type: "birds", y: 110 },
-      { at: 560, type: "mountain", y: 55 },
-      { at: 960, type: "mountain", y: 70 },
-      { at: 1010, type: "storm", y: 45 },
-      { at: 1180, type: "birds", y: 90 },
-      { at: 1300, type: "storm", y: 120 },
-      { at: 1650, type: "birds", y: 70 },
-      { at: 1780, type: "mountain", y: 80 },
-      { at: 1900, type: "storm", y: 100 },
-      { at: 2350, type: "storm", y: 55 },
-      { at: 2400, type: "mountain", y: 75 },
-      { at: 2560, type: "birds", y: 95 },
-      { at: 2700, type: "storm", y: 125 },
-      { at: 3050, type: "mountain", y: 60 },
-      { at: 3200, type: "birds", y: 80 },
-      { at: 3300, type: "storm", y: 105 },
-      { at: 3750, type: "storm", y: 70 },
-      { at: 3880, type: "birds", y: 120 },
-      { at: 4000, type: "mountain", y: 90 },
-      { at: 4450, type: "birds", y: 100 },
-      { at: 4560, type: "storm", y: 130 },
-      { at: 4700, type: "mountain", y: 65 },
-      { at: 5150, type: "mountain", y: 75 },
-      { at: 5270, type: "birds", y: 85 },
-      { at: 5400, type: "storm", y: 110 },
-    ],
-  },
-  // LEG 3: the jumbo, around the world. Biggest mountains and more storms, but wide gaps,
-  // because the jumbo is slow to turn.
-  {
-    aircraft: "jumbo", from: "HND", spacing: 700,
-    stops: ["LAX", "JFK", "LHR", "DXB", "JNB", "GRU", "SCL", "SYD"],
-    obstacles: [
-      { at: 300, type: "storm", y: 70 },
-      { at: 440, type: "mountain", y: 70 },
-      { at: 560, type: "birds", y: 100 },
-      { at: 960, type: "storm", y: 100 },
-      { at: 1080, type: "mountain", y: 90 },
-      { at: 1200, type: "birds", y: 50 },
-      { at: 1650, type: "mountain", y: 80 },
-      { at: 1760, type: "storm", y: 45 },
-      { at: 1880, type: "birds", y: 110 },
-      { at: 2350, type: "storm", y: 110 },
-      { at: 2450, type: "birds", y: 70 },
-      { at: 2580, type: "mountain", y: 85 },
-      { at: 3050, type: "birds", y: 90 },
-      { at: 3160, type: "mountain", y: 95 },
-      { at: 3260, type: "storm", y: 55 },
-      { at: 3750, type: "mountain", y: 100 },
-      { at: 3850, type: "storm", y: 50 },
-      { at: 3980, type: "birds", y: 100 },
-      { at: 4450, type: "storm", y: 80 },
-      { at: 4560, type: "mountain", y: 90 },
-      { at: 4680, type: "birds", y: 60 },
-      { at: 5150, type: "mountain", y: 100 },
-      { at: 5250, type: "storm", y: 45 },
-      { at: 5380, type: "birds", y: 105 },
-    ],
-  },
-];
