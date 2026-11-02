@@ -34,7 +34,7 @@ Live site: https://jcm-book-library.github.io/recall-arcade/ · Repo: github.com
 | Labelled diagrams | `boards/diagramBoard.ts` (drawn in code), `boards/skeletonBoard.ts` + `boards/pictureBoard.ts` (real SVGs) | Cells & Life, Human Body |
 | Real anatomy SVGs | `scripts/build-skeleton.mjs`, `scripts/build-organs.mjs` + `scripts/organ-systems.mjs` (the source SVGs are downloaded and are not in the repo); cleaned output in `src/assets/` | Human Body |
 | Photo walls | `data/pictures.ts` (Wikipedia, free licences, credits), `data/picture-titles.json`, `decks/picture-decks.ts`, `boards/flagBoard.ts` | Animals, Landmarks, Pet Breeds, Dinosaurs |
-| City outlines (prompt + tile wall) | `decks/city-shapes.ts`, `boards/flagBoard.ts`, data builder `scripts/build-cities.py` (Python; reads OpenStreetMap data from the Overture Maps bucket on S3, which the cloud machine can reach), output `src/data/city-shapes.json` (loaded only when the game opens) | City Shapes |
+| City outlines (prompt + tile wall; "Pick from six" click mode via `Board.showChoices`) | `decks/city-shapes.ts`, `boards/flagBoard.ts`, data builder `scripts/build-cities.py` (Python; reads OpenStreetMap data from the Overture Maps bucket on S3, which the cloud machine can reach), output `src/data/city-water.json` and `src/data/city-streets.json` (each loaded only when a round needs it) | City Shapes |
 | Own photos from the repo | `decks/tail-fins.ts`, photos in `public/arcade/spotter/` | Tail Fins |
 | Timelines | `ui/timeline.ts`, `decks/history*.ts`, `decks/people*.ts` | Big Moments, Who Lived When? |
 | Multiple choice | `ui/choice.ts`, `decks/choice-decks.ts` | Classifying Life; Ear Training |

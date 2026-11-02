@@ -1,8 +1,9 @@
-"""Builds src/data/city-shapes.json for the "City Shapes" quiz.
+"""Builds src/data/city-water.json and src/data/city-streets.json for the "City Shapes" quiz.
 
 Each city gets a small square SVG drawing:
   * "water": the sea, harbours, lakes and wide rivers around the city (a filled path);
-  * "streets": the main road layout of the centre (a stroked path), for cities in STREETS.
+  * "streets": the road layout of the centre (stroked paths by width), plus any water in that
+    frame, for cities in STREETS.
 
 The shapes are OpenStreetMap data (© OpenStreetMap contributors, ODbL), read from the free
 Overture Maps release on Amazon S3. OpenStreetMap's own servers are blocked from the cloud
@@ -28,7 +29,9 @@ from shapely.geometry import box as make_box
 from shapely.ops import unary_union
 
 RELEASE = "2026-10-21.0"
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "data", "city-shapes.json")
+DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "data")
+# Two files, so a round only downloads the drawings it shows.
+OUT = {"water": os.path.join(DATA, "city-water.json"), "streets": os.path.join(DATA, "city-streets.json")}
 SIZE = 400  # every drawing is SIZE x SIZE
 KM_PER_DEG = 111.32
 
@@ -80,6 +83,25 @@ STREETS = {
     "amsterdam": (52.372, 4.893, 1.2),
     "moscow": (55.752, 37.617, 3.0),
     "kyoto": (35.005, 135.765, 1.8),
+    # Added Nov 26: streets and water together (harbours, rivers, lakes, moats).
+    "sydney": (-33.862, 151.211, 1.3),
+    "brisbane": (-27.472, 153.025, 1.6),
+    "christchurch": (-43.530, 172.628, 1.5),
+    "chicago": (41.885, -87.630, 1.6),
+    "sanfrancisco": (37.795, -122.405, 2.0),
+    "venice": (45.437, 12.333, 1.0),
+    "vienna": (48.208, 16.370, 1.2),
+    "london": (51.507, -0.100, 1.8),
+    "berlin": (52.515, 13.370, 1.8),
+    "stockholm": (59.326, 18.072, 1.3),
+    "copenhagen": (55.680, 12.575, 1.5),
+    "budapest": (47.505, 19.050, 1.8),
+    "istanbul": (41.020, 28.978, 1.8),
+    "buenosaires": (-34.605, -58.385, 1.6),
+    "tokyo": (35.684, 139.755, 1.6),
+    "hongkong": (22.290, 114.168, 1.8),
+    "brasilia": (-15.790, -47.880, 6.5),
+    "beijing": (39.915, 116.397, 2.4),
 }
 
 s3 = pafs.S3FileSystem(anonymous=True, region="us-west-2")
@@ -151,6 +173,7 @@ ROADS = {"motorway": 3, "trunk": 3, "primary": 2.4, "secondary": 2, "tertiary": 
 
 
 def street_paths(lat, lon, km):
+    """Roads by width, plus "water": any water in the same frame (a harbour, river or moat)."""
     bounds = window(lat, lon, km)
     frame = make_box(*bounds)
     rows = fetch(dataset("transportation", "segment"), bounds, ["subtype", "class", "geometry"])
@@ -158,7 +181,7 @@ def street_paths(lat, lon, km):
     for r in rows:
         w = ROADS.get(r["class"])
         # A wide view only needs the main roads; the side streets would turn to mush.
-        if r["subtype"] != "road" or not w or (km > 2.5 and w < 1.6):
+        if r["subtype"] != "road" or not w or (km > 2.5 and w < 1.6) or (km > 4 and w < 2):
             continue
         g = shapely.from_wkb(r["geometry"]).intersection(frame)
         if g.is_empty:
@@ -167,12 +190,16 @@ def street_paths(lat, lon, km):
         for line in getattr(g, "geoms", [g]):
             if line.geom_type == "LineString" and len(line.coords) > 1:
                 by_width.setdefault(w, []).append(line_path(line.coords))
-    return {str(w): "".join(v) for w, v in sorted(by_width.items(), reverse=True)}
+    out = {str(w): "".join(v) for w, v in sorted(by_width.items(), reverse=True)}
+    water = water_path(lat, lon, km)
+    if water:
+        out["water"] = water
+    return out
 
 
 def main():
     only = set(sys.argv[1:])
-    out = json.load(open(OUT)) if os.path.exists(OUT) else {"water": {}, "streets": {}}
+    out = {k: json.load(open(f)) if os.path.exists(f) else {} for k, f in OUT.items()}
     for cid, spec in CITIES.items():
         if only and cid not in only:
             continue
@@ -183,9 +210,10 @@ def main():
             continue
         out["streets"][cid] = street_paths(*spec)
         print(f"streets {cid}: {sum(map(len, out['streets'][cid].values())) / 1024:.1f} KB", flush=True)
-    with open(OUT, "w") as f:
-        json.dump(out, f, separators=(",", ":"))
-    print(f"Wrote {OUT} ({os.path.getsize(OUT) / 1024:.0f} KB)")
+    for k, f in OUT.items():
+        with open(f, "w") as fh:
+            json.dump(out[k], fh, separators=(",", ":"))
+        print(f"Wrote {f} ({os.path.getsize(f) / 1024:.0f} KB)")
 
 
 if __name__ == "__main__":
