@@ -29,6 +29,7 @@ import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 import { renderPong } from "./arcade/pong";
 import { renderLabyrinth } from "./arcade/labyrinth";
+import { renderHeroWorkshop } from "./arcade/hero-workshop";
 import { renderFlyover } from "./arcade/flyover";
 
 // Every game in the arcade, grouped by subject on the home page (up to six each).
@@ -71,6 +72,7 @@ function route() {
   const deck = DECKS.find((d) => d.id === id);
   if (id === "pong") cleanup = renderPong(root);
   else if (id === "labyrinth") cleanup = renderLabyrinth(root);
+  else if (id === "hero") cleanup = renderHeroWorkshop(root);
   else if (id === "flyover") cleanup = renderFlyover(root);
   else if (deck) cleanup = deck.screen ? deck.screen(root, deck) : renderPlay(root, deck);
   else renderHome(root, DECKS);

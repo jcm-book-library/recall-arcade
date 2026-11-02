@@ -1,5 +1,6 @@
 import { h, formatTime } from "../ui/dom";
 import { LEVELS } from "./labyrinth-maps";
+import { loadSavedHero, makeHeroSheet } from "./hero-art";
 import { clamp, loadBest, makeBeeper, makeCanvas, noise, paint, saveBest, startLoop } from "./kit";
 import type { Blip } from "./kit";
 
@@ -508,86 +509,6 @@ const MINO_WALK = [
   "...ooo..",
 ];
 
-// The hero is 16 rows: 12 for the head and body, 4 for the legs. Two leg poses make him walk.
-const HERO_PALETTE = {
-  o: "#1c1410", h: "#6b3f1d", s: "#f2c9a0", e: "#1c1410", t: "#3fae6a",
-  b: "#d9a441", l: "#34437d", k: "#5a3417",
-};
-const HERO_FRONT = [
-  "................",
-  "....oooooooo....",
-  "...ohhhhhhhho...",
-  "...ohhhhhhhho...",
-  "...ohssssssho...",
-  "...osesssseso...",
-  "...osssssssso...",
-  ".....osssso.....",
-  "....ottttttto...",
-  "...osttttttso...",
-  "...osbbbbbbso...",
-  "....ottttttto...",
-];
-const HERO_BACK = [
-  "................",
-  "....oooooooo....",
-  "...ohhhhhhhho...",
-  "...ohhhhhhhho...",
-  "...ohhhhhhhho...",
-  "...ohhhhhhhho...",
-  "...ohhhhhhhho...",
-  ".....ohhhho.....",
-  "....ottttttto...",
-  "...osttttttso...",
-  "...osbbbbbbso...",
-  "....ottttttto...",
-];
-const HERO_SIDE = [
-  "................",
-  "....ooooooo.....",
-  "...ohhhhhhho....",
-  "...ohhhhhhhho...",
-  "...ohhhhssssso..",
-  "...ohhhhsesssso.",
-  "...ohhhhssssso..",
-  "....ohhhsssso...",
-  "....ottttttto...",
-  "....otttttttso..",
-  "....obbbbbbbso..",
-  "....ottttttto...",
-];
-const HERO_LEGS_FRONT = [
-  ["....ollllllo....", "....olll.llo....", "....okkk..oo....", "....oooo........"],
-  ["....ollllllo....", "....ollo.lllo...", ".....oo..okkko..", ".........oooo..."],
-];
-const HERO_LEGS_SIDE = [
-  [".....olllllo....", ".....oll.llo....", ".....okk..kko...", ".....oooo.oooo.."],
-  [".....olllllo....", "......ollo......", "......okko......", "......oooo......"],
-];
-
-/**
- * The hero's picture sheet: 2 columns (walk frame 1, walk frame 2) by 4 rows (down, left,
- * right, up), each frame 16x16, so the sheet is 32 x 64. YOUR OWN drawing can replace this
- * built-in one: see docs/arcade-art.md.
- */
-function makeHeroSheet() {
-  const sheet = makeCanvas(TILE * 2, TILE * 4);
-  const g = sheet.getContext("2d")!;
-  for (let f = 0; f < 2; f++) {
-    const front = paint([...HERO_FRONT, ...HERO_LEGS_FRONT[f]], HERO_PALETTE);
-    const back = paint([...HERO_BACK, ...HERO_LEGS_FRONT[f]], HERO_PALETTE);
-    const right = paint([...HERO_SIDE, ...HERO_LEGS_SIDE[f]], HERO_PALETTE);
-    g.drawImage(front, f * TILE, 0);
-    g.drawImage(right, f * TILE, TILE * 2);
-    g.drawImage(back, f * TILE, TILE * 3);
-    // Facing left is just facing right, flipped like a mirror.
-    g.save();
-    g.translate(f * TILE + TILE, TILE);
-    g.scale(-1, 1);
-    g.drawImage(right, 0, 0);
-    g.restore();
-  }
-  return sheet;
-}
 
 // Wasps (the garden's version of the bats) are symmetrical too: write the LEFT HALF only.
 const WASP_WINGS_UP = [
@@ -826,7 +747,9 @@ export function renderLabyrinth(root: HTMLElement): () => void {
     heroFrameH = heroImage.naturalHeight / 4;
   };
   heroImage.onerror = () => {};
-  heroImage.src = `${import.meta.env.BASE_URL}arcade/hero.png`;
+  // A hero tried out in the Hero Workshop (#hero) on THIS device comes first; otherwise the one
+  // in the project folder, public/arcade/hero.png.
+  heroImage.src = loadSavedHero() ?? `${import.meta.env.BASE_URL}arcade/hero.png`;
 
   // ---------- game state ----------
   // For testing a level directly. Only works in the development copy (npm run dev).

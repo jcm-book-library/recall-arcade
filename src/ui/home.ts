@@ -49,10 +49,11 @@ function card(deck: Deck) {
 // Arcade games are real-time games rather than quizzes, so they have no progress or best score here.
 // To add one: write its screen, add a route in main.ts, and add a line to this list.
 // Which games are open depends on quiz challenges (ARCADE_OPENS_AT in engine/progress.ts).
-const ARCADE_GAMES: { id: string; title: string; blurb: string }[] = [
+const ARCADE_GAMES: { id: string; title: string; blurb: string; kicker?: string }[] = [
   { id: "pong", title: "Planet Pong", blurb: "Where video games began. Knock the planets past the computer, mind the asteroids." },
   { id: "labyrinth", title: "The Labyrinth", blurb: "Keys, locked doors, bats, and something big that lives in the middle. Find the stairs." },
   { id: "flyover", title: "Flyover", blurb: "Fly a Cessna, then a jet, then a jumbo across the continents. Pick the right airport code at every stop, and dodge the storms." },
+  { id: "hero", title: "Hero Workshop", kicker: "Make your own", blurb: "Draw your own pixel hero for the arcade. Start from the built-in hero, recolour it, and watch it walk." },
 ];
 
 /** A locked game still opens (as a Preview): never locked behind skill alone. */
@@ -63,7 +64,7 @@ function arcadeCard(game: (typeof ARCADE_GAMES)[number], cleared: number) {
   return h(
     "a",
     { class: `card${open ? "" : " locked-card"}`, href: `#${game.id}` },
-    h("span", { class: "card-kicker" }, open ? "Arcade game" : `🔒 Opens after challenges in ${need} subjects`),
+    h("span", { class: "card-kicker" }, open ? game.kicker ?? "Arcade game" : `🔒 Opens after challenges in ${need} subjects`),
     h("h2", {}, game.title),
     h("p", {}, game.blurb),
     open ? null : h("span", { class: "card-challenge" }, `${left} more ${left === 1 ? "subject" : "subjects"} to go. You can still have a go.`),
