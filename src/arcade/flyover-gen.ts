@@ -1,6 +1,7 @@
 import {
-  AIRCRAFT, LEGS, RECIPES, WORLD_H, FIRST_OBSTACLE, GATE_CLEAR_AFTER, GATE_CLEAR_BEFORE, GATE_RETRY, MIN_GROUP_GAP,
-  checkpointAt, flyingFromX, gateSlots, hitboxOf, legLength, pictureOf, OBSTACLE_INFO, STOP_RUN,
+  AIRCRAFT, LEGS, RECIPES, WORLD_H, FIRST_OBSTACLE, GATE_CLEAR_AFTER, GATE_CLEAR_BEFORE, GATE_RETRY, MIN_GROUP_GAP, TAKEOFF_LEN,
+  THUNDER_PERIOD, THUNDER_TERRAINS, THUNDER_Y, boltRect,
+  checkpointAt, gateSlots, hitboxOf, legLength, pictureOf, OBSTACLE_INFO,
   type Aircraft, type Leg, type ObstacleSpec, type Rect, type RecipeItem, type Route, type Terrain,
 } from "./flyover-data.ts";
 
@@ -122,37 +123,50 @@ export function advanceReach(ac: Aircraft, from: Uint8Array, x0: number, x1: num
   const cells = from.length;
   const upRate = (ac.maxUp * UP_FACTOR * STEP_X) / ac.speed;
   const downRate = (ac.maxDown * UP_FACTOR * STEP_X) / ac.speed;
-  const near = hits.filter((r) => r.x < x1 + 40 && r.x + r.w > x0 - 40);
   const slots = gateSlots(ac).ys;
-  let ok = from;
+  // Only the obstacles that could matter between x0 and x1 (and, for each, its blocked range of cells, worked out once).
+  const near = hits
+    .filter((r) => r.x < x1 + 40 && r.x + r.w > x0 - 40)
+    .map((r) => ({
+      x0: r.x, x1: r.x + r.w,
+      c0: Math.max(0, Math.floor(r.y - ac.hitH / 2 - ROOM - lo) + 1),
+      c1: Math.min(cells, Math.ceil(r.y + r.h + ac.hitH / 2 + ROOM - lo)), // blocked cells are c0 up to (not including) c1
+    }));
+  // Two lists swapped each step, and one scratch list, so a long walk makes no garbage.
+  let ok: Uint8Array<ArrayBuffer> = from as Uint8Array<ArrayBuffer>;
+  let next = new Uint8Array(cells);
+  const diff = new Int32Array(cells + 1);
   for (let x = x0 + STEP_X; x <= x1; x += STEP_X) {
     // Spread: from every reachable height, the plane could now be anywhere in a range.
-    const diff = new Int32Array(cells + 1);
+    diff.fill(0);
     for (let c = 0; c < cells; c++) {
       if (!ok[c]) continue;
       diff[Math.max(0, Math.floor(c - upRate))]++;
       diff[Math.min(cells - 1, Math.ceil(c + downRate)) + 1]--;
     }
-    const next = new Uint8Array(cells);
-    let run = 0;
+    let run = 0, any = false;
     for (let c = 0; c < cells; c++) { run += diff[c]; next[c] = run > 0 ? 1 : 0; }
     // Strike out the heights that would touch something.
-    const px0 = x - ac.hitW / 2 - ROOM, pw = ac.hitW + ROOM * 2;
+    const px0 = x - ac.hitW / 2 - ROOM, px1 = px0 + ac.hitW + ROOM * 2;
     for (const r of near) {
-      if (!(r.x < px0 + pw && r.x + r.w > px0)) continue;
-      const blockFrom = r.y - ac.hitH / 2 - ROOM, blockTo = r.y + r.h + ac.hitH / 2 + ROOM;
-      for (let c = Math.max(0, Math.floor(blockFrom - lo) + 1); c < cells && lo + c < blockTo; c++) next[c] = 0;
+      if (!(r.x0 < px1 && r.x1 > px0)) continue;
+      for (let c = r.c0; c < r.c1; c++) next[c] = 0;
     }
+    for (let c = 0; c < cells; c++) if (next[c]) { any = true; break; }
+    if (!any) return null;
+    const t = ok === from ? new Uint8Array(cells) : ok; // (never write into the list we were given)
     ok = next;
-    if (!ok.includes(1)) return null;
+    next = t;
     if (gates.includes(x)) {
       for (const sy of slots) {
         const c = sy - lo;
-        if (!ok.slice(Math.max(0, c - 2), c + 3).includes(1)) return null;
+        let seen = false;
+        for (let k = Math.max(0, c - 2); k < Math.min(cells, c + 3); k++) if (ok[k]) { seen = true; break; }
+        if (!seen) return null;
       }
     }
   }
-  return ok;
+  return ok === from ? from : ok.slice(); // hand back a list of its own
 }
 
 // ---------- making a course ----------
@@ -172,12 +186,21 @@ const groundMax = (ac: Aircraft) => WORLD_H - (ac.ceiling + 36);
 
 /**
  * GENERATING OBSTACLES FROM A RECIPE. For each hop, in order:
- *   1. Decide how many GROUPS to put in it (the leg's `perHop`), spread evenly with a little jiggle.
- *   2. For each group, look up the terrain at that spot, and pick an obstacle from that
- *      terrain's recipe (a weighted pick: weight 4 is twice as likely as weight 2).
- *   3. Sometimes (the leg's `pairChance`) add a second obstacle right beside it: a PAIR.
- *   4. TEST the hop with the "is there a way through?" walk above. If it fails, throw the
- *      hop away and roll again (up to 60 times; then fall back to fewer groups).
+ *   1. Decide how many GROUPS to put in it (the leg's `perHop`) and how many THUNDERCLOUDS (leg 3),
+ *      and spread those "slots" evenly along the hop with a little jiggle.
+ *   2. Fill the slots one at a time, left to right. For a group, look up the terrain at that spot
+ *      and pick an obstacle from that terrain's recipe (a weighted pick: weight 4 is twice as
+ *      likely as weight 2). Sometimes (the leg's `pairChance`) add a second obstacle right beside
+ *      it: a PAIR. A thundercloud is always on its own.
+ *   3. TEST each new slot straight away with the "is there a way through?" walk above. If it
+ *      fails, roll that slot again (up to 24 times, then leave it empty). Testing one slot at a
+ *      time, not the whole hop at once, is what lets a long, busy hop be built at all.
+ *   4. A thundercloud has an EXTRA test: the walk is done twice more, once as if its bolt were
+ *      striking UP and once as if it were striking DOWN. There must be a way through both times, so
+ *      one of "over" and "under" is always open (see the thunderclouds section in flyover-data.ts).
+ *   5. At the end of the hop, test the run-in to the gates; if that fails, take the last slot away and test again.
+ * The walk is also done for a plane that restarts at the middle height after the previous checkpoint
+ * (that is where a diversion puts you), so a diversion never drops you into something unfair.
  * All the dice come from the seeded generator, so the same seed always gives the same course.
  */
 export function buildCourse(legIndex: number, seed: number, routeIndex?: number): Course {
@@ -216,59 +239,135 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
     return spec;
   };
 
+  /** A thundercloud: always in the middle band of the sky, with its own cycle length and starting point. */
+  const makeThunder = (at: number): ObstacleSpec => {
+    const period = Math.round(between(rng, THUNDER_PERIOD[0], THUNDER_PERIOD[1]) * 10) / 10;
+    return {
+      at: Math.round(at), type: "thunder", y: Math.round(between(rng, THUNDER_Y[0], THUNDER_Y[1])),
+      period, phase: Math.floor(rng() * period * 10) / 10, seed: Math.floor(rng() * 2 ** 31),
+    };
+  };
+
+  /** Where a walk has got to: the heights the plane could be at, at distance `cx`; and the same for a plane that restarted at the middle height. */
+  interface Walk { cx: number; reach: Uint8Array; restart: Uint8Array | null }
+  const onGrid = (v: number) => Math.floor(v / STEP_X) * STEP_X;
+  /** Carry both walks on to `to`. Null if either has no way through. */
+  const carry = (w: Walk, to: number, hits: Rect[], gates: number[]): Walk | null => {
+    const r = advanceReach(ac, w.reach, w.cx, to, hits, gates);
+    if (!r) return null;
+    let re: Uint8Array | null = null;
+    if (w.restart) { re = advanceReach(ac, w.restart, w.cx, to, hits, gates); if (!re) return null; }
+    return { cx: to, reach: r, restart: re };
+  };
+
   for (let hop = 0; hop < stops; hop++) {
     const cp = checkpointAt(leg, hop);
     // Where obstacle pictures may sit: after the clear space round the last gate, before the clear space round this one.
-    // (On a leg where the plane lands at every stop, the quiet space after a checkpoint is the whole
-    // landing, rest and take-off: STOP_RUN, plus a little spare. Afterwards the plane is back at its
-    // starting height, so the "way through" walk starts again from there.)
-    const zs = hop === 0 ? FIRST_OBSTACLE : checkpointAt(leg, hop - 1) + (leg.landAtStops ? STOP_RUN + 40 : GATE_CLEAR_AFTER);
-    if (hop > 0 && leg.landAtStops) { reach = startReach(ac); prevEnd = flyingFromX(leg, hop - 1); }
+    const zs = hop === 0 ? FIRST_OBSTACLE : checkpointAt(leg, hop - 1) + GATE_CLEAR_AFTER;
     const ze = cp - GATE_CLEAR_BEFORE;
-    const wanted = randInt(rng, leg.perHop[0], leg.perHop[1]);
     const evalEnd = cp + GATE_RETRY; // we test as far as the go-around gates
     const gates = [cp, cp + GATE_RETRY];
 
-    const proposeHop = (n: number): ObstacleSpec[] | null => {
-      const out: ObstacleSpec[] = [];
-      if (n <= 0) return out;
-      // Spread the groups along the zone, at least MIN_GROUP_GAP apart, with a little jiggle.
-      const a = zs + 50, span = ze - 50 - a;
-      const slack = span - (n - 1) * MIN_GROUP_GAP; // spare room once the minimum gaps are taken out
-      if (slack < 0) return null;
-      const xs: number[] = [];
-      for (let k = 0; k < n; k++) xs.push(a + k * MIN_GROUP_GAP + (slack * (k + 0.5)) / n + between(rng, -1, 1) * (slack / n) * 0.45);
-      for (const x of xs) {
-        const first = make(x, "any");
-        out.push(first);
-        if (rng() < leg.pairChance) {
-          // A pair: the second one is a different kind of thing (ground with floating, or two floating ones at different heights).
-          const want = OBSTACLE_INFO[first.type].ground ? "floating" : rng() < 0.6 ? "ground" : "floating";
-          const second = make(x + (rng() < 0.5 ? -1 : 1) * between(rng, 15, 40), want);
-          out.push(second);
-        }
-      }
-      return out;
-    };
+    // The walk for this hop starts where the plane is back in control after the last checkpoint:
+    // either carried on from the last hop, or (the restart) sitting at the middle height after a take-off.
+    let start: Walk;
+    if (hop === 0) start = { cx: 0, reach, restart: null };
+    else {
+      const from = checkpointAt(leg, hop - 1) + TAKEOFF_LEN;
+      const carried = advanceReach(ac, reach, prevEnd, from, [], []) ?? reach;
+      start = { cx: from, reach: carried, restart: startReach(ac) };
+    }
 
-    let chosen: ObstacleSpec[] | null = null;
-    let tries = 0;
-    for (; tries < 90 && !chosen; tries++) {
-      const n = tries < 60 ? wanted : Math.max(0, wanted - (tries < 75 ? 1 : 2));
-      const cand = proposeHop(n);
-      if (!cand) continue;
-      const hits = cand.map(hitboxOf);
-      const next = advanceReach(ac, reach, prevEnd, evalEnd, hits, gates);
-      if (next && cand.every((o) => inside(o, zs, ze))) { chosen = cand; reach = next; }
+    // The slots: evenly spread, at least MIN_GROUP_GAP apart, with a little jiggle.
+    const wantedThunder = leg.thunder[1] > 0 ? randInt(rng, leg.thunder[0], leg.thunder[1]) : 0;
+    let slotCount = randInt(rng, leg.perHop[0], leg.perHop[1]) + wantedThunder;
+    const a = zs + 50, span = ze - 50 - a;
+    while (slotCount > 0 && span - (slotCount - 1) * MIN_GROUP_GAP < 0) slotCount--;
+    const slack = span - (slotCount - 1) * MIN_GROUP_GAP;
+    const xs: number[] = [];
+    for (let k = 0; k < slotCount; k++) xs.push(a + k * MIN_GROUP_GAP + (slack * (k + 0.5)) / slotCount + between(rng, -1, 1) * (slack / slotCount) * 0.45);
+    // Which slots are thunderclouds? Picked at random, but not two in a row if it can be helped.
+    const isThunder: boolean[] = xs.map(() => false);
+    let placedClouds = 0;
+    for (const k of shuffled(rng, xs.map((_, i) => i))) {
+      if (placedClouds >= Math.min(wantedThunder, slotCount)) break;
+      if (isThunder[k - 1] || isThunder[k + 1]) continue;
+      isThunder[k] = true; placedClouds++;
     }
-    if (!chosen) {
-      // Cannot happen with sensible data, but never get stuck: an empty hop is always flyable.
-      chosen = [];
-      reach = advanceReach(ac, reach, prevEnd, evalEnd, [], gates) ?? reach;
+
+    // ---- fill the slots, one at a time ----
+    let w = start;
+    const placed: ObstacleSpec[] = []; // everything chosen so far in this hop
+    // Each step remembers where the walk was before it, so the last one can be taken back.
+    const undo: { w: Walk; count: number; clouds: number }[] = [];
+    const clouds: { spec: ObstacleSpec; before: Walk }[] = []; // thunderclouds placed in this hop, with the walk just before each
+
+    for (let k = 0; k < xs.length; k++) {
+      let done = false;
+      for (let tries = 0; tries < 24 && !done; tries++) {
+        let cand: ObstacleSpec[];
+        if (isThunder[k] && THUNDER_TERRAINS.includes(terrainAt(segments, Math.round(xs[k])))) {
+          cand = [makeThunder(xs[k])];
+        } else {
+          cand = [make(xs[k], "any")];
+          if (rng() < leg.pairChance) {
+            // A pair: the second one is a different kind of thing (ground with floating, or two floating ones at different heights).
+            const want = OBSTACLE_INFO[cand[0].type].ground ? "floating" : rng() < 0.6 ? "ground" : "floating";
+            cand.push(make(xs[k] + (rng() < 0.5 ? -1 : 1) * between(rng, 15, 40), want));
+          }
+        }
+        if (!cand.every((o) => inside(o, zs, ze))) continue;
+        const left = Math.min(...cand.map((o) => pictureOf(o).x)), right = Math.max(...cand.map((o) => { const p = pictureOf(o); return p.x + p.w; }));
+        if (left - 25 < w.cx) continue; // it would reach back into ground the walk has already covered
+        const hits = placed.map(hitboxOf).concat(cand.map(hitboxOf));
+        const look = Math.min(onGrid(right + 100), evalEnd);
+        if (!carry(w, look, hits, [])) continue;
+        // The lightning test: for this cloud, and any cloud just before it, the way must stay open with the bolt up AND with it down.
+        const newCloud = cand[0].type === "thunder" ? cand[0] : null;
+        const watch = clouds.filter((c) => c.spec.at > left - 320).map((c) => ({ spec: c.spec, from: c.before }));
+        if (newCloud) watch.push({ spec: newCloud, from: w });
+        let ok = true;
+        for (const c of watch) for (const side of ["up", "down"] as const) {
+          if (ok && !carry(c.from, look, hits.concat(boltRect(c.spec, side)), [])) ok = false;
+        }
+        if (!ok) continue;
+        // Accepted. Carry the walk up to just before the new slot, and remember the step.
+        const next = carry(w, Math.max(w.cx, onGrid(left - 25)), hits, []);
+        if (!next) continue;
+        undo.push({ w, count: placed.length, clouds: clouds.length });
+        if (newCloud) clouds.push({ spec: newCloud, before: next });
+        placed.push(...cand);
+        w = next;
+        done = true;
+      }
+      if (!done) fallbacks++;
     }
-    if (tries > 60) fallbacks++;
-    obstacles.push(...chosen);
+
+    // ---- the run-in to the gates ----
+    // Everything placed must still leave all three rings of both gates reachable. If not, take the last slot back.
+    const finish = (): Walk | null => {
+      const hits = placed.map(hitboxOf);
+      const end = carry(w, evalEnd, hits, gates);
+      if (!end) return null;
+      for (const c of clouds) {
+        if (c.spec.at < cp - 700) continue; // too far from the gates to matter (the slot tests already covered it)
+        for (const side of ["up", "down"] as const) if (!carry(c.before, evalEnd, hits.concat(boltRect(c.spec, side)), gates)) return null;
+      }
+      return end;
+    };
+    let end = finish();
+    while (!end && undo.length) {
+      const last = undo.pop()!;
+      placed.length = last.count;
+      clouds.length = last.clouds;
+      w = last.w;
+      fallbacks++;
+      end = finish();
+    }
+    if (!end) end = carry(start, evalEnd, [], gates) ?? { cx: evalEnd, reach, restart: null }; // cannot happen: an empty hop is always flyable
+    reach = end.reach;
     prevEnd = evalEnd;
+    obstacles.push(...placed);
   }
 
   obstacles.sort((p, q) => p.at - q.at);

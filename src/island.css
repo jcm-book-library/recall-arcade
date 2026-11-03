@@ -1,0 +1,71 @@
+/* ---------- The island (Overworld) ---------- */
+/* The island reuses the Labyrinth's screen, canvas and on-screen pad (.lab-*), so only the extras are here. */
+
+.island .play-top { align-items: center; justify-content: space-between; }
+.island .play-title { flex: 1 1 auto; }
+.isl-list { text-decoration: none; padding: 6px 14px; font: 0.8rem var(--font-pixel); text-transform: uppercase; color: var(--ink); border-color: var(--line); background: var(--panel); }
+.isl-list:hover { border-color: var(--accent); }
+.isl-canvas { outline-offset: 3px; }
+.island .lab-howto { flex: none; }
+
+/* The panel that opens over the island. */
+.isl-overlay {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+  background: rgba(8, 14, 20, 0.55);
+}
+.isl-panel {
+  width: min(100%, 460px); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto;
+  display: grid; gap: 10px; padding: 16px 18px 14px;
+  background: var(--panel); color: var(--ink); border: 2px solid var(--ink); border-radius: var(--r);
+  box-shadow: 5px 5px 0 var(--accent);
+}
+.isl-panel:focus { outline: none; }
+.isl-small { width: min(100%, 360px); }
+.isl-title { margin: 0; font: 400 1.15rem/1.25 var(--font-pixel); letter-spacing: 0.03em; text-wrap: balance; }
+.isl-kicker { margin: -4px 0 0; font: 0.75rem var(--font-pixel); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.isl-text { margin: 0; line-height: 1.45; }
+.isl-sign { font-size: 1.05rem; }
+.isl-lock { margin: 0; padding: 8px 10px; border: 2px dashed var(--line); border-radius: var(--r); color: var(--muted); font-size: 0.95rem; }
+.isl-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 2px; }
+.isl-close { cursor: pointer; border-color: var(--line); color: var(--ink); background: transparent; }
+.isl-close:hover { border-color: var(--ink); }
+.isl-play { text-decoration: none; text-align: center; font: 0.95rem var(--font-pixel); background: var(--accent); color: var(--on-accent); border-color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.isl-play:hover { transform: translate(-1px, -1px); }
+
+/* One quiz in a subject's list. */
+.isl-quizzes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.isl-quiz {
+  display: grid; grid-template-columns: 1fr auto; gap: 1px 12px; align-items: center; padding: 8px 12px;
+  text-decoration: none; color: var(--ink); background: var(--bg); border: 2px solid var(--line); border-radius: var(--r);
+}
+.isl-quiz:hover { border-color: var(--accent); }
+.isl-quiz-name { font-weight: 700; }
+.isl-quiz-challenge { grid-column: 1; font-size: 0.85rem; color: var(--muted); }
+.isl-quiz.done .isl-quiz-challenge { color: var(--found); }
+.isl-go { grid-row: 1 / span 2; grid-column: 2; font: 0.8rem var(--font-pixel); color: var(--muted); }
+.isl-quiz:hover .isl-go { color: var(--ink); }
+
+/* The big "Explore the island" banner at the top of the home page. */
+.island-banner {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px 18px; margin: 4px 0 8px; padding: 14px 18px;
+  text-decoration: none; color: var(--ink);
+  background: linear-gradient(180deg, #bfe6fb 0%, #bfe6fb 62%, #ecd9a0 62%, #ecd9a0 100%);
+  border: 2px solid var(--ink); border-radius: var(--r); box-shadow: 5px 5px 0 var(--accent);
+}
+.island-banner:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--accent); }
+.island-banner-art { font-size: 3rem; line-height: 1; }
+.island-banner-text { display: grid; gap: 2px; color: #15212a; }
+.island-banner-title { font: 400 1.4rem/1.2 var(--font-pixel); }
+.island-banner-blurb { font-size: 0.98rem; }
+.island-banner-go { font: 0.95rem var(--font-pixel); padding: 8px 14px; background: var(--accent); color: var(--on-accent); border: 2px solid var(--ink); border-radius: var(--r); white-space: nowrap; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .island-banner { background: linear-gradient(180deg, #1f4f7a 0%, #1f4f7a 62%, #8a7a4c 62%, #8a7a4c 100%); }
+  :root:not([data-theme="light"]) .island-banner-text { color: #f2f7fa; }
+}
+:root[data-theme="dark"] .island-banner { background: linear-gradient(180deg, #1f4f7a 0%, #1f4f7a 62%, #8a7a4c 62%, #8a7a4c 100%); }
+:root[data-theme="dark"] .island-banner-text { color: #f2f7fa; }
+@media (max-width: 560px) {
+  .island-banner { grid-template-columns: auto 1fr; }
+  .island-banner-go { grid-column: 1 / -1; justify-self: start; }
+  .island-banner-art { font-size: 2.4rem; }
+}

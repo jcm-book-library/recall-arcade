@@ -32,6 +32,7 @@ export const CHALLENGES: Record<string, Challenge> = {
   capitals: count(12, "Name 12 capitals"),
   water: count(10, "Find 10 seas, lakes or rivers"),
   neighbours: count(5, "Name 5 neighbours"),
+  cityshapes: count(5, "Name 5 cities from their shapes"),
   mountains: count(6, "Find 6 mountains"),
   // Science
   zoomout: count(8, "Name 8 things in space"),

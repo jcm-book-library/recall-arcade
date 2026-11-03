@@ -49,7 +49,7 @@ function card(deck: Deck) {
 // Arcade games are real-time games rather than quizzes, so they have no progress or best score here.
 // To add one: write its screen, add a route in main.ts, and add a line to this list.
 // Which games are open depends on quiz challenges (ARCADE_OPENS_AT in engine/progress.ts).
-const ARCADE_GAMES: { id: string; title: string; blurb: string; kicker?: string }[] = [
+export const ARCADE_GAMES: { id: string; title: string; blurb: string; kicker?: string }[] = [
   { id: "pong", title: "Planet Pong", blurb: "Where video games began. Knock the planets past the computer, mind the asteroids." },
   { id: "labyrinth", title: "The Labyrinth", blurb: "Keys, locked doors, bats, and something big that lives in the middle. Find the stairs." },
   { id: "flyover", title: "Flyover", blurb: "Fly a Cessna, then a jet, then a jumbo across the continents. Pick the right airport code at every stop, and dodge the storms." },
@@ -118,6 +118,18 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
         { class: "home-head" },
         h("h1", { class: "logo" }, "Recall", h("span", {}, "Arcade")),
         h("p", { class: "lede" }, "Short timed rounds you play again and again until it sticks. ★ marks the easy starter round in each game."),
+      ),
+      h(
+        "a",
+        { class: "island-banner", href: "#island" },
+        h("span", { class: "island-banner-art", "aria-hidden": "true" }, "🏝️"),
+        h(
+          "span",
+          { class: "island-banner-text" },
+          h("span", { class: "island-banner-title" }, "Explore the island"),
+          h("span", { class: "island-banner-blurb" }, "Walk a pixel hero round an island. Every subject is a building, and the arcade games are stops along the path."),
+        ),
+        h("span", { class: "island-banner-go" }, "Walk in ▸"),
       ),
       ...sections,
       h(
