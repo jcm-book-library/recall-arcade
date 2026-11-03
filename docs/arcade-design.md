@@ -209,3 +209,8 @@ take-off and landing functions are ready to call at mid-leg stops.
   - Leg 3 hops were made longer (1,300 px) to fit the landings.
 - **Running out of fuel** diverts you to your last correct stop with a full tank.
 - **Fuel check.** `scripts/check-flyover.mjs` simulates pilots: a sensible pilot makes it, and a pilot who climbs all the time runs dry on leg 3.
+
+**Flyover play-test round 3 (3 Nov 2026), built:**
+- **No stopping at middle stops.** A transit gives no fuel and a stopover refills the tank while you keep flying. Leg 2 stopovers: MNL and PEK, CPT, DXB, SCL. Leg 3 stopovers: AUH and DFW, YYZ and DOH, JNB and GRU.
+- **Longer legs.** Leg 2 is about 2× leg 1 (about 92 s) and leg 3 is about 2× leg 2 (about 185 s). There are more obstacles per hop, so the sky is as busy per second as before. Fuel was retuned for the longer hops.
+- **Leg 3 thunderclouds.** A light at the top or bottom warns 0.9 s before a 0.4 s bolt goes that way. The checker makes sure both over and under are passable.

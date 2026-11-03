@@ -3,7 +3,7 @@
 // without touching flyover.ts. (A small check script, scripts/check-flyover.mjs, builds every
 // route many times over and warns you if anything becomes unfair or impossible.)
 //
-// HOW A LEG IS MADE NOW: each leg has a list of ROUTES you write by hand (the airports, and
+// HOW A LEG IS MADE: each leg has a list of ROUTES you write by hand (the airports, and
 // what the land or sea looks like below each hop). Every play, the leg picks one route at
 // random. The obstacles are NOT written out any more: flyover-gen.ts makes them each time from
 // the RECIPES below ("what lives over a desert?") and the leg's difficulty.
@@ -69,8 +69,13 @@ export const TERRAINS: Terrain[] = ["sea", "coast", "mountains", "desert", "city
 //   cliff      a low sea cliff, like a small mountain      ground
 //   mesa       a flat-topped rock                          ground
 //   building   a tall building with lit windows            ground (w = how wide, optional)
-export type ObstacleType = "storm" | "dust" | "gulls" | "parrots" | "mountain" | "cliff" | "mesa" | "building";
-export interface ObstacleSpec { at: number; type: ObstacleType; y: number; w?: number }
+//   thunder    a big dark THUNDERCLOUD (leg 3 only) that     floats, in the middle of the sky
+//              zaps lightning straight up or straight down
+//              on a timer (see "thunderclouds" below)
+export type ObstacleType = "storm" | "dust" | "gulls" | "parrots" | "mountain" | "cliff" | "mesa" | "building" | "thunder";
+// `phase`, `period` and `seed` are only used by a thundercloud: they set where it is in its zap cycle
+// (so no two clouds fire together), how long one cycle is, and which side it warns about each time.
+export interface ObstacleSpec { at: number; type: ObstacleType; y: number; w?: number; phase?: number; period?: number; seed?: number }
 export interface Rect { x: number; y: number; w: number; h: number }
 
 export const OBSTACLE_INFO: Record<ObstacleType, { ground: boolean; what: string; w?: number; h?: number }> = {
@@ -82,6 +87,7 @@ export const OBSTACLE_INFO: Record<ObstacleType, { ground: boolean; what: string
   cliff: { ground: true, what: "A cliff" },
   mesa: { ground: true, what: "A mesa" },
   building: { ground: true, what: "A tall building" },
+  thunder: { ground: false, what: "A thundercloud", w: 60, h: 30 },
 };
 
 /** How wide a ground obstacle's picture is, from how tall it is. */
@@ -116,6 +122,52 @@ export function hitboxOf(o: ObstacleSpec): Rect {
     case "building": return { x: p.x + 2, y: p.y + 1, w: p.w - 4, h: p.h - 1 };
     default: return { x: p.x + 5, y: p.y + 5, w: p.w - 10, h: p.h - 10 };
   }
+}
+
+// ---------- thunderclouds (leg 3) ----------
+// A thundercloud sits in the middle of the sky and is an obstacle all the time. On top of that it
+// runs a repeating timer, its CYCLE:
+//     quiet ...... then WARNING (a light flashes at the top or the bottom of the cloud for 0.9 s)
+//                 ...... then the BOLT (lightning straight up or down from the cloud for 0.4 s).
+// The light shows the side the bolt will take, so you make a call: go over the cloud or under it.
+// Every cloud has its own cycle length and starting point (set when the course is made), so they
+// do not all fire together, and the side is picked fresh, at random, every cycle.
+export const THUNDER_WARN = 0.9; // seconds of flashing light before the bolt
+export const THUNDER_BOLT = 0.4; // seconds the bolt lasts
+export const THUNDER_BOLT_W = 10; // how wide the bolt's hit area is, in pixels
+export const THUNDER_PERIOD: [number, number] = [3.2, 4.0]; // the shortest and longest cycle, in seconds
+/** The cloud's middle is kept inside this band of heights, so there is always room to pass over AND under it. */
+export const THUNDER_Y: [number, number] = [64, 104];
+/** Which kinds of terrain a thundercloud may appear over (leg 3 mixes them in with the usual recipes). */
+export const THUNDER_TERRAINS: Terrain[] = ["sea", "coast", "mountains", "desert", "jungle"];
+
+export type ThunderPhase = "quiet" | "warn" | "bolt";
+export type ThunderSide = "up" | "down";
+/**
+ * What a thundercloud is doing at game time `time` (seconds). It is a pure sum of the cloud's own
+ * numbers and the time, so the game and the check script always agree.
+ */
+export function thunderAt(o: ObstacleSpec, time: number): { phase: ThunderPhase; side: ThunderSide; cycle: number; left: number } {
+  const period = o.period ?? 3.6;
+  const u = time + (o.phase ?? 0);
+  const cycle = Math.floor(u / period);
+  const into = u - cycle * period; // seconds since this cycle began
+  const fire = period - THUNDER_BOLT; // when the bolt starts
+  const warn = fire - THUNDER_WARN; // when the light starts
+  // The side comes from mixing the cloud's seed with the cycle number: random-looking, but the same every time.
+  const h = Math.imul((o.seed ?? 1) ^ Math.imul(cycle + 7, 0x9e3779b1), 0x85ebca6b);
+  const side: ThunderSide = (h >>> 13) & 1 ? "up" : "down";
+  if (into >= fire) return { phase: "bolt", side, cycle, left: period - into };
+  if (into >= warn) return { phase: "warn", side, cycle, left: fire - into };
+  return { phase: "quiet", side, cycle, left: warn - into };
+}
+
+/** The area a bolt strikes: from the cloud to the very top (or bottom) edge of the sky. */
+export function boltRect(o: ObstacleSpec, side: ThunderSide): Rect {
+  const body = hitboxOf(o);
+  const x = o.at - THUNDER_BOLT_W / 2;
+  if (side === "up") return { x, y: -20, w: THUNDER_BOLT_W, h: body.y + 3 + 20 };
+  return { x, y: body.y + body.h - 3, w: THUNDER_BOLT_W, h: WORLD_H + 20 - (body.y + body.h - 3) };
 }
 
 // ---------- the recipes: what lives over each terrain ----------
@@ -158,7 +210,7 @@ export interface Hop { start: Terrain; end: Terrain }
 export interface Route {
   codes: string[]; // airport codes. The first is where you take off; each one after is a stop (a checkpoint)
   hops: Hop[]; // one for every stop, so there is always ONE MORE code than hops
-  stopovers: string[]; // (leg 3 only) the stops that are STOPOVERS: a rest and a full refuel. Every other middle stop is a quick TRANSIT
+  stopovers: string[]; // (legs 2 and 3) the middle stops that are STOPOVERS: they refuel you to FULL. Every other middle stop is a TRANSIT (no fuel)
 }
 
 /** Write a route the easy way:  route("HBA MEL SYD", "sea, mountains")  or, with stopovers, route("MEL HKT AUH", "sea, desert", "AUH")  */
@@ -176,17 +228,17 @@ function route(codes: string, terrain: string, stopovers = ""): Route {
 // ---------- fuel ----------
 // FUEL IS A RESOURCE THAT DRAINS AND REFILLS. It is a number from 0 to 100 (a percentage of a full
 // tank). Every moment the game takes a little off, depending on what you are doing (the BURN
-// RATES, in percent of a full tank per SECOND), and now and then something puts some back.
-// Reach 0 and the engines stop. Change these numbers to make a leg easier or harder, then run
-// `node scripts/check-flyover.mjs`: it flies pretend pilots over every route and tells you if
-// the leg has become impossible (or too easy to matter).
+// RATES, in percent of a full tank per SECOND). The only way to put fuel back is a STOPOVER: flying
+// through its gate refuels you to FULL while you keep flying (the bar fills over about a second).
+// A TRANSIT gives nothing. Reach 0 and the engines stop. Change these numbers to make a leg
+// easier or harder, then run `node scripts/check-flyover.mjs`: it flies pretend pilots over every
+// route and tells you if the leg has become impossible (or too easy to matter).
 export const FULL_TANK = 100;
 export interface FuelRules {
   climbBurn: number; // holding climb burns fuel fastest
   levelBurn: number; // flying level (or still drifting up after you let go) burns a little
   // (gliding down, not holding climb, burns NOTHING: that is the lesson of the briefing card)
-  strikeCost: number; // a strike (a bump, or a wrong gate) costs this much, instead of a comfort star
-  gateTopUp: number; // a correct gate adds this much, up to a full tank (0 = no top-up)
+  strikeCost: number; // a strike (a bump, a wrong gate, a lightning bolt) costs this much, instead of a comfort star
 }
 /** The sinking speed (pixels per second) above which the plane counts as "gliding down". */
 export const GLIDE_SPEED = 4;
@@ -195,11 +247,15 @@ export const AMBER_BELOW = 30;
 export const RED_BELOW = 15;
 /** A beep sounds as the tank drops below each of these percentages. */
 export const LOW_FUEL_BEEPS = [25, 10];
-/** Leg 3 stops: how long the countdown lasts, in seconds. */
-export const TRANSIT_SECONDS = 3;
-export const STOPOVER_SECONDS = 5;
+/** How long the tank takes to fill, in seconds, after you fly through a stopover's gate. The plane keeps flying meanwhile. */
+export const REFUEL_SECONDS = 1;
 
 // ---------- the legs ----------
+// LONGER EACH LEG. Leg 1 takes about 45 seconds from take-off to touchdown. Leg 2 is meant to take
+// about TWICE that and leg 3 about twice leg 2 (four times leg 1). The only dial is `spacing`, the
+// distance between one checkpoint and the next, because every route keeps its stops. (Leg 2's
+// routes have 4 or 5 hops, so a long route takes a little more.) The obstacles per hop grow with the hop,
+// so the sky is just as busy per second. scripts/check-flyover.mjs prints the times it works out.
 export interface Leg {
   aircraft: AircraftId;
   level: string; // shown on the leg card
@@ -207,16 +263,16 @@ export interface Leg {
   routes: Route[]; // the leg picks one of these at random each play
   perHop: [number, number]; // how many obstacle groups to make in each hop (fewest, most)
   pairChance: number; // chance (0 to 1) that a group is a PAIR: two obstacles close together
+  thunder: [number, number]; // how many thunderclouds to add to each hop (fewest, most). 0 on legs 1 and 2
   glowRight: boolean; // after a go-around, does the right gate glow? (Easy help)
   fuel: FuelRules | null; // null = no fuel on this leg: the three comfort stars are the life bar instead
-  landAtStops: boolean; // true = after each right gate the plane really lands, waits, and takes off again (leg 3)
 }
 
 export const LEGS: Leg[] = [
   // LEG 1: the Cessna, around Australia. EASY: one thing at a time, nothing tricky, and the
   // right gate glows after a go-around.
   {
-    aircraft: "cessna", level: "Easy", spacing: 600, perHop: [2, 2], pairChance: 0, glowRight: true, fuel: null, landAtStops: false,
+    aircraft: "cessna", level: "Easy", spacing: 600, perHop: [2, 2], pairChance: 0, thunder: [0, 0], glowRight: true, fuel: null,
     routes: [
       route("HBA MEL SYD BNE CNS", "sea, mountains, coast, coast"),
       route("SYD MEL ADL PER LEA", "mountains, coast, desert, coast"),
@@ -224,25 +280,26 @@ export const LEGS: Leg[] = [
       route("PER AYQ ADL MEL AKL", "desert, desert, coast, sea"),
     ],
   },
-  // LEG 2: the little jet, from Australia out into the world. INTERMEDIATE: busier, some pairs.
+  // LEG 2: the little jet, from Australia out into the world. INTERMEDIATE: about twice as long as
+  // leg 1, busier, some pairs. Each route has named STOPOVERS (a full tank when you fly through the gate);
+  // the other middle stops are transits. Fuel is GENEROUS: holding climb for a whole stretch between
+  // stopovers just about empties the tank, climbing 85% of the time never does.
   {
-    aircraft: "jet", level: "Intermediate", spacing: 700, perHop: [2, 3], pairChance: 0.3, glowRight: false, landAtStops: false,
-    // Generous: holding climb ALL the time just about empties the tank; climbing half the time never does.
-    fuel: { climbBurn: 8, levelBurn: 1.5, strikeCost: 12, gateTopUp: FULL_TANK / 3 },
+    aircraft: "jet", level: "Intermediate", spacing: 2070, perHop: [7, 8], pairChance: 0.3, thunder: [0, 0], glowRight: false,
+    fuel: { climbBurn: 2.6, levelBurn: 0.45, strikeCost: 8 },
     routes: [
-      route("MEL CNS MNL HND PEK UBN", "coast+mountains, sea, sea, city, desert"),
-      route("PER MRU CPT WDH LOS", "sea, coast, desert, sea"),
-      route("SYD BWN DXB LHR BTS", "desert+sea, mountains, city, sea+city"),
-      route("BNE AKL SCL GIG SJO", "sea, sea, mountains, jungle"),
+      route("MEL CNS MNL HND PEK UBN", "coast+mountains, sea, sea, city, desert", "MNL PEK"),
+      route("PER MRU CPT WDH LOS", "sea, coast, desert, sea", "CPT"),
+      route("SYD BWN DXB LHR BTS", "desert+sea, mountains, city, sea+city", "DXB"),
+      route("BNE AKL SCL GIG SJO", "sea, sea, mountains, jungle", "SCL"),
     ],
   },
-  // LEG 3: the jumbo, around the world. HARD: more of everything, including pairs, with wide
-  // gaps because the jumbo is slow to turn. Tighter fuel, with NO top-up at the gates: only a
-  // STOPOVER fills the tank. The spacing is wide because between two checkpoints the plane has
-  // to land, wait and take off again (see STOP_RUN below) and still have room to fly.
+  // LEG 3: the jumbo, around the world. HARD: about twice as long as leg 2, more of everything,
+  // including pairs, with wide gaps because the jumbo is slow to turn, plus THUNDERCLOUDS. Tighter
+  // fuel: climbing half the time is fine, but holding climb all the time runs dry between stopovers.
   {
-    aircraft: "jumbo", level: "Hard", spacing: 1300, perHop: [3, 3], pairChance: 0.4, glowRight: false, landAtStops: true,
-    fuel: { climbBurn: 6.5, levelBurn: 1.0, strikeCost: 10, gateTopUp: 0 },
+    aircraft: "jumbo", level: "Hard", spacing: 2475, perHop: [11, 12], pairChance: 0.4, thunder: [2, 3], glowRight: false,
+    fuel: { climbBurn: 1.8, levelBurn: 0.15, strikeCost: 10 },
     routes: [
       route("MEL HKT AUH FCO DFW AKL BNE", "desert, sea, desert, sea, sea, sea", "AUH DFW"),
       route("SYD LAX YYZ HEL DOH CAN ADL", "sea, mountains, sea, mountains, mountains, desert", "YYZ DOH"),
@@ -263,21 +320,14 @@ export const ROLL_OUT = 110; // how far the plane rolls along the runway after t
 export const RUNWAY_END_PAD = 40; // bare runway beyond where the roll ends
 
 /**
- * THE GROUND RUN OF A STOP (leg 3). After the right gate the plane glides down, touches down at
- * LAND_AFTER_GATE, rolls out, and later takes off again over TAKEOFF_LEN. Obstacles keep clear of
- * the whole stretch, so it adds up to this many pixels past the checkpoint.
+ * What kind of stop is stop number `i` (0 for the first)? The last one is where the leg ends.
+ * A stop is a TRANSIT (no fuel) unless the route names it as a STOPOVER (refuel to full). You never
+ * land at either: you just fly through the gate. (Leg 1 has no fuel, so its stops are just stops.)
  */
-export const STOP_RUN = LAND_AFTER_GATE + ROLL_OUT + TAKEOFF_LEN;
-/** What kind of stop is stop number `i` (0 for the first)? The last one is where the leg ends. */
 export function stopKind(route: Route, i: number): "transit" | "stopover" | "last" {
   if (i >= route.hops.length - 1) return "last";
   return route.stopovers.includes(route.codes[i + 1]) ? "stopover" : "transit";
 }
-/** Where the plane touches down at stop `i`, and where it sits (stopped) before taking off again. */
-export const stopTouchX = (leg: Leg, i: number) => checkpointAt(leg, i) + LAND_AFTER_GATE;
-export const stopParkX = (leg: Leg, i: number) => stopTouchX(leg, i) + ROLL_OUT;
-/** Where you start flying again after stop `i`. On the legs that really land at each stop it is the end of the take-off; otherwise the checkpoint itself. */
-export const flyingFromX = (leg: Leg, i: number) => (leg.landAtStops ? stopParkX(leg, i) + TAKEOFF_LEN : checkpointAt(leg, i));
 
 /** Where the gate group for stop number `i` (0 for the first stop) sits, from the start of the leg. */
 export const checkpointAt = (leg: Leg, i: number) => leg.spacing * (i + 1);
