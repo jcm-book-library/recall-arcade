@@ -158,18 +158,46 @@ export interface Hop { start: Terrain; end: Terrain }
 export interface Route {
   codes: string[]; // airport codes. The first is where you take off; each one after is a stop (a checkpoint)
   hops: Hop[]; // one for every stop, so there is always ONE MORE code than hops
+  stopovers: string[]; // (leg 3 only) the stops that are STOPOVERS: a rest and a full refuel. Every other middle stop is a quick TRANSIT
 }
 
-/** Write a route the easy way:  route("HBA MEL SYD", "sea, mountains")  */
-function route(codes: string, terrain: string): Route {
+/** Write a route the easy way:  route("HBA MEL SYD", "sea, mountains")  or, with stopovers, route("MEL HKT AUH", "sea, desert", "AUH")  */
+function route(codes: string, terrain: string, stopovers = ""): Route {
   return {
     codes: codes.trim().split(/\s+/),
+    stopovers: stopovers.trim() ? stopovers.trim().split(/\s+/) : [],
     hops: terrain.split(",").map((t) => {
       const [start, end] = t.trim().split("+");
       return { start: start as Terrain, end: (end ?? start) as Terrain };
     }),
   };
 }
+
+// ---------- fuel ----------
+// FUEL IS A RESOURCE THAT DRAINS AND REFILLS. It is a number from 0 to 100 (a percentage of a full
+// tank). Every moment the game takes a little off, depending on what you are doing (the BURN
+// RATES, in percent of a full tank per SECOND), and now and then something puts some back.
+// Reach 0 and the engines stop. Change these numbers to make a leg easier or harder, then run
+// `node scripts/check-flyover.mjs`: it flies pretend pilots over every route and tells you if
+// the leg has become impossible (or too easy to matter).
+export const FULL_TANK = 100;
+export interface FuelRules {
+  climbBurn: number; // holding climb burns fuel fastest
+  levelBurn: number; // flying level (or still drifting up after you let go) burns a little
+  // (gliding down, not holding climb, burns NOTHING: that is the lesson of the briefing card)
+  strikeCost: number; // a strike (a bump, or a wrong gate) costs this much, instead of a comfort star
+  gateTopUp: number; // a correct gate adds this much, up to a full tank (0 = no top-up)
+}
+/** The sinking speed (pixels per second) above which the plane counts as "gliding down". */
+export const GLIDE_SPEED = 4;
+/** The gauge turns amber below AMBER_BELOW percent and flashes red below RED_BELOW. */
+export const AMBER_BELOW = 30;
+export const RED_BELOW = 15;
+/** A beep sounds as the tank drops below each of these percentages. */
+export const LOW_FUEL_BEEPS = [25, 10];
+/** Leg 3 stops: how long the countdown lasts, in seconds. */
+export const TRANSIT_SECONDS = 3;
+export const STOPOVER_SECONDS = 5;
 
 // ---------- the legs ----------
 export interface Leg {
@@ -180,13 +208,15 @@ export interface Leg {
   perHop: [number, number]; // how many obstacle groups to make in each hop (fewest, most)
   pairChance: number; // chance (0 to 1) that a group is a PAIR: two obstacles close together
   glowRight: boolean; // after a go-around, does the right gate glow? (Easy help)
+  fuel: FuelRules | null; // null = no fuel on this leg: the three comfort stars are the life bar instead
+  landAtStops: boolean; // true = after each right gate the plane really lands, waits, and takes off again (leg 3)
 }
 
 export const LEGS: Leg[] = [
   // LEG 1: the Cessna, around Australia. EASY: one thing at a time, nothing tricky, and the
   // right gate glows after a go-around.
   {
-    aircraft: "cessna", level: "Easy", spacing: 600, perHop: [2, 2], pairChance: 0, glowRight: true,
+    aircraft: "cessna", level: "Easy", spacing: 600, perHop: [2, 2], pairChance: 0, glowRight: true, fuel: null, landAtStops: false,
     routes: [
       route("HBA MEL SYD BNE CNS", "sea, mountains, coast, coast"),
       route("SYD MEL ADL PER LEA", "mountains, coast, desert, coast"),
@@ -196,7 +226,9 @@ export const LEGS: Leg[] = [
   },
   // LEG 2: the little jet, from Australia out into the world. INTERMEDIATE: busier, some pairs.
   {
-    aircraft: "jet", level: "Intermediate", spacing: 700, perHop: [2, 3], pairChance: 0.3, glowRight: false,
+    aircraft: "jet", level: "Intermediate", spacing: 700, perHop: [2, 3], pairChance: 0.3, glowRight: false, landAtStops: false,
+    // Generous: holding climb ALL the time just about empties the tank; climbing half the time never does.
+    fuel: { climbBurn: 8, levelBurn: 1.5, strikeCost: 12, gateTopUp: FULL_TANK / 3 },
     routes: [
       route("MEL CNS MNL HND PEK UBN", "coast+mountains, sea, sea, city, desert"),
       route("PER MRU CPT WDH LOS", "sea, coast, desert, sea"),
@@ -205,13 +237,16 @@ export const LEGS: Leg[] = [
     ],
   },
   // LEG 3: the jumbo, around the world. HARD: more of everything, including pairs, with wide
-  // gaps because the jumbo is slow to turn.
+  // gaps because the jumbo is slow to turn. Tighter fuel, with NO top-up at the gates: only a
+  // STOPOVER fills the tank. The spacing is wide because between two checkpoints the plane has
+  // to land, wait and take off again (see STOP_RUN below) and still have room to fly.
   {
-    aircraft: "jumbo", level: "Hard", spacing: 780, perHop: [3, 3], pairChance: 0.4, glowRight: false,
+    aircraft: "jumbo", level: "Hard", spacing: 1300, perHop: [3, 3], pairChance: 0.4, glowRight: false, landAtStops: true,
+    fuel: { climbBurn: 6.5, levelBurn: 1.0, strikeCost: 10, gateTopUp: 0 },
     routes: [
-      route("MEL HKT AUH FCO DFW AKL BNE", "desert, sea, desert, sea, sea, sea"),
-      route("SYD LAX YYZ HEL DOH CAN ADL", "sea, mountains, sea, mountains, mountains, desert"),
-      route("PER JNB CAI CDG GRU SCL MEL", "sea, jungle+desert, mountains, sea, mountains, sea"),
+      route("MEL HKT AUH FCO DFW AKL BNE", "desert, sea, desert, sea, sea, sea", "AUH DFW"),
+      route("SYD LAX YYZ HEL DOH CAN ADL", "sea, mountains, sea, mountains, mountains, desert", "YYZ DOH"),
+      route("PER JNB CAI CDG GRU SCL MEL", "sea, jungle+desert, mountains, sea, mountains, sea", "JNB GRU"),
     ],
   },
 ];
@@ -226,6 +261,23 @@ export const MIN_GROUP_GAP = 100; // obstacle groups are at least this far apart
 export const LAND_AFTER_GATE = GATE_RETRY + 260; // the landing runway starts this far past the last checkpoint
 export const ROLL_OUT = 110; // how far the plane rolls along the runway after touching down
 export const RUNWAY_END_PAD = 40; // bare runway beyond where the roll ends
+
+/**
+ * THE GROUND RUN OF A STOP (leg 3). After the right gate the plane glides down, touches down at
+ * LAND_AFTER_GATE, rolls out, and later takes off again over TAKEOFF_LEN. Obstacles keep clear of
+ * the whole stretch, so it adds up to this many pixels past the checkpoint.
+ */
+export const STOP_RUN = LAND_AFTER_GATE + ROLL_OUT + TAKEOFF_LEN;
+/** What kind of stop is stop number `i` (0 for the first)? The last one is where the leg ends. */
+export function stopKind(route: Route, i: number): "transit" | "stopover" | "last" {
+  if (i >= route.hops.length - 1) return "last";
+  return route.stopovers.includes(route.codes[i + 1]) ? "stopover" : "transit";
+}
+/** Where the plane touches down at stop `i`, and where it sits (stopped) before taking off again. */
+export const stopTouchX = (leg: Leg, i: number) => checkpointAt(leg, i) + LAND_AFTER_GATE;
+export const stopParkX = (leg: Leg, i: number) => stopTouchX(leg, i) + ROLL_OUT;
+/** Where you start flying again after stop `i`. On the legs that really land at each stop it is the end of the take-off; otherwise the checkpoint itself. */
+export const flyingFromX = (leg: Leg, i: number) => (leg.landAtStops ? stopParkX(leg, i) + TAKEOFF_LEN : checkpointAt(leg, i));
 
 /** Where the gate group for stop number `i` (0 for the first stop) sits, from the start of the leg. */
 export const checkpointAt = (leg: Leg, i: number) => leg.spacing * (i + 1);

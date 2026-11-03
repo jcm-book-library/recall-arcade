@@ -1,6 +1,8 @@
 // Checks the Flyover routes and the courses made from them are sensible and fair. Run it with:
 //   node scripts/check-flyover.mjs
 //   node scripts/check-flyover.mjs 500      (to try 500 seeds per route instead of 200)
+// It also runs a FUEL SIMULATION (see the end of the file): pretend pilots who climb a set share of the
+// time fly every route, and it reports how much fuel is left at the end of each stretch.
 // It reads src/arcade/flyover-data.ts and flyover-gen.ts directly (Node 22 can run TypeScript files
 // that have no fancy syntax). Every route of every leg is built with many different seeds, exactly
 // as the game builds it, and each one is checked. It prints every problem it finds. Exit code 1
@@ -8,6 +10,7 @@
 import {
   AIRCRAFT, LEGS, RECIPES, TERRAINS, WORLD_H, FIRST_OBSTACLE, GATE_CLEAR_BEFORE, GATE_CLEAR_AFTER, GATE_RETRY,
   checkpointAt, legLength, gateSlots, hitboxOf, pictureOf, OBSTACLE_INFO,
+  FULL_TANK, STOP_RUN, TAKEOFF_LEN, stopKind, flyingFromX,
 } from "../src/arcade/flyover-data.ts";
 import { buildCourse, makeRng, pickDecoys, terrainAt } from "../src/arcade/flyover-gen.ts";
 import { AIRPORT_TABLE } from "../src/decks/airports-data.ts";
@@ -40,6 +43,13 @@ LEGS.forEach((leg, li) => {
     if (new Set(r.codes).size !== r.codes.length) bad(`${R}: an airport is listed twice`);
     for (const c of r.codes) if (!codes.has(c)) bad(`${R}: airport code ${c} is not in airports-data`);
     for (const hop of r.hops) for (const t of [hop.start, hop.end]) if (!TERRAINS.includes(t)) bad(`${R}: unknown terrain "${t}"`);
+    // Stopovers: only on the legs that land at every stop, only middle stops, and never the first or last airport.
+    for (const so of r.stopovers) {
+      if (!leg.landAtStops) bad(`${R}: stopovers only make sense on a leg that lands at its stops`);
+      const k = r.codes.indexOf(so);
+      if (k < 1 || k > r.codes.length - 2) bad(`${R}: stopover ${so} must be a middle stop`);
+    }
+    if (leg.landAtStops && r.stopovers.length < 1) bad(`${R}: a leg that lands at its stops needs at least one stopover`);
     // Every airport used on this leg should not be reused from another leg's start... (no rule), but decoys must exist for every stop.
     for (let stop = 0; stop < r.hops.length; stop++) {
       for (let s = 1; s <= 20; s++) {
@@ -83,7 +93,9 @@ function checkCourse(li, leg, ac, course, name) {
   // Gate keep-clear zones.
   const zones = course.route.hops.map((_, i) => {
     const cp = checkpointAt(leg, i);
-    return { x: cp - GATE_CLEAR_BEFORE, w: GATE_CLEAR_BEFORE + GATE_CLEAR_AFTER, y: -1000, h: 3000 };
+    // On a leg that lands at every stop the quiet space after a middle checkpoint is the whole landing and take-off.
+    const after = leg.landAtStops && i < stops - 1 ? STOP_RUN : GATE_CLEAR_AFTER;
+    return { x: cp - GATE_CLEAR_BEFORE, w: GATE_CLEAR_BEFORE + after, y: -1000, h: 3000 };
   });
   const hits = course.obstacles.map(hitboxOf);
   let lastAt = -Infinity;
@@ -129,7 +141,11 @@ function checkCourse(li, leg, ac, course, name) {
   const slots = gateSlots(ac).ys;
   const gateAt = new Set();
   for (let i = 0; i < stops; i++) { gateAt.add(checkpointAt(leg, i)); gateAt.add(checkpointAt(leg, i) + GATE_RETRY); }
+  // After a landing and take-off the plane starts again from the middle height.
+  const restartAt = new Set();
+  if (leg.landAtStops) for (let i = 0; i < stops - 1; i++) restartAt.add(flyingFromX(leg, i));
   for (let x = 0; x <= end; x += STEP) {
+    if (restartAt.has(x)) { ok = new Uint8Array(cells); ok[Math.round((lo + hi) / 2) - lo] = 1; }
     const next = new Uint8Array(cells);
     for (let c = 0; c < cells; c++) {
       if (!ok[c]) continue;
@@ -153,6 +169,92 @@ function checkCourse(li, leg, ac, course, name) {
     }
   }
 }
+
+// ---------- the FUEL SIMULATION ----------
+// A pretend pilot flies a route, climbing a given SHARE of the time (0.5 = half the time). The rest of
+// the time is counted as LEVEL flight, which burns a little: that is on purpose pessimistic, because
+// a real pilot who is not climbing is mostly gliding down, which burns nothing. The pilot never
+// strikes anything. Each seed gives the pilot a slightly different share (2 points either way), so
+// the answer is not one lucky number. For every stretch we note the fuel left when it ends:
+//   leg 2: each hop is a stretch (a correct gate tops the tank up by a third after it)
+//   leg 3: a stretch runs from one refuel (the start, or a stopover) to the next, over several hops
+// "Left" below 0 means the tank ran dry in that stretch.
+function flyFuel(leg, route, share) {
+  const ac = AIRCRAFT[leg.aircraft];
+  const rules = leg.fuel;
+  const stops = route.hops.length;
+  const rate = share * rules.climbBurn + (1 - share) * rules.levelBurn; // percent per second
+  let fuel = FULL_TANK;
+  let from = TAKEOFF_LEN; // flying starts when the first take-off ends
+  const stretches = []; // { label, left }
+  let startLabel = route.codes[0];
+  for (let i = 0; i < stops; i++) {
+    const seconds = (checkpointAt(leg, i) - from) / ac.speed;
+    fuel -= seconds * rate;
+    const kind = stopKind(route, i);
+    if (leg.landAtStops) {
+      if (kind !== "stopover") { if (kind === "last") stretches.push({ label: `${startLabel}-${route.codes[i + 1]}`, left: fuel }); }
+      else { stretches.push({ label: `${startLabel}-${route.codes[i + 1]}`, left: fuel }); fuel = FULL_TANK; startLabel = route.codes[i + 1]; }
+    } else {
+      stretches.push({ label: `${route.codes[i]}-${route.codes[i + 1]}`, left: fuel });
+      fuel = Math.min(FULL_TANK, fuel + rules.gateTopUp);
+    }
+    from = flyingFromX(leg, i);
+  }
+  return stretches;
+}
+
+/** Run many pilots; give back the lowest "fuel left" seen for each stretch. */
+function worstOver(leg, route, share, seeds, strikes = 0) {
+  const worst = new Map();
+  for (let seed = 1; seed <= seeds; seed++) {
+    const rng = makeRng(seed * 7919 + 13);
+    const sh = share >= 1 ? 1 : Math.max(0, Math.min(1, share + (rng() - 0.5) * 0.04));
+    for (const st of flyFuel(leg, route, sh)) {
+      const left = st.left - strikes * leg.fuel.strikeCost;
+      if (!worst.has(st.label) || left < worst.get(st.label)) worst.set(st.label, left);
+    }
+  }
+  return worst;
+}
+
+const lines = [];
+LEGS.forEach((leg, li) => {
+  if (!leg.fuel) return;
+  const L = `Leg ${li + 1}`;
+  const shares = li === 1 ? [0.5, 0.85, 1] : [0.5, 0.65, 1];
+  leg.routes.forEach((route, ri) => {
+    const cell = (share, strikes = 0) => {
+      const w = worstOver(leg, route, share, SEEDS, strikes);
+      const min = Math.min(...w.values());
+      return { w, min, text: [...w].map(([k, v]) => `${k} ${v.toFixed(0)}`).join(", ") };
+    };
+    for (const share of shares) {
+      const c = cell(share);
+      lines.push(`${L} route ${ri + 1} ${route.codes.join(" ")} | climbing ${Math.round(share * 100)}%: min left ${c.min.toFixed(1)}%  [${c.text}]`);
+    }
+    const strike = cell(0.5, leg.landAtStops ? 2 : 0);
+    if (leg.landAtStops) lines.push(`${L} route ${ri + 1} | climbing 50% and 2 strikes in every stretch: min left ${strike.min.toFixed(1)}%`);
+    // ---- the rules the owner asked for ----
+    if (li === 1) {
+      if (cell(0.85).min <= 0) bad(`${L} route ${ri + 1}: the tank runs dry at 85% climbing (should be generous)`);
+      if (cell(0.85).min < 5) bad(`${L} route ${ri + 1}: only ${cell(0.85).min.toFixed(1)}% left at 85% climbing, too tight for "generous"`);
+    }
+    if (li === 2) {
+      const half = cell(0.5).min;
+      if (half <= 0) bad(`${L} route ${ri + 1}: the tank runs dry at 50% climbing`);
+      else if (half < 10) bad(`${L} route ${ri + 1}: only ${half.toFixed(1)}% left at 50% climbing; a sensible pilot should have a little to spare`);
+      if (cell(1).min >= 0) bad(`${L} route ${ri + 1}: never runs dry even at 100% climbing, so fuel does not matter`);
+    }
+  });
+  // On leg 3, at least some stretch runs dry at 100% climbing (the sentence the owner wanted proven), over all routes.
+  if (li === 2) {
+    const dry = leg.routes.some((route) => [...worstOver(leg, route, 1, 5).values()].some((v) => v < 0));
+    if (!dry) bad(`${L}: no stretch runs dry at 100% climbing`);
+  }
+});
+console.log("Fuel simulation (percent of a full tank left at the end of each stretch; below 0 = ran dry):");
+for (const l of lines) console.log("  " + l);
 
 if (problems.size) {
   console.error(`Flyover: ${problems.size} problem(s)`);

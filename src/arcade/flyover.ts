@@ -2,7 +2,8 @@ import { h, formatTime } from "../ui/dom";
 import { AIRPORT_TABLE } from "../decks/airports-data";
 import {
   AIRCRAFT, LEGS, WORLD_H, GATE_RETRY, TAKEOFF_LEN, LAND_AFTER_GATE, ROLL_OUT, RUNWAY_END_PAD, OBSTACLE_INFO,
-  checkpointAt, gateSlots, groundWidth, hitboxOf, pictureOf,
+  FULL_TANK, GLIDE_SPEED, AMBER_BELOW, RED_BELOW, LOW_FUEL_BEEPS, TRANSIT_SECONDS, STOPOVER_SECONDS,
+  checkpointAt, gateSlots, groundWidth, hitboxOf, pictureOf, stopKind, stopParkX, stopTouchX,
   type Aircraft, type Leg, type ObstacleSpec, type Rect, type Terrain,
 } from "./flyover-data";
 import { buildCourse, makeRng, mixSeed, pickDecoys, terrainBlend, type Course } from "./flyover-gen";
@@ -24,6 +25,11 @@ import type { Blip } from "./kit";
 //      a landing. These are small separate pieces (beginTakeoff, beginLanding) that can be used
 //      anywhere along a leg, not only at the two ends.
 //   7. BLENDED SCENERY. The land or sea below changes gradually from one terrain to the next.
+//   8. FUEL. A number that DRAINS while you fly (fastest when you climb) and REFILLS at certain
+//      moments. It is the life bar on legs 2 and 3. See the "fuel" section below.
+//   9. STOPS WITH A COUNTDOWN. On leg 3 the plane lands at each stop, waits while a timer counts
+//      down (3-2-1 or 5-4-3-2-1), then takes off again. A countdown is just a number that goes
+//      down by the real time passed, and something happens when it reaches zero.
 
 // ---------- the world ----------
 const W = 320; // the canvas is tiny, then the browser scales it up with crisp pixels
@@ -40,6 +46,7 @@ const INVULN_TIME = 2.2; // after a bump nothing else can bump you for a moment
 const SLOW_TIME = 0.9; // turbulence slows the plane down for a moment
 const CARD_TIME = 4; // the "leg intro" card moves on by itself after this many seconds
 const REST_TIME = 0.9; // the plane sits on the runway this long after landing
+const FLAMEOUT_TIME = 1.7; // engines out: the plane glides down for this long before the "diverted" card
 const STORE_KEY = "learning-arcade:flyover";
 
 type State = "ready" | "briefing" | "playing" | "paused" | "legdone" | "diverted" | "won";
@@ -49,7 +56,9 @@ type State = "ready" | "briefing" | "playing" | "paused" | "legdone" | "diverted
 //   flight   you are flying
 //   landing  gliding down to the runway, then rolling to a stop. The computer flies.
 //   landed   stopped on the runway
-type Phase = "parked" | "takeoff" | "flight" | "landing" | "landed";
+//   layover  (leg 3) waiting at a stop while the countdown runs; a stopover also refuels
+//   flameout out of fuel: the engines are quiet and the plane glides down, then we divert
+type Phase = "parked" | "takeoff" | "flight" | "landing" | "landed" | "layover" | "flameout";
 
 const smooth = (t: number) => t * t * (3 - 2 * t); // eases from 0 to 1 gently at both ends
 const mod = (a: number, n: number) => ((a % n) + n) % n;
@@ -133,6 +142,9 @@ const SOUNDS = {
   divert: [[55, 0.2, 0], [50, 0.2, 0.18], [46, 0.3, 0.36]],
   win: [[72, 0.12, 0], [76, 0.12, 0.1], [79, 0.12, 0.2], [84, 0.12, 0.3], [79, 0.1, 0.42], [84, 0.1, 0.52], [91, 0.35, 0.62]],
   lift: [[67, 0.08, 0], [72, 0.08, 0.08], [76, 0.16, 0.16]],
+  low: [[84, 0.09, 0], [84, 0.09, 0.16]], // the low-fuel warning: two quick high beeps
+  tick: [[76, 0.06, 0]], // one tick of a countdown
+  refuelled: [[72, 0.1, 0], [79, 0.1, 0.1], [86, 0.2, 0.2]],
   touch: [[45, 0.07, 0], [52, 0.1, 0.07]],
 } satisfies Record<string, Blip[]>;
 
@@ -199,7 +211,7 @@ export function renderFlyover(root: HTMLElement): () => void {
   const pauseBtn = h("button", { class: "btn ghost", type: "button" }, "Pause");
   const hudLeg = h("span", { class: "fly-stat" });
   const hudNext = h("span", { class: "fly-stat fly-next" });
-  const hudComfort = h("span", { class: "fly-stat fly-comfort" });
+  const hudComfort = h("span", { class: "fly-stat fly-comfort" }); // stars on leg 1, the fuel gauge on legs 2 and 3
   const hudStops = h("span", { class: "fly-stat" });
   const hudTime = h("span", { class: "fly-stat" });
   const padUp = h("button", { class: "fly-key", type: "button", tabindex: "-1", "aria-label": "Climb" }, "▲");
@@ -273,6 +285,13 @@ export function renderFlyover(root: HTMLElement): () => void {
   let y = 100;
   let vy = 0;
   let comfort = MAX_COMFORT;
+  // FUEL (legs 2 and 3): a percentage, 100 = full. It goes down as you fly and up at a top-up or a refuel.
+  let fuel = FULL_TANK;
+  let lowWarned = LOW_FUEL_BEEPS.map(() => false); // has each low-fuel beep sounded yet? (reset when the tank rises again)
+  let minFuel = FULL_TANK; // the lowest the tank got on this leg (shown on the leg card)
+  let layover = { stop: -1, kind: "transit" as "transit" | "stopover", left: 0, total: 1, from: 0, tick: 0 }; // the countdown at a stop; stop -1 = none
+  let flameout = { t: 0 };
+  const devKinds: Record<number, "transit" | "stopover"> = {}; // development copy only: force a stop's kind
   let stopIndex = 0; // which stop is next (0 for the first)
   let got: boolean[] = []; // for each stop: did we find the right gate?
   let lastStop = -1; // the last stop we got right (-1 = none yet, so a diversion goes back to the runway)
@@ -281,6 +300,9 @@ export function renderFlyover(root: HTMLElement): () => void {
   const reached = () => got.filter(Boolean).length;
   const stopCode = (i: number) => course.route.codes[i + 1];
   const stopCount = () => course.route.hops.length;
+  const fuelRules = () => leg.fuel;
+  /** Is stop `i` a transit, a stopover, or the last one? (Only leg 3 has the first two.) */
+  const kindOf = (i: number) => (i < stopCount() - 1 && devKinds[i]) || stopKind(course.route, i);
 
   // The take-off and the landing each remember a few numbers while they run.
   let ride = { from: 0, lifted: false, dust: 0 };
@@ -339,6 +361,9 @@ export function renderFlyover(root: HTMLElement): () => void {
     got = course.route.hops.map(() => false);
     lastStop = -1;
     comfort = MAX_COMFORT;
+    refill();
+    minFuel = FULL_TANK;
+    layover.stop = -1;
     stopIndex = 0;
     legTime = 0;
     resetFlightBits();
@@ -359,6 +384,8 @@ export function renderFlyover(root: HTMLElement): () => void {
 
   /** The runways of this leg: the one we take off from, and the one at the end that we land on. */
   function runwayFor(fromX: number): Runway {
+    // At a leg-3 stop the runway is longer: it holds the landing, the roll-out AND the next take-off.
+    if (leg.landAtStops && fromX > 0) return { x0: fromX - ROLL_OUT - 40, x1: fromX + TAKEOFF_LEN + 20, lights: true };
     return { x0: fromX - 60, x1: fromX + TAKEOFF_LEN + 20, lights: false };
   }
   const landingTouchX = () => checkpointAt(leg, stopCount() - 1) + LAND_AFTER_GATE;
@@ -423,13 +450,19 @@ export function renderFlyover(root: HTMLElement): () => void {
   function stepLanding(dt: number) {
     if (phase === "landed") {
       landing.rest += dt;
-      if (landing.rest >= REST_TIME) finishLeg();
+      if (landing.rest >= REST_TIME) {
+        if (layover.stop >= 0) beginLayover(); // a stop in the middle of the leg: wait, then take off again
+        else finishLeg();
+      }
       return;
     }
     const L = landing;
+    // At a transit or stopover in the middle of a leg, the landing runs at double speed (like a
+    // time-lapse), so the stop doesn't drag. The final landing of a leg plays at full length.
+    const pace = layover.stop >= 0 ? 2 : 1;
     if (!L.touched) {
       speed += clamp(ac.speed * 0.85 - speed, -SPEED_UP * dt, SPEED_UP * dt); // a little slower for the approach
-      dist += speed * dt;
+      dist += speed * dt * pace;
       const p = clamp((dist - L.from) / Math.max(1, L.touchX - L.from), 0, 1);
       const before = y;
       // Half a straight slope, half a curve that flattens out at the end: a smooth, gentle touchdown.
@@ -447,7 +480,7 @@ export function renderFlyover(root: HTMLElement): () => void {
       // Rolling out: slowing down steadily, so the plane stops exactly at the end of the roll.
       const q = clamp((dist - L.touchX) / ROLL_OUT, 0, 1);
       speed = Math.max(5, L.v0 * Math.sqrt(1 - q));
-      dist += speed * dt;
+      dist += speed * dt * pace;
       if (q < 0.7) { ride.dust -= dt; if (ride.dust <= 0) { ride.dust = 0.09; addPuff(dist - 8, SURFACE - 1, 1); } }
       if (q >= 1) { speed = 0; phase = "landed"; }
     }
@@ -458,6 +491,75 @@ export function renderFlyover(root: HTMLElement): () => void {
     for (let i = 0; i < count; i++) {
       const life = 0.5 + Math.random() * 0.5;
       puffs.push({ x: x - Math.random() * 6, y: yy - Math.random() * 3, vx: -8 - Math.random() * 14, vy: -6 - Math.random() * 10, life, max: life });
+    }
+  }
+
+  // ---------- fuel ----------
+  // A RESOURCE THAT DRAINS AND REFILLS. Every update we work out how fast the engines are
+  // burning (climb > level > gliding down) and take that much off the tank: rate times the time
+  // slice. A "rate" is "how much per second", so a short slice takes a tiny bit, and the total
+  // over a second comes out right whatever the screen's speed. Gates and stopovers add to the tank.
+  function addFuel(amount: number) {
+    fuel = clamp(fuel + amount, 0, FULL_TANK);
+    LOW_FUEL_BEEPS.forEach((limit, i) => { if (fuel > limit) lowWarned[i] = false; }); // the warning can sound again
+  }
+  function refill() { fuel = FULL_TANK; lowWarned = LOW_FUEL_BEEPS.map(() => false); }
+  /** Take fuel off. Beep as the tank crosses each warning line, and stop the engines at empty. */
+  function burnFuel(amount: number) {
+    const before = fuel;
+    fuel = Math.max(0, fuel - amount);
+    minFuel = Math.min(minFuel, fuel);
+    LOW_FUEL_BEEPS.forEach((limit, i) => {
+      if (before > limit && fuel <= limit && !lowWarned[i]) { lowWarned[i] = true; if (fuel > 0) beep("low"); }
+    });
+    if (fuel <= 0 && phase === "flight") beginFlameout();
+  }
+
+  /** OUT OF FUEL. The engines go quiet and the plane glides down for a moment; then we divert. */
+  function beginFlameout() {
+    phase = "flameout";
+    flameout = { t: 0 };
+    recover = null;
+    wobble = 0;
+    beep("divert");
+    say("OUT OF FUEL!", "Engines quiet. Gliding down", "#ff8a7a", 3);
+  }
+  function stepFlameout(dt: number) {
+    flameout.t += dt;
+    speed += clamp(ac.speed * 0.55 - speed, -SPEED_UP * dt, SPEED_UP * dt);
+    dist += speed * dt;
+    const before = y;
+    y = Math.min(ac.floor, y + 34 * dt);
+    vy = (y - before) / dt;
+    if (flameout.t >= FLAMEOUT_TIME) divert();
+  }
+
+  // ---------- stops with a countdown (leg 3) ----------
+  // A TRANSIT is a quick stop: a 3-2-1 countdown and no fuel. A STOPOVER is a rest: 5-4-3-2-1
+  // while the tank fills up. The countdown is a number of seconds LEFT. Each update we take the
+  // time that passed off it, and when it reaches zero the plane takes off. The number on the
+  // card is the time left, rounded UP (so "1" shows until the very end).
+  function beginLayover() {
+    const stop = layover.stop;
+    const kind = kindOf(stop) === "stopover" ? "stopover" : "transit";
+    const total = kind === "stopover" ? STOPOVER_SECONDS : TRANSIT_SECONDS;
+    layover = { stop, kind, left: total, total, from: fuel, tick: total + 1 };
+    phase = "layover";
+    banner = null;
+  }
+  function stepLayover(dt: number) {
+    layover.left = Math.max(0, layover.left - dt);
+    // A stopover fills the tank in a straight line from what it was to full over the whole countdown.
+    if (layover.kind === "stopover") {
+      const k = 1 - layover.left / layover.total;
+      addFuel(layover.from + (FULL_TANK - layover.from) * k - fuel);
+    }
+    const shown = Math.ceil(layover.left - 1e-9);
+    if (shown < layover.tick && shown > 0) { layover.tick = shown; beep("tick"); }
+    if (layover.left <= 0) {
+      if (layover.kind === "stopover") { addFuel(FULL_TANK); beep("refuelled"); }
+      layover.stop = -1;
+      beginTakeoff(dist);
     }
   }
 
@@ -494,24 +596,35 @@ export function renderFlyover(root: HTMLElement): () => void {
     return from;
   }
 
+  /**
+   * A STRIKE: a bump into the weather or an obstacle, or a wrong gate. On the easy leg it costs a
+   * comfort star; on the fuel legs it costs a chunk of fuel instead. Either way the plane wobbles.
+   */
   function turbulence(title: string, sub: string) {
-    comfort--;
+    const rules = fuelRules();
     bumpCount++;
     wobble = WOBBLE_TIME;
     slow = SLOW_TIME;
     invuln = INVULN_TIME;
     flash = 0.18;
     beep("bump");
-    if (comfort <= 0) { divert(); return; }
-    say(title, sub, "#ffd34e");
+    if (rules) {
+      burnFuel(rules.strikeCost);
+      if (fuel <= 0) return; // burnFuel has started the glide down
+      say(`${title} -${rules.strikeCost}% FUEL`, sub, "#ffd34e");
+    } else {
+      comfort--;
+      if (comfort <= 0) { divert(); return; }
+      say(title, sub, "#ffd34e");
+    }
     // No crash: the plane just floats back up (or down) to a safe height.
     recover = { t: 0, from: y, to: safeYFrom(y) };
   }
 
   /**
-   * DIVERTED (out of comfort stars). The kind way: the leg is NOT restarted. The plane is put back
-   * on a runway at the last stop it got right (or at the start, if it has not got one yet), the
-   * stars are refilled, and the leg carries on from there.
+   * DIVERTED (out of comfort stars on leg 1, out of fuel on legs 2 and 3). The kind way: the leg is
+   * NOT restarted. The plane is put back on a runway at the last stop it got right (or at the
+   * start, if it has not got one yet), the stars or the tank are refilled, and the leg carries on from there.
    */
   function divert() {
     divertCount++;
@@ -520,8 +633,11 @@ export function renderFlyover(root: HTMLElement): () => void {
     stopIndex = lastStop + 1;
     divertCity = cityOf(lastStop < 0 ? course.route.codes[0] : stopCode(lastStop));
     comfort = MAX_COMFORT;
+    refill();
+    layover.stop = -1;
     resetFlightBits();
-    parkAt(lastStop < 0 ? 0 : checkpointAt(leg, lastStop));
+    // (On leg 3 that stop has a real runway, and the plane sits where it stopped after landing.)
+    parkAt(lastStop < 0 ? 0 : leg.landAtStops ? stopParkX(leg, lastStop) : checkpointAt(leg, lastStop));
     gate = newGate(stopIndex);
     setState("diverted");
   }
@@ -538,6 +654,13 @@ export function renderFlyover(root: HTMLElement): () => void {
   }
 
   /** The plane has reached the gates' column. Which ring did it fly through? */
+  /** Leg 3: the right gate was flown, so the plane lands at this stop (the runway appears ahead). */
+  function landAtStop(stop: number) {
+    runways.push(runwayFor(stopParkX(leg, stop)));
+    layover.stop = stop;
+    beginLanding(stopTouchX(leg, stop));
+  }
+
   function passGate(g: GateGroup) {
     const { ys, half } = gateSlots(ac);
     // The ring whose middle is nearest the plane's height is the one we went through.
@@ -553,14 +676,17 @@ export function renderFlyover(root: HTMLElement): () => void {
       beep("stop");
       if (isLast) say(`CLEARED TO LAND AT ${right}!`, `${cityOf(right)}, ${countryOf(right)}`, "#5fe08a", 3);
       else say(`CHECKPOINT ${right}!`, `${cityOf(right)}, ${countryOf(right)}`, "#5fe08a", 2.4);
+      // Leg 2: a correct gate tops the tank up. (Leg 3 gives nothing here: only a stopover refuels.)
+      if (leg.fuel && leg.fuel.gateTopUp > 0) addFuel(leg.fuel.gateTopUp);
       nextStop();
+      if (leg.landAtStops && !isLast) landAtStop(g.stop);
       return;
     }
     if (through >= 0 && !g.off[through]) {
       // A wrong gate counts as turbulence.
       g.off[through] = true;
       turbulence("TURBULENCE!", `That was ${g.codes[through]}, not ${right}`);
-      if (state !== "playing") return;
+      if (state !== "playing" || phase !== "flight") return; // diverted, or the tank ran dry
     } else {
       beep("miss");
     }
@@ -590,6 +716,8 @@ export function renderFlyover(root: HTMLElement): () => void {
 
     if (phase === "takeoff") { stepTakeoff(dt); return; }
     if (phase === "landing" || phase === "landed") { stepLanding(dt); return; }
+    if (phase === "layover") { stepLayover(dt); return; }
+    if (phase === "flameout") { stepFlameout(dt); return; }
     if (phase !== "flight") return;
 
     // FORWARD SPEED builds up gradually: this is ACCELERATION. We never jump straight to top
@@ -626,6 +754,16 @@ export function renderFlyover(root: HTMLElement): () => void {
       if (y > ac.floor) { y = ac.floor; vy = Math.min(vy, 0); }
     }
 
+    // FUEL. How fast are we burning? Holding climb is the thirstiest; level flight (or still
+    // drifting up after you let go) burns a little; gliding down burns nothing at all.
+    const rules = fuelRules();
+    if (rules) {
+      const climbing = up && !down && !recover;
+      const gliding = !climbing && vy > GLIDE_SPEED && !recover;
+      burnFuel((climbing ? rules.climbBurn : gliding ? 0 : rules.levelBurn) * dt);
+      if (phase !== "flight") return; // the tank ran dry: burnFuel started the glide down
+    }
+
     // A thin white trail behind the plane. Each puff is fixed in the WORLD, so as the world
     // scrolls it streams away to the left, which shows how fast we are going.
     trailTimer -= dt;
@@ -651,7 +789,7 @@ export function renderFlyover(root: HTMLElement): () => void {
   }
 
   function finishLeg() {
-    legStars.push(comfort);
+    legStars.push(leg.fuel ? -1 : comfort); // -1 = this leg used fuel, not stars
     if (legIndex === LEGS.length - 1) {
       if (best === null || totalTime < best) { best = totalTime; newBest = true; saveBest(STORE_KEY, totalTime); }
       beep("win");
@@ -674,18 +812,31 @@ export function renderFlyover(root: HTMLElement): () => void {
   }
 
   // ---------- the HUD (the strip above the game) ----------
+  /** " (stopover)" or " (transit)" for a stop on a leg that has them, otherwise nothing. */
+  const kindNote = (stop: number) => (leg.landAtStops && stop < stopCount() - 1 ? ` (${kindOf(stop)})` : "");
   let hudSignature = "";
   function updateHud() {
     // Only touch the page when something actually changed.
-    const sig = [legIndex, comfort, reached(), stopIndex, gate?.attempt ?? -1, Math.floor(totalTime), state === "ready", phase, course?.routeIndex].join("|");
+    const pct = Math.ceil(fuel - 1e-6);
+    const sig = [legIndex, comfort, pct, reached(), stopIndex, gate?.attempt ?? -1, Math.floor(totalTime), state === "ready", phase, course?.routeIndex].join("|");
     if (sig === hudSignature) return;
     hudSignature = sig;
     hudLeg.textContent = `Leg ${legIndex + 1}/${LEGS.length}: ${ac.name}`;
     if (state === "ready") hudNext.textContent = "Ready for take-off";
-    else if (gate) hudNext.textContent = `Next stop: ${cityOf(stopCode(gate.stop))}${gate.attempt ? " (go around)" : ""}`;
+    else if (gate) hudNext.textContent = `Next stop: ${cityOf(stopCode(gate.stop))}${kindNote(gate.stop)}${gate.attempt ? " (go around)" : ""}`;
     else hudNext.textContent = phase === "landed" ? "Landed" : "Coming in to land";
-    hudComfort.textContent = "Comfort " + "★".repeat(comfort) + "☆".repeat(MAX_COMFORT - comfort);
-    hudComfort.setAttribute("aria-label", `Comfort: ${comfort} of ${MAX_COMFORT} stars`);
+    if (leg.fuel) {
+      // FUEL: eight little blocks plus the percentage. The text turns amber, then flashes red, as it runs low.
+      const blocks = Math.ceil(fuel / (FULL_TANK / 8) - 1e-6);
+      hudComfort.textContent = `Fuel ${"▮".repeat(blocks)}${"▯".repeat(8 - blocks)} ${pct}%`;
+      hudComfort.setAttribute("aria-label", `Fuel: ${pct} percent`);
+      hudComfort.classList.toggle("low", fuel < AMBER_BELOW);
+      hudComfort.classList.toggle("crit", fuel < RED_BELOW);
+    } else {
+      hudComfort.textContent = "Comfort " + "★".repeat(comfort) + "☆".repeat(MAX_COMFORT - comfort);
+      hudComfort.setAttribute("aria-label", `Comfort: ${comfort} of ${MAX_COMFORT} stars`);
+      hudComfort.classList.remove("low", "crit");
+    }
     hudStops.textContent = `Stops ${reached()}/${stopCount()}`;
     hudTime.textContent = `Time ${formatTime(totalTime)}`;
   }
@@ -1195,6 +1346,51 @@ export function renderFlyover(root: HTMLElement): () => void {
     });
   }
 
+  // The FUEL GAUGE, top left: a little box with a bar that shrinks as the tank empties. Green
+  // while there is plenty, amber under AMBER_BELOW percent, and flashing red under RED_BELOW.
+  function drawFuelGauge(t: number) {
+    const x0 = 3, y0 = 17, w = 66, hgt = 14;
+    const flashingOff = fuel < RED_BELOW && Math.floor(t * 4) % 2 === 0;
+    const colour = fuel < RED_BELOW ? (flashingOff ? "#b3382a" : "#ff4d3a") : fuel < AMBER_BELOW ? "#ffb52e" : "#5fe08a";
+    px(x0, y0, w, hgt, "rgba(10,18,48,0.78)");
+    px(x0, y0, w, 1, "#8e9ac8"); px(x0, y0 + hgt - 1, w, 1, "#8e9ac8");
+    px(x0, y0, 1, hgt, "#8e9ac8"); px(x0 + w - 1, y0, 1, hgt, "#8e9ac8");
+    text(`FUEL ${Math.ceil(fuel - 1e-6)}%`, x0 + 4, y0 + 4, 8, fuel < AMBER_BELOW ? colour : "#e8ecff", "left");
+    const bw = w - 8;
+    px(x0 + 4, y0 + 8, bw, 4, "#27304f");
+    px(x0 + 4, y0 + 8, Math.round((bw * fuel) / FULL_TANK), 4, colour);
+    // Tick marks at the two warning lines, so you can see where the beeps happen.
+    for (const mark of LOW_FUEL_BEEPS) px(x0 + 4 + Math.round((bw * mark) / FULL_TANK), y0 + 7, 1, 6, "#8e9ac8");
+  }
+
+  /** The card shown while the plane waits at a leg-3 stop: the stop's name, and a big countdown. */
+  function drawLayover(t: number) {
+    const city = cityOf(stopCode(layover.stop));
+    const stopover = layover.kind === "stopover";
+    const width = 270, hgt = 84;
+    const x0 = Math.round((W - width) / 2), y0 = 38;
+    px(x0, y0, width, hgt, "#0a1230");
+    px(x0, y0, width, 1, "#8e9ac8"); px(x0, y0 + hgt - 1, width, 1, "#8e9ac8");
+    px(x0, y0, 1, hgt, "#8e9ac8"); px(x0 + width - 1, y0, 1, hgt, "#8e9ac8");
+    const title = `${stopover ? "STOPOVER" : "TRANSIT"}: ${city}`.toUpperCase();
+    let size = 16;
+    ctx.font = `${size}px Silkscreen, "Courier New", monospace`;
+    while (size > 8 && ctx.measureText(title).width > width - 14) { size--; ctx.font = `${size}px Silkscreen, "Courier New", monospace`; }
+    text(title, W / 2, y0 + 12, size, stopover ? "#5fe08a" : "#7fd0ff");
+    text(stopover ? "Rest and refuel." : "Quick stop. No fuel added.", W / 2, y0 + 25, 8, "#e8ecff");
+    const n = Math.max(1, Math.ceil(layover.left - 1e-9));
+    const pulse = 1 - (layover.left % 1); // 0 just after the number changes, rising to 1
+    text(String(n), W / 2, y0 + 47, pulse < 0.15 ? 36 : 32, "#ffd34e");
+    if (stopover) {
+      const bw = 200, bx = W / 2 - bw / 2, by = y0 + 66;
+      px(bx - 1, by - 1, bw + 2, 8, "#8e9ac8");
+      px(bx, by, bw, 6, "#27304f");
+      px(bx, by, Math.round((bw * fuel) / FULL_TANK), 6, fuel < AMBER_BELOW ? "#ffb52e" : "#5fe08a");
+      text(`${Math.ceil(fuel - 1e-6)}%`, bx + bw + 4, by + 3, 8, "#e8ecff", "left");
+    }
+    void t;
+  }
+
   const stars = (n: number) => "★".repeat(n) + "☆".repeat(Math.max(0, MAX_COMFORT - n));
 
   function draw(t: number) {
@@ -1227,7 +1423,7 @@ export function renderFlyover(root: HTMLElement): () => void {
     } else if (gate && state === "playing") {
       // The next stop, on the game itself, so you don't have to look away to the strip above.
       const city = cityOf(stopCode(gate.stop));
-      const msg = `NEXT STOP: ${city.toUpperCase()}${gate.attempt ? " (GO AROUND)" : ""}`;
+      const msg = `NEXT STOP: ${city.toUpperCase()}${kindNote(gate.stop).toUpperCase()}${gate.attempt ? " (GO AROUND)" : ""}`;
       ctx.font = `8px Silkscreen, "Courier New", monospace`;
       const bw = Math.ceil(ctx.measureText(msg).width) + 12;
       px((W - bw) / 2, 2, bw, 12, "rgba(10,18,48,0.7)");
@@ -1243,7 +1439,10 @@ export function renderFlyover(root: HTMLElement): () => void {
       }
     }
 
-    const total = legStars.reduce((a, b) => a + b, 0);
+    if (leg.fuel && (state === "playing" || state === "paused")) drawFuelGauge(t);
+    if (phase === "layover" && layover.stop >= 0 && (state === "playing" || state === "paused")) drawLayover(t);
+
+    const startStars = legStars[0] ?? 0; // only leg 1 uses comfort stars
     const startName = (c: string) => `${cityOf(c)} (${c})`;
     if (state === "ready") {
       panel([
@@ -1258,6 +1457,8 @@ export function renderFlyover(root: HTMLElement): () => void {
         { t: ac.nick.toUpperCase(), size: 16, colour: "#ffd34e" },
         { t: `${startName(first)} to ${startName(last)}`, size: 8, colour: "#e8ecff" },
         { t: course.route.codes.join("  "), size: 8, colour: "#8e9ac8" },
+        ...(leg.fuel ? [{ t: "Climbing burns fuel. Gliding down burns none.", size: 8, colour: "#7fd0ff" }] : []),
+        ...(leg.landAtStops ? [{ t: `Stopovers refuel you: ${course.route.stopovers.map(cityOf).join(", ")}`, size: 8, colour: "#ffd34e" }] : []),
         { t: "Space or tap to go", size: 8, colour: "#e8ecff" },
       ], 300);
     } else if (state === "paused") {
@@ -1269,20 +1470,21 @@ export function renderFlyover(root: HTMLElement): () => void {
       panel([
         { t: `LEG ${legIndex + 1} COMPLETE!`, size: 16, colour: "#5fe08a" },
         { t: `Time ${formatTime(legTime)}     Stops ${reached()} of ${stopCount()}`, size: 8, colour: "#e8ecff" },
-        { t: `Comfort ${stars(comfort)}`, size: 8, colour: "#ffd34e" },
+        { t: leg.fuel ? `Fuel left ${Math.ceil(fuel)}%     Lowest ${Math.floor(minFuel)}%` : `Comfort ${stars(comfort)}`, size: 8, colour: "#ffd34e" },
         { t: "Space or tap for the next leg", size: 8, colour: "#e8ecff" },
       ], 280);
     } else if (state === "diverted") {
       panel([
-        { t: `DIVERTED TO ${divertCity.toUpperCase()}`, size: 16, colour: "#7fd0ff" },
-        { t: "Too bumpy! Comfort is topped up again.", size: 8, colour: "#e8ecff" },
-        { t: "Nothing broken. You carry on from here.", size: 8, colour: "#8e9ac8" },
+        { t: leg.fuel ? "OUT OF FUEL!" : `DIVERTED TO ${divertCity.toUpperCase()}`, size: 16, colour: leg.fuel ? "#ff8a7a" : "#7fd0ff" },
+        { t: leg.fuel ? `Diverted to ${divertCity}` : "Too bumpy! Comfort is topped up again.", size: 8, colour: "#e8ecff" },
+        { t: leg.fuel ? "Tank refuelled to full. You carry on from here." : "Nothing broken. You carry on from here.", size: 8, colour: "#8e9ac8" },
         { t: "Space or tap to take off", size: 8, colour: "#e8ecff" },
       ], 296);
     } else if (state === "won") {
       panel([
         { t: "ALL LEGS FLOWN!", size: 16, colour: "#5fe08a" },
-        { t: `Total time ${formatTime(totalTime)}     Comfort ${total} of ${LEGS.length * MAX_COMFORT}`, size: 8, colour: "#e8ecff" },
+        { t: `Total time ${formatTime(totalTime)}     Diversions ${divertCount}`, size: 8, colour: "#e8ecff" },
+        { t: `Leg 1 comfort ${stars(startStars)}`, size: 8, colour: "#ffd34e" },
         { t: newBest ? "A new best time!" : `Best time ${formatTime(best ?? totalTime)}`, size: 8, colour: "#ffd34e" },
         { t: "Space or tap to fly again", size: 8, colour: "#e8ecff" },
       ], 296);
@@ -1368,7 +1570,7 @@ export function renderFlyover(root: HTMLElement): () => void {
   if (import.meta.env.DEV) {
     const api = {
       info: () => ({
-        state, phase, leg: legIndex + 1, aircraft: leg.aircraft, dist, speed, y, vy, comfort, reached: reached(), stopIndex, lastStop,
+        state, phase, leg: legIndex + 1, aircraft: leg.aircraft, dist, speed, y, vy, comfort, fuel, minFuel, layover: { ...layover }, kinds: course.route.codes.slice(1).map((_, i) => kindOf(i)), reached: reached(), stopIndex, lastStop,
         divertCount, bumpCount, totalTime, seed: course.seed, routeIndex: course.routeIndex, route: course.route.codes,
         hops: course.route.hops.map((x) => (x.start === x.end ? x.start : `${x.start}+${x.end}`)), length: course.length,
         segments: course.segments.map((s) => ({ x0: s.x0, x1: s.x1, terrain: s.terrain })),
@@ -1398,6 +1600,12 @@ export function renderFlyover(root: HTMLElement): () => void {
       // Pretend the plane got stop `i` right (so a diversion has somewhere to go back to).
       markGot: (i: number) => { for (let k = 0; k <= i; k++) got[k] = true; lastStop = i; },
       setComfort: (n: number) => { comfort = n; },
+      // Set the tank (percent). Beep flags are cleared so the low-fuel warnings can be tried again.
+      setFuel: (n: number) => { fuel = n; lowWarned = LOW_FUEL_BEEPS.map((limit) => n <= limit); },
+      // Force stop number `i` (0 = the first stop) to be a "transit" or a "stopover".
+      setStopKind: (i: number, kind: "transit" | "stopover") => { devKinds[i] = kind; },
+      // Switch the plane's controls on without a real key press (for tests that fly by script).
+      hold: (up: boolean) => { keys.up = up; },
       bump: () => turbulence("TURBULENCE!", "Test bump"),
       god: (on: boolean) => { god = on; },
       setPlaneY: (v: number) => { y = v; vy = 0; },

@@ -199,3 +199,13 @@ obstacles generated per hop (`src/arcade/flyover-gen.ts`, seeded; `node scripts/
 tests 200 seeds per route), take-off and landing, the glowing right gate on Easy, and diverting
 to the last stop. Flyover now uses `kit.ts`. Step 2 (fuel, transits, stopovers) is next: the
 take-off and landing functions are ready to call at mid-leg stops.
+
+**Flyover step 2 built (3 Nov 2026):**
+- **Fuel on legs 2 and 3.** The numbers are in `flyover-data.ts`.
+  - Leg 2 burns 8% a second climbing and 1.5% level, a strike costs 12%, and each correct gate adds a third.
+  - Leg 3 burns 6.5% and 1%, a strike costs 10%, gates add nothing, and stopovers refill the tank.
+- **Leg 3 stops.** You land at every middle stop: a transit is a 3 s countdown, a stopover is 5 s with a full refuel.
+  - Mid-leg landings play at double speed, so a stop takes about 13 s.
+  - Leg 3 hops were made longer (1,300 px) to fit the landings.
+- **Running out of fuel** diverts you to your last correct stop with a full tank.
+- **Fuel check.** `scripts/check-flyover.mjs` simulates pilots: a sensible pilot makes it, and a pilot who climbs all the time runs dry on leg 3.
