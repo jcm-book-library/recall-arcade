@@ -48,6 +48,7 @@ The arcade files are written to be read: their comments explain the game loop, f
 
 ## Where the design notes are (and aren't)
 - `docs/roadmap.md`: the plan, the subject tables, the 26 Oct 2026 review notes for every subject, new game styles and subject ideas, the visual-accuracy plan.
+- `docs/mythology-design.md`: the Mythology rebuild (four cultures, a learning ladder, special challenges).
 - `docs/island-design.md`: the island (Overworld), `#island`: decisions, build steps, where the files are.
 - `docs/arcade-design.md`: **the latest arcade decisions** (1 Nov 2026): Pong tiers, Labyrinth worlds, Flyover changes, how quizzes unlock the arcade, the island, and the build order. Start here for arcade work.
 - `docs/science-design.md`: the Science plan (Inner Space, The Scale of Things, Earth & Sky) and the "learn it first" cards for every hard game.
