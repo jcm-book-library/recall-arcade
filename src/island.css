@@ -69,3 +69,23 @@
   .island-banner-go { grid-column: 1 / -1; justify-self: start; }
   .island-banner-art { font-size: 2.4rem; }
 }
+
+/* The little status line above the island: stamps collected, gates open, and free roam. */
+.isl-hud { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; font: 0.8rem var(--font-pixel); letter-spacing: 0.04em; color: var(--muted); }
+.isl-hud-item { display: inline-flex; align-items: center; gap: 6px; }
+.isl-hud-icon { color: var(--accent); }
+.isl-hud-item.free { color: var(--found); text-transform: uppercase; }
+
+/* The message that pops up when the loop is finished. It sits over the bottom of the screen and fades away. */
+.isl-toast {
+  position: fixed; left: 50%; bottom: 16px; z-index: 60; width: min(calc(100% - 32px), 460px); transform: translate(-50%, 12px);
+  padding: 12px 16px; text-align: center; font: 400 1rem/1.35 var(--font-pixel);
+  background: var(--panel); color: var(--ink); border: 2px solid var(--ink); border-radius: var(--r); box-shadow: 4px 4px 0 var(--accent);
+  opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s;
+}
+.isl-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .isl-toast { transition: none; } }
+
+/* The stamp line in an arcade stop's panel. */
+.isl-stamp { margin: 0; padding: 8px 10px; border: 2px dashed var(--line); border-radius: var(--r); color: var(--muted); font-size: 0.95rem; }
+.isl-stamp.got { border-style: solid; border-color: var(--found); color: var(--found); }

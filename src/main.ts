@@ -31,7 +31,7 @@ import { renderPong } from "./arcade/pong";
 import { renderLabyrinth } from "./arcade/labyrinth";
 import { renderHeroWorkshop } from "./arcade/hero-workshop";
 import { renderFlyover } from "./arcade/flyover";
-import { islandReturnPending, renderIsland } from "./arcade/island";
+import { renderIsland } from "./arcade/island";
 
 // Every game in the arcade, grouped by subject on the home page (up to six each).
 const DECKS: Deck[] = [
@@ -69,23 +69,18 @@ let cleanup: (() => void) | void;
 function route() {
   cleanup?.();
   cleanup = undefined;
-  let id = location.hash.replace(/^#/, "");
-  // Coming "back" from a quiz or game opened on the island: every quiz's "◂ Arcade" link goes to
-  // the home page, so if the player left from the island, show the island instead. This only
-  // happens once per trip (the island switches the flag off), and the island's own "List view"
-  // button switches it off too, so it can never trap anyone. See island.ts for the full story.
-  if (id === "" && islandReturnPending()) {
-    history.replaceState(null, "", "#island");
-    id = "island";
-  }
+  // The island is the front page ("" or "#"), so every quiz's "◂ Arcade" link lands there. The
+  // card list lives at "#list", and "#island" still works as an old way of saying the same thing.
+  const id = location.hash.replace(/^#/, "");
   const deck = DECKS.find((d) => d.id === id);
   if (id === "pong") cleanup = renderPong(root);
   else if (id === "labyrinth") cleanup = renderLabyrinth(root);
   else if (id === "hero") cleanup = renderHeroWorkshop(root);
   else if (id === "flyover") cleanup = renderFlyover(root);
-  else if (id === "island") cleanup = renderIsland(root, DECKS);
+  else if (id === "" || id === "island") cleanup = renderIsland(root, DECKS);
+  else if (id === "list") renderHome(root, DECKS);
   else if (deck) cleanup = deck.screen ? deck.screen(root, deck) : renderPlay(root, deck);
-  else renderHome(root, DECKS);
+  else cleanup = renderIsland(root, DECKS); // an unknown address: back to the island
   window.scrollTo(0, 0);
 }
 
