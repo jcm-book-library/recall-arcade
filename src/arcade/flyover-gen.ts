@@ -1,6 +1,6 @@
 import {
   AIRCRAFT, LEGS, RECIPES, WORLD_H, FIRST_OBSTACLE, GATE_CLEAR_AFTER, GATE_CLEAR_BEFORE, GATE_RETRY, MIN_GROUP_GAP,
-  checkpointAt, gateSlots, hitboxOf, legLength, pictureOf, OBSTACLE_INFO,
+  checkpointAt, flyingFromX, gateSlots, hitboxOf, legLength, pictureOf, OBSTACLE_INFO, STOP_RUN,
   type Aircraft, type Leg, type ObstacleSpec, type Rect, type RecipeItem, type Route, type Terrain,
 } from "./flyover-data.ts";
 
@@ -204,8 +204,9 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
   };
 
   const make = (at: number, want: "any" | "ground" | "floating"): ObstacleSpec => {
+    at = Math.round(at); // (round FIRST: the terrain must be looked up at the very spot the obstacle will stand)
     const item = pick(terrainAt(segments, at), want);
-    const spec: ObstacleSpec = { at: Math.round(at), type: item.type, y: 0 };
+    const spec: ObstacleSpec = { at, type: item.type, y: 0 };
     if (OBSTACLE_INFO[item.type].ground) {
       spec.y = Math.round(between(rng, item.lo, Math.max(item.lo, Math.min(item.hi, groundMax(ac)))));
       if (item.type === "building") spec.w = 2 * Math.round(between(rng, item.wLo ?? 18, item.wHi ?? 30) / 2);
@@ -218,7 +219,11 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
   for (let hop = 0; hop < stops; hop++) {
     const cp = checkpointAt(leg, hop);
     // Where obstacle pictures may sit: after the clear space round the last gate, before the clear space round this one.
-    const zs = hop === 0 ? FIRST_OBSTACLE : checkpointAt(leg, hop - 1) + GATE_CLEAR_AFTER;
+    // (On a leg where the plane lands at every stop, the quiet space after a checkpoint is the whole
+    // landing, rest and take-off: STOP_RUN, plus a little spare. Afterwards the plane is back at its
+    // starting height, so the "way through" walk starts again from there.)
+    const zs = hop === 0 ? FIRST_OBSTACLE : checkpointAt(leg, hop - 1) + (leg.landAtStops ? STOP_RUN + 40 : GATE_CLEAR_AFTER);
+    if (hop > 0 && leg.landAtStops) { reach = startReach(ac); prevEnd = flyingFromX(leg, hop - 1); }
     const ze = cp - GATE_CLEAR_BEFORE;
     const wanted = randInt(rng, leg.perHop[0], leg.perHop[1]);
     const evalEnd = cp + GATE_RETRY; // we test as far as the go-around gates

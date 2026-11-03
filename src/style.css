@@ -735,6 +735,11 @@ a.btn { text-decoration: none; }
   font: 0.8rem/1.4 var(--font-pixel); text-transform: uppercase;
 }
 .fly-comfort { color: #d9a41e; letter-spacing: 1px; }
+/* The fuel readout shares the comfort slot: gold while fine, orange when low, flashing red when nearly empty. */
+.fly-comfort.low { color: #d97a1e; }
+.fly-comfort.crit { color: #d8402f; animation: fly-flash 0.5s steps(2, jump-none) infinite; }
+@keyframes fly-flash { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .fly-comfort.crit { animation: none; } }
 .fly-screen {
   width: 100%; border: 2px solid var(--line); border-radius: var(--r); overflow: hidden;
   background: var(--space); box-shadow: 4px 4px 0 var(--line); line-height: 0;
