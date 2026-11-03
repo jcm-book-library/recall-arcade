@@ -1,6 +1,8 @@
 import {
   AIRCRAFT, LEGS, RECIPES, WORLD_H, FIRST_OBSTACLE, GATE_CLEAR_AFTER, GATE_CLEAR_BEFORE, GATE_RETRY, MIN_GROUP_GAP, TAKEOFF_LEN,
   THUNDER_PERIOD, THUNDER_TERRAINS, THUNDER_Y, boltRect,
+  HELI_Y, HELI_AMP, HELI_PERIOD, DEVIL_Y, DEVIL_AMP, DEVIL_PERIOD, THERMAL_CLEAR, THERMAL_W, THERMAL_TERRAINS, SPECIAL_TERRAIN,
+  isMover, isStill, moverBox, moverShifts,
   checkpointAt, gateSlots, hitboxOf, legLength, pictureOf, OBSTACLE_INFO,
   type Aircraft, type Leg, type ObstacleSpec, type Rect, type RecipeItem, type Route, type Terrain,
 } from "./flyover-data.ts";
@@ -102,6 +104,11 @@ export function terrainBlend(segs: Segment[], d: number): { a: Terrain; b: Terra
 // If the list ever becomes empty, there is no way through.
 export const STEP_X = 5;
 const UP_FACTOR = 0.65;
+/**
+ * How many moments of a moving hazard's swing the course maker tries. (The check script tries every other one of these, 24,
+ * so anything it flies is one the course maker has already proved flyable.)
+ */
+const MOVER_TESTS = 48; // (a new hazard is tried at all 48; one already placed is re-tried at every other one, 24, when something new goes beside it)
 const ROOM = 4; // leave this much room round the plane, so passing a gap is not a pixel-perfect job
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -114,11 +121,24 @@ export function startReach(ac: Aircraft): Uint8Array {
 }
 
 /**
- * Walk from `x0` to `x1`. `hits` are the obstacle hitboxes, `gates` the distances of gate groups
- * (at each one, all three rings must be reachable). Returns the new list of reachable heights,
- * or null if there is no way through.
+ * A MOVING hazard, as the walk sees it: the stretch of the leg it can ever be in (`x0` to `x1`), and a function that
+ * says where its hitbox is at the moment the plane is level with `planeX`. Made by `moverAt` below, for one chosen
+ * "arrival moment" (a shift), so a walk is a test of "what if the plane arrives at exactly this point of its swing?".
  */
-export function advanceReach(ac: Aircraft, from: Uint8Array, x0: number, x1: number, hits: Rect[], gates: number[]): Uint8Array | null {
+export interface Mover { x0: number; x1: number; at: (planeX: number) => Rect }
+
+/** The moving hazard `o`, for the plane arriving when `o` is at the point of its swing given by `shift` (see moverShifts). Plane speed is the aircraft's. */
+export function moverAt(o: ObstacleSpec, shift: number, ac: Aircraft): Mover {
+  const sweep = pictureOf(o);
+  return { x0: sweep.x, x1: sweep.x + sweep.w, at: (planeX) => moverBox(o, planeX, shift + (planeX - o.at) / ac.speed) };
+}
+
+/**
+ * Walk from `x0` to `x1`. `hits` are the obstacle hitboxes, `gates` the distances of gate groups
+ * (at each one, all three rings must be reachable). `movers` (optional) are moving hazards, whose box is worked out afresh
+ * at every step. Returns the new list of reachable heights, or null if there is no way through.
+ */
+export function advanceReach(ac: Aircraft, from: Uint8Array, x0: number, x1: number, hits: Rect[], gates: number[], movers: Mover[] = []): Uint8Array | null {
   const lo = ac.ceiling;
   const cells = from.length;
   const upRate = (ac.maxUp * UP_FACTOR * STEP_X) / ac.speed;
@@ -132,6 +152,7 @@ export function advanceReach(ac: Aircraft, from: Uint8Array, x0: number, x1: num
       c0: Math.max(0, Math.floor(r.y - ac.hitH / 2 - ROOM - lo) + 1),
       c1: Math.min(cells, Math.ceil(r.y + r.h + ac.hitH / 2 + ROOM - lo)), // blocked cells are c0 up to (not including) c1
     }));
+  const nearMovers = movers.filter((m) => m.x0 < x1 + 40 && m.x1 > x0 - 40);
   // Two lists swapped each step, and one scratch list, so a long walk makes no garbage.
   let ok: Uint8Array<ArrayBuffer> = from as Uint8Array<ArrayBuffer>;
   let next = new Uint8Array(cells);
@@ -151,6 +172,14 @@ export function advanceReach(ac: Aircraft, from: Uint8Array, x0: number, x1: num
     for (const r of near) {
       if (!(r.x0 < px1 && r.x1 > px0)) continue;
       for (let c = r.c0; c < r.c1; c++) next[c] = 0;
+    }
+    for (const m of nearMovers) {
+      if (!(m.x0 < px1 && m.x1 > px0)) continue;
+      const r = m.at(x);
+      if (!(r.x < px1 && r.x + r.w > px0)) continue;
+      const c0 = Math.max(0, Math.floor(r.y - ac.hitH / 2 - ROOM - lo) + 1);
+      const c1 = Math.min(cells, Math.ceil(r.y + r.h + ac.hitH / 2 + ROOM - lo));
+      for (let c = c0; c < c1; c++) next[c] = 0;
     }
     for (let c = 0; c < cells; c++) if (next[c]) { any = true; break; }
     if (!any) return null;
@@ -186,7 +215,8 @@ const groundMax = (ac: Aircraft) => WORLD_H - (ac.ceiling + 36);
 
 /**
  * GENERATING OBSTACLES FROM A RECIPE. For each hop, in order:
- *   1. Decide how many GROUPS to put in it (the leg's `perHop`) and how many THUNDERCLOUDS (leg 3),
+ *   1. Decide how many GROUPS to put in it (the leg's `perHop`), how many THUNDERCLOUDS (leg 3), and, in a hop that has a
+ *      city or a desert, how many MOVING hazards and heat thermals (leg 3),
  *      and spread those "slots" evenly along the hop with a little jiggle.
  *   2. Fill the slots one at a time, left to right. For a group, look up the terrain at that spot
  *      and pick an obstacle from that terrain's recipe (a weighted pick: weight 4 is twice as
@@ -198,7 +228,12 @@ const groundMax = (ac: Aircraft) => WORLD_H - (ac.ceiling + 36);
  *   4. A thundercloud has an EXTRA test: the walk is done twice more, once as if its bolt were
  *      striking UP and once as if it were striking DOWN. There must be a way through both times, so
  *      one of "over" and "under" is always open (see the thunderclouds section in flyover-data.ts).
- *   5. At the end of the hop, test the run-in to the gates; if that fails, take the last slot away and test again.
+ *   5. A MOVING hazard (leg 3: a helicopter over a city, a dust devil over a desert) is tested the same way, but over
+ *      TIME instead of two sides: the plane is flown past it 48 times, arriving at 48 different points of its swing
+ *      (see moverShifts and moverAt), and there must be a way through every time. A mover next to a thundercloud is
+ *      tested with the bolt up and down too. Heat thermals are harmless, so they only need room: nothing else within
+ *      THERMAL_CLEAR of the column, so the push can never shove you into something.
+ *   6. At the end of the hop, test the run-in to the gates; if that fails, take the last slot away and test again.
  * The walk is also done for a plane that restarts at the middle height after the previous checkpoint
  * (that is where a diversion puts you), so a diversion never drops you into something unfair.
  * All the dice come from the seeded generator, so the same seed always gives the same course.
@@ -248,15 +283,35 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
     };
   };
 
+  /** A news helicopter (over a city) or a dust devil (over a desert): the kind is picked by the land below it. Its swing has its own length and starting point. */
+  const makeSpecial = (at: number): ObstacleSpec | null => {
+    at = Math.round(at);
+    const type = SPECIAL_TERRAIN[terrainAt(segments, at)];
+    if (type === "heli") {
+      const period = Math.round(between(rng, HELI_PERIOD[0], HELI_PERIOD[1]) * 10) / 10;
+      return { at, type, y: Math.round(between(rng, HELI_Y[0], HELI_Y[1])), amp: Math.round(between(rng, HELI_AMP[0], HELI_AMP[1])), period, phase: Math.floor(rng() * period * 10) / 10 };
+    }
+    if (type === "devil") {
+      const period = Math.round(between(rng, DEVIL_PERIOD[0], DEVIL_PERIOD[1]) * 10) / 10;
+      return { at, type, y: Math.round(between(rng, DEVIL_Y[0], DEVIL_Y[1])), amp: Math.round(between(rng, DEVIL_AMP[0], DEVIL_AMP[1])), period, phase: Math.floor(rng() * period * 10) / 10 };
+    }
+    return null;
+  };
+  /** A heat thermal: a column of rising air over the desert. */
+  const makeThermal = (at: number): ObstacleSpec | null => {
+    at = Math.round(at);
+    return THERMAL_TERRAINS.includes(terrainAt(segments, at)) ? { at, type: "thermal", y: 100 } : null;
+  };
+
   /** Where a walk has got to: the heights the plane could be at, at distance `cx`; and the same for a plane that restarted at the middle height. */
   interface Walk { cx: number; reach: Uint8Array; restart: Uint8Array | null }
   const onGrid = (v: number) => Math.floor(v / STEP_X) * STEP_X;
   /** Carry both walks on to `to`. Null if either has no way through. */
-  const carry = (w: Walk, to: number, hits: Rect[], gates: number[]): Walk | null => {
-    const r = advanceReach(ac, w.reach, w.cx, to, hits, gates);
+  const carry = (w: Walk, to: number, hits: Rect[], gates: number[], movers: Mover[] = []): Walk | null => {
+    const r = advanceReach(ac, w.reach, w.cx, to, hits, gates, movers);
     if (!r) return null;
     let re: Uint8Array | null = null;
-    if (w.restart) { re = advanceReach(ac, w.restart, w.cx, to, hits, gates); if (!re) return null; }
+    if (w.restart) { re = advanceReach(ac, w.restart, w.cx, to, hits, gates, movers); if (!re) return null; }
     return { cx: to, reach: r, restart: re };
   };
 
@@ -279,35 +334,68 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
     }
 
     // The slots: evenly spread, at least MIN_GROUP_GAP apart, with a little jiggle.
+    const hopLand = [route.hops[hop].start, route.hops[hop].end];
     const wantedThunder = leg.thunder[1] > 0 ? randInt(rng, leg.thunder[0], leg.thunder[1]) : 0;
-    let slotCount = randInt(rng, leg.perHop[0], leg.perHop[1]) + wantedThunder;
+    const wantedPerHop = randInt(rng, leg.perHop[0], leg.perHop[1]);
+    // The moving hazards and thermals are only asked for in a hop that has the right land (a city for a helicopter, a desert for a dust devil or a thermal).
+    const wantedSpecial = leg.special[1] > 0 && hopLand.some((t) => SPECIAL_TERRAIN[t]) ? randInt(rng, leg.special[0], leg.special[1]) : 0;
+    const wantedThermal = leg.thermal[1] > 0 && hopLand.some((t) => THERMAL_TERRAINS.includes(t)) ? randInt(rng, leg.thermal[0], leg.thermal[1]) : 0;
+    // A pair of moving hazards takes the place of one ordinary group (so the sky is not much more crowded, just harder),
+    // and a single one is an extra; a thermal is harmless, so it is always an extra.
+    let slotCount = wantedPerHop - Math.floor(wantedSpecial / 2) + wantedThunder + wantedSpecial + wantedThermal;
     const a = zs + 50, span = ze - 50 - a;
     while (slotCount > 0 && span - (slotCount - 1) * MIN_GROUP_GAP < 0) slotCount--;
     const slack = span - (slotCount - 1) * MIN_GROUP_GAP;
     const xs: number[] = [];
     for (let k = 0; k < slotCount; k++) xs.push(a + k * MIN_GROUP_GAP + (slack * (k + 0.5)) / slotCount + between(rng, -1, 1) * (slack / slotCount) * 0.45);
-    // Which slots are thunderclouds? Picked at random, but not two in a row if it can be helped.
-    const isThunder: boolean[] = xs.map(() => false);
-    let placedClouds = 0;
-    for (const k of shuffled(rng, xs.map((_, i) => i))) {
-      if (placedClouds >= Math.min(wantedThunder, slotCount)) break;
-      if (isThunder[k - 1] || isThunder[k + 1]) continue;
-      isThunder[k] = true; placedClouds++;
-    }
+    // What goes in each slot? Most are ordinary. Some are thunderclouds, moving hazards or thermals: picked at random,
+    // but not two of a kind in a row if it can be helped, and a moving hazard or thermal only where the land below suits it.
+    type Kind = "normal" | "thunder" | "special" | "thermal";
+    const kind: Kind[] = xs.map(() => "normal");
+    const assign = (what: Kind, wanted: number, suits: (x: number) => boolean) => {
+      let placedSoFar = 0;
+      for (const k of shuffled(rng, xs.map((_, i) => i))) {
+        if (placedSoFar >= Math.min(wanted, slotCount)) break;
+        if (kind[k] !== "normal" || !suits(xs[k]) || kind[k - 1] === what || kind[k + 1] === what) continue;
+        kind[k] = what; placedSoFar++;
+      }
+    };
+    assign("thunder", wantedThunder, (x) => THUNDER_TERRAINS.includes(terrainAt(segments, Math.round(x))));
+    if (wantedSpecial > 0) assign("special", wantedSpecial, (x) => !!SPECIAL_TERRAIN[terrainAt(segments, Math.round(x))]);
+    if (wantedThermal > 0) assign("thermal", wantedThermal, (x) => THERMAL_TERRAINS.includes(terrainAt(segments, Math.round(x))));
 
     // ---- fill the slots, one at a time ----
     let w = start;
     const placed: ObstacleSpec[] = []; // everything chosen so far in this hop
     // Each step remembers where the walk was before it, so the last one can be taken back.
-    const undo: { w: Walk; count: number; clouds: number }[] = [];
+    const undo: { w: Walk; count: number; clouds: number; movers: number }[] = [];
     const clouds: { spec: ObstacleSpec; before: Walk }[] = []; // thunderclouds placed in this hop, with the walk just before each
+    const movers: { spec: ObstacleSpec; before: Walk }[] = []; // moving hazards placed in this hop, likewise
+    // The ordinary still boxes of a list (moving hazards and thermals are not in it: they are tested by their own walks).
+    const stillHits = (list: ObstacleSpec[]) => list.filter(isStill).map(hitboxOf);
+    /** Is anything in `list` too near a thermal column (or is `list` itself a thermal that is too near something)? The push must never shove you into something. */
+    const crowdsThermal = (list: ObstacleSpec[]) => {
+      const all = placed.concat(list);
+      return all.some((t) => t.type === "thermal" && all.some((o) => {
+        if (o === t || o.type === "thermal") return false;
+        const p = pictureOf(o);
+        return p.x < t.at + THERMAL_W / 2 + THERMAL_CLEAR && p.x + p.w > t.at - THERMAL_W / 2 - THERMAL_CLEAR;
+      }));
+    };
 
     for (let k = 0; k < xs.length; k++) {
       let done = false;
       for (let tries = 0; tries < 24 && !done; tries++) {
         let cand: ObstacleSpec[];
-        if (isThunder[k] && THUNDER_TERRAINS.includes(terrainAt(segments, Math.round(xs[k])))) {
-          cand = [makeThunder(xs[k])];
+        const landHere = terrainAt(segments, Math.round(xs[k]));
+        if (kind[k] === "thunder" && THUNDER_TERRAINS.includes(landHere)) {
+          cand = [makeThunder(xs[k] + (tries >= 8 ? between(rng, -30, 30) : 0))]; // after a few failures a cloud may shift sideways to find room
+        } else if (kind[k] === "special" && SPECIAL_TERRAIN[landHere]) {
+          cand = [makeSpecial(xs[k])!];
+        } else if (kind[k] === "thermal") {
+          const th = makeThermal(xs[k] + between(rng, -30, 30)); // a thermal may shift sideways a little to find room
+          if (!th) continue;
+          cand = [th];
         } else {
           cand = [make(xs[k], "any")];
           if (rng() < leg.pairChance) {
@@ -319,7 +407,8 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
         if (!cand.every((o) => inside(o, zs, ze))) continue;
         const left = Math.min(...cand.map((o) => pictureOf(o).x)), right = Math.max(...cand.map((o) => { const p = pictureOf(o); return p.x + p.w; }));
         if (left - 25 < w.cx) continue; // it would reach back into ground the walk has already covered
-        const hits = placed.map(hitboxOf).concat(cand.map(hitboxOf));
+        if (crowdsThermal(cand)) continue;
+        const hits = stillHits(placed).concat(stillHits(cand));
         const look = Math.min(onGrid(right + 100), evalEnd);
         if (!carry(w, look, hits, [])) continue;
         // The lightning test: for this cloud, and any cloud just before it, the way must stay open with the bolt up AND with it down.
@@ -330,12 +419,30 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
         for (const c of watch) for (const side of ["up", "down"] as const) {
           if (ok && !carry(c.from, look, hits.concat(boltRect(c.spec, side)), [])) ok = false;
         }
+        // The moving-hazard test: the same idea, but for EVERY moment the plane could arrive: fly past the hazard at each
+        // point of its swing (the highest, the lowest, and between) and there must always be a way through.
+        const newMover = isMover(cand[0]) ? cand[0] : null;
+        const watchMovers = movers.filter((m) => m.spec.at > left - 400).map((m) => ({ spec: m.spec, from: m.before }));
+        if (newMover) watchMovers.push({ spec: newMover, from: w });
+        for (const m of watchMovers) for (const shift of moverShifts(m.spec, m.spec === newMover ? MOVER_TESTS : MOVER_TESTS / 2)) {
+          if (ok && !carry(m.from, look, hits, [], [moverAt(m.spec, shift, ac)])) ok = false;
+        }
+        // And a moving hazard close to a thundercloud: both at once. (A tall dust devil blocks the way UNDER, so a bolt that
+        // strikes UP next to it would leave no way through. Walk from whichever of the two started earlier.)
+        for (const m of watchMovers) for (const c of clouds.map((q) => ({ spec: q.spec, from: q.before })).concat(newCloud ? [{ spec: newCloud, from: w }] : [])) {
+          if (!ok || Math.abs(c.spec.at - m.spec.at) > 330 || (m.spec.at < left - 400 && c.spec.at < left - 320)) continue;
+          const from = m.from.cx <= c.from.cx ? m.from : c.from;
+          for (const side of ["up", "down"] as const) for (const shift of moverShifts(m.spec, MOVER_TESTS / 2)) {
+            if (ok && !carry(from, look, hits.concat(boltRect(c.spec, side)), [], [moverAt(m.spec, shift, ac)])) ok = false;
+          }
+        }
         if (!ok) continue;
         // Accepted. Carry the walk up to just before the new slot, and remember the step.
         const next = carry(w, Math.max(w.cx, onGrid(left - 25)), hits, []);
         if (!next) continue;
-        undo.push({ w, count: placed.length, clouds: clouds.length });
+        undo.push({ w, count: placed.length, clouds: clouds.length, movers: movers.length });
         if (newCloud) clouds.push({ spec: newCloud, before: next });
+        if (newMover) movers.push({ spec: newMover, before: next });
         placed.push(...cand);
         w = next;
         done = true;
@@ -346,12 +453,16 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
     // ---- the run-in to the gates ----
     // Everything placed must still leave all three rings of both gates reachable. If not, take the last slot back.
     const finish = (): Walk | null => {
-      const hits = placed.map(hitboxOf);
+      const hits = stillHits(placed);
       const end = carry(w, evalEnd, hits, gates);
       if (!end) return null;
       for (const c of clouds) {
         if (c.spec.at < cp - 700) continue; // too far from the gates to matter (the slot tests already covered it)
         for (const side of ["up", "down"] as const) if (!carry(c.before, evalEnd, hits.concat(boltRect(c.spec, side)), gates)) return null;
+      }
+      for (const m of movers) {
+        if (m.spec.at < cp - 700) continue;
+        for (const shift of moverShifts(m.spec, MOVER_TESTS / 2)) if (!carry(m.before, evalEnd, hits, gates, [moverAt(m.spec, shift, ac)])) return null;
       }
       return end;
     };
@@ -360,6 +471,7 @@ export function buildCourse(legIndex: number, seed: number, routeIndex?: number)
       const last = undo.pop()!;
       placed.length = last.count;
       clouds.length = last.clouds;
+      movers.length = last.movers;
       w = last.w;
       fallbacks++;
       end = finish();
