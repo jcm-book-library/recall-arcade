@@ -121,13 +121,13 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
       ),
       h(
         "a",
-        { class: "island-banner", href: "#island" },
+        { class: "island-banner", href: "#" },
         h("span", { class: "island-banner-art", "aria-hidden": "true" }, "🏝️"),
         h(
           "span",
           { class: "island-banner-text" },
-          h("span", { class: "island-banner-title" }, "Explore the island"),
-          h("span", { class: "island-banner-blurb" }, "Walk a pixel hero round an island. Every subject is a building, and the arcade games are stops along the path."),
+          h("span", { class: "island-banner-title" }, "◂ Back to the island"),
+          h("span", { class: "island-banner-blurb" }, "Walk the route round the island. Every subject is a building, and the arcade games are stops along the path."),
         ),
         h("span", { class: "island-banner-go" }, "Walk in ▸"),
       ),

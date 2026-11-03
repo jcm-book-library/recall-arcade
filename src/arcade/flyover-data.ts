@@ -72,10 +72,19 @@ export const TERRAINS: Terrain[] = ["sea", "coast", "mountains", "desert", "city
 //   thunder    a big dark THUNDERCLOUD (leg 3 only) that     floats, in the middle of the sky
 //              zaps lightning straight up or straight down
 //              on a timer (see "thunderclouds" below)
-export type ObstacleType = "storm" | "dust" | "gulls" | "parrots" | "mountain" | "cliff" | "mesa" | "building" | "thunder";
-// `phase`, `period` and `seed` are only used by a thundercloud: they set where it is in its zap cycle
-// (so no two clouds fire together), how long one cycle is, and which side it warns about each time.
-export interface ObstacleSpec { at: number; type: ObstacleType; y: number; w?: number; phase?: number; period?: number; seed?: number }
+//   heli       a news HELICOPTER (leg 3, over a city) that    MOVES: patrols up and down
+//              patrols up and down between the buildings      (see "moving hazards" below)
+//   devil      a DUST DEVIL (leg 3, over a desert), a spinning MOVES: rises from the ground, grows
+//              twister that grows and shrinks and drifts left  and shrinks, drifts slowly left
+//   thermal    a column of rising hot air (leg 3, desert).     NOT a hazard: it only pushes you up
+//              Harmless, but it pushes the plane UP
+export type ObstacleType = "storm" | "dust" | "gulls" | "parrots" | "mountain" | "cliff" | "mesa" | "building" | "thunder" | "heli" | "devil" | "thermal";
+// `phase`, `period` and `seed` are used by the things that run on a timer. A thundercloud: where it is in its zap
+// cycle (so no two clouds fire together), how long one cycle is, and which side it warns about each time.
+// A helicopter or dust devil: where it is in its up-and-down swing, and how long one swing takes. `amp` is only for those two:
+// how far the helicopter swings above and below its middle height (`y`), or how much the dust devil's height
+// grows and shrinks around its average height (`y`).
+export interface ObstacleSpec { at: number; type: ObstacleType; y: number; w?: number; phase?: number; period?: number; seed?: number; amp?: number }
 export interface Rect { x: number; y: number; w: number; h: number }
 
 export const OBSTACLE_INFO: Record<ObstacleType, { ground: boolean; what: string; w?: number; h?: number }> = {
@@ -88,6 +97,9 @@ export const OBSTACLE_INFO: Record<ObstacleType, { ground: boolean; what: string
   mesa: { ground: true, what: "A mesa" },
   building: { ground: true, what: "A tall building" },
   thunder: { ground: false, what: "A thundercloud", w: 60, h: 30 },
+  heli: { ground: false, what: "A news helicopter", w: 36, h: 20 },
+  devil: { ground: true, what: "A dust devil" }, // (it rises from the ground, so it is drawn with the ground things)
+  thermal: { ground: false, what: "A heat thermal", w: 56, h: 144 },
 };
 
 /** How wide a ground obstacle's picture is, from how tall it is. */
@@ -100,6 +112,14 @@ export function groundWidth(o: ObstacleSpec): number {
 
 /** The rectangle the PICTURE covers (x counted from the start of the leg). */
 export function pictureOf(o: ObstacleSpec): Rect {
+  // The three new things are special: a moving thing's "picture" here is the WHOLE AREA it sweeps through
+  // (so the course maker can keep that area tidy); the drawing and the touching use where it is right now.
+  if (o.type === "heli") { const a = o.amp ?? 30; return { x: o.at - 18, y: o.y - a - 12, w: 36, h: 2 * a + 24 }; }
+  if (o.type === "devil") {
+    const [xa, xb] = devilSweep(o), top = o.y + (o.amp ?? 28);
+    return { x: xa - 14, y: WORLD_H - top - 2, w: xb - xa + 28, h: top + 2 };
+  }
+  if (o.type === "thermal") return { x: o.at - THERMAL_W / 2, y: THERMAL_TOP, w: THERMAL_W, h: WORLD_H - THERMAL_TOP };
   const info = OBSTACLE_INFO[o.type];
   if (info.ground) {
     const w = groundWidth(o);
@@ -114,6 +134,11 @@ export function pictureOf(o: ObstacleSpec): Rect {
  * decides if you bump something. (A building really is a box, so its hitbox is nearly all of it.)
  */
 export function hitboxOf(o: ObstacleSpec): Rect {
+  if (o.type === "heli") { const a = o.amp ?? 30; return { x: o.at - HELI_HIT_W / 2, y: o.y - a - HELI_HIT_UP, w: HELI_HIT_W, h: 2 * a + HELI_HIT_H }; } // everywhere its body can be
+  if (o.type === "devil") {
+    const [xa, xb] = devilSweep(o), top = o.y + (o.amp ?? 28);
+    return { x: xa - DEVIL_HIT_W / 2, y: WORLD_H - top + 6, w: xb - xa + DEVIL_HIT_W, h: top - 6 };
+  }
   const p = pictureOf(o);
   switch (o.type) {
     case "mountain": return { x: o.at - p.w * 0.2, y: p.y + 6, w: p.w * 0.4, h: p.h - 6 };
@@ -169,6 +194,89 @@ export function boltRect(o: ObstacleSpec, side: ThunderSide): Rect {
   if (side === "up") return { x, y: -20, w: THUNDER_BOLT_W, h: body.y + 3 + 20 };
   return { x, y: body.y + body.h - 3, w: THUNDER_BOLT_W, h: WORLD_H + 20 - (body.y + body.h - 3) };
 }
+
+// ---------- moving hazards (leg 3): the news helicopter and the dust devil ----------
+// A thundercloud sits still and only its BOLT changes. These two actually MOVE, and the way they move is
+// plain maths of the game clock, so the drawing, the touching and the check script always agree, and the
+// player can learn the rhythm and see it coming a long way off.
+//   HELICOPTER (over a city): hangs in a column of sky between buildings and swings up and down, smoothly,
+//   like a swing: its height is its middle height `y` plus `amp` times a sine wave. One swing takes `period` seconds.
+//   DUST DEVIL (over a desert): a twister standing on the ground. Its HEIGHT grows and shrinks the same way
+//   (average height `y`, plus and minus `amp`), and it drifts slowly LEFT, a bit faster than the ground goes by.
+// Both are fair because a way through always exists (see the check script): the helicopter never covers the
+// very top or the very bottom of the sky, and the dust devil is never so tall that you cannot fly over it
+// (and when it shrinks you can even slip underneath).
+export const HELI_Y: [number, number] = [72, 96]; // the helicopter's middle height
+export const HELI_AMP: [number, number] = [26, 34]; // how far it swings up and down from that
+export const HELI_PERIOD: [number, number] = [5.2, 6.6]; // seconds for one full swing: slow enough to read and time
+export const HELI_HIT_W = 24; // the helicopter's hitbox: the body and the rotor hub, not the thin tail or blades
+export const HELI_HIT_H = 12;
+export const HELI_HIT_UP = 7; // how far the hitbox reaches above the helicopter's middle
+export const DEVIL_Y: [number, number] = [58, 70]; // the dust devil's average height (counted up from the ground)
+export const DEVIL_AMP: [number, number] = [26, 32]; // how much its height grows and shrinks (so about 30 up to 100)
+export const DEVIL_PERIOD: [number, number] = [4.2, 5.4];
+export const DEVIL_DRIFT = 12; // how fast it drifts left, in pixels per second
+export const DEVIL_HIT_W = 14; // the twister's hitbox is a narrow column; the wide swirl at the top is just for show
+export const DEVIL_LEAD = 340; // we follow it from this far before the plane reaches it (about where it comes into view)...
+export const DEVIL_AFTER = 80; // ...to this far after
+/** The plane's speed that the dust devil's drift is worked out with (the jumbo's: dust devils only live on leg 3). */
+export const DEVIL_SPEED = AIRCRAFT.jumbo.speed;
+
+/** Is this one a MOVING hazard? Its place depends on the game clock, so it is not part of the ordinary list of boxes. */
+export const isMover = (o: ObstacleSpec) => o.type === "heli" || o.type === "devil";
+/** Is this one an ordinary still hazard (not a mover, and not the harmless thermal)? */
+export const isStill = (o: ObstacleSpec) => !isMover(o) && o.type !== "thermal";
+
+const swing = (o: ObstacleSpec, time: number, fallbackPeriod: number) => Math.sin(((time + (o.phase ?? 0)) / (o.period ?? fallbackPeriod)) * Math.PI * 2);
+/** The helicopter's middle height at game time `time`. */
+export const heliY = (o: ObstacleSpec, time: number) => o.y + (o.amp ?? 30) * swing(o, time, 6);
+/** The dust devil's height (up from the ground) at game time `time`. */
+export const devilHeight = (o: ObstacleSpec, time: number) => o.y + (o.amp ?? 28) * swing(o, time, 4.8);
+/** Where the dust devil's middle is when the plane is `dist` along the leg: it starts a little to the right and drifts left as the plane comes on. */
+export const devilX = (o: ObstacleSpec, dist: number) => o.at - (DEVIL_DRIFT * (dist - o.at)) / DEVIL_SPEED;
+/** The furthest left and right the dust devil's middle gets while the plane is anywhere near it. */
+function devilSweep(o: ObstacleSpec): [number, number] {
+  return [devilX(o, o.at + DEVIL_AFTER), devilX(o, o.at - DEVIL_LEAD)];
+}
+
+/**
+ * The hitbox of a moving hazard RIGHT NOW: the plane is `dist` along the leg and the game clock says `time`.
+ * (The helicopter's body, or the dust devil's narrow column, as tall as the twister is at this moment.)
+ */
+export function moverBox(o: ObstacleSpec, dist: number, time: number): Rect {
+  if (o.type === "heli") {
+    return { x: o.at - HELI_HIT_W / 2, y: heliY(o, time) - HELI_HIT_UP, w: HELI_HIT_W, h: HELI_HIT_H };
+  }
+  const hgt = devilHeight(o, time);
+  return { x: devilX(o, dist) - DEVIL_HIT_W / 2, y: WORLD_H - hgt + 6, w: DEVIL_HIT_W, h: hgt - 6 };
+}
+
+/**
+ * The swing times to test: `n` evenly spaced points round the mover's cycle, given as the game time when the plane
+ * is level with it. They start at the swing's own zero, so the highest and lowest points (and the middle) are
+ * always among them. The course maker and the check script both fly the plane past the mover at each one:
+ * "whatever moment the plane happens to arrive, is there a way through?"
+ */
+export function moverShifts(o: ObstacleSpec, n: number): number[] {
+  const period = o.period ?? 5;
+  return Array.from({ length: n }, (_, k) => (k * period) / n - (o.phase ?? 0));
+}
+
+// ---------- heat thermals (leg 3, desert) ----------
+// A column of rising hot air over the sand. It is NOT an obstacle: it never costs a strike. While the plane's
+// middle is inside the column it is pushed UP (a gentle extra lift added to its acceleration), so you may drift
+// higher than you meant to. Hold the descend key and you can still go where you like: the push is
+// smaller than what the descend key does. It is shown as a shimmering column.
+export const THERMAL_W = 56; // how wide the column is
+export const THERMAL_TOP = 36; // how high the column reaches (the height of its top, counted from the top of the screen)
+export const THERMAL_LIFT = 120; // the extra upward acceleration inside it (pixels per second, per second). The jumbo's own climb is 170.
+export const THERMAL_CLEAR = 40; // keep other things this far from a column, so the push never shoves you into them
+export const inThermal = (o: ObstacleSpec, dist: number, y: number) => Math.abs(dist - o.at) < THERMAL_W / 2 && y > THERMAL_TOP;
+
+/** Which moving hazard lives over which terrain (leg 3 only). */
+export const SPECIAL_TERRAIN: Partial<Record<Terrain, ObstacleType>> = { city: "heli", desert: "devil" };
+/** Where heat thermals may rise. */
+export const THERMAL_TERRAINS: Terrain[] = ["desert"];
 
 // ---------- the recipes: what lives over each terrain ----------
 // For every kind of terrain: which obstacles can appear, how often (`weight`: a bigger number
@@ -264,6 +372,8 @@ export interface Leg {
   perHop: [number, number]; // how many obstacle groups to make in each hop (fewest, most)
   pairChance: number; // chance (0 to 1) that a group is a PAIR: two obstacles close together
   thunder: [number, number]; // how many thunderclouds to add to each hop (fewest, most). 0 on legs 1 and 2
+  special: [number, number]; // how many MOVING hazards (a helicopter over a city, a dust devil over a desert) to add to each hop that has such land. 0 on legs 1 and 2
+  thermal: [number, number]; // how many heat thermals to add to each hop that has desert. 0 on legs 1 and 2
   glowRight: boolean; // after a go-around, does the right gate glow? (Easy help)
   fuel: FuelRules | null; // null = no fuel on this leg: the three comfort stars are the life bar instead
 }
@@ -272,7 +382,7 @@ export const LEGS: Leg[] = [
   // LEG 1: the Cessna, around Australia. EASY: one thing at a time, nothing tricky, and the
   // right gate glows after a go-around.
   {
-    aircraft: "cessna", level: "Easy", spacing: 600, perHop: [2, 2], pairChance: 0, thunder: [0, 0], glowRight: true, fuel: null,
+    aircraft: "cessna", level: "Easy", spacing: 600, perHop: [2, 2], pairChance: 0, thunder: [0, 0], special: [0, 0], thermal: [0, 0], glowRight: true, fuel: null,
     routes: [
       route("HBA MEL SYD BNE CNS", "sea, mountains, coast, coast"),
       route("SYD MEL ADL PER LEA", "mountains, coast, desert, coast"),
@@ -282,11 +392,11 @@ export const LEGS: Leg[] = [
   },
   // LEG 2: the little jet, from Australia out into the world. INTERMEDIATE: about twice as long as
   // leg 1, busier, some pairs. Each route has named STOPOVERS (a full tank when you fly through the gate);
-  // the other middle stops are transits. Fuel is GENEROUS: holding climb for a whole stretch between
-  // stopovers just about empties the tank, climbing 85% of the time never does.
+  // the other middle stops are transits. Fuel is FAIRLY TIGHT: climbing 65% of the time between
+  // stopovers still leaves a little, but climbing 90% of the time runs the tank dry.
   {
-    aircraft: "jet", level: "Intermediate", spacing: 2070, perHop: [7, 8], pairChance: 0.3, thunder: [0, 0], glowRight: false,
-    fuel: { climbBurn: 2.6, levelBurn: 0.45, strikeCost: 8 },
+    aircraft: "jet", level: "Intermediate", spacing: 2070, perHop: [7, 8], pairChance: 0.3, thunder: [0, 0], special: [0, 0], thermal: [0, 0], glowRight: false,
+    fuel: { climbBurn: 3.25, levelBurn: 0.45, strikeCost: 8 },
     routes: [
       route("MEL CNS MNL HND PEK UBN", "coast+mountains, sea, sea, city, desert", "MNL PEK"),
       route("PER MRU CPT WDH LOS", "sea, coast, desert, sea", "CPT"),
@@ -295,15 +405,17 @@ export const LEGS: Leg[] = [
     ],
   },
   // LEG 3: the jumbo, around the world. HARD: about twice as long as leg 2, more of everything,
-  // including pairs, with wide gaps because the jumbo is slow to turn, plus THUNDERCLOUDS. Tighter
-  // fuel: climbing half the time is fine, but holding climb all the time runs dry between stopovers.
+  // including pairs, with wide gaps because the jumbo is slow to turn, plus THUNDERCLOUDS, and over a
+  // city a news HELICOPTER, over a desert a DUST DEVIL (and sometimes a heat thermal). Tightest fuel:
+  // climbing 45% of the time still leaves a little, climbing 65% of the time runs dry on a long
+  // stretch, and holding climb all the time runs dry on every route.
   {
-    aircraft: "jumbo", level: "Hard", spacing: 2475, perHop: [11, 12], pairChance: 0.4, thunder: [2, 3], glowRight: false,
-    fuel: { climbBurn: 1.8, levelBurn: 0.15, strikeCost: 10 },
+    aircraft: "jumbo", level: "Hard", spacing: 2475, perHop: [11, 12], pairChance: 0.4, thunder: [2, 3], special: [1, 2], thermal: [1, 1], glowRight: false,
+    fuel: { climbBurn: 2.05, levelBurn: 0.15, strikeCost: 10 },
     routes: [
-      route("MEL HKT AUH FCO DFW AKL BNE", "desert, sea, desert, sea, sea, sea", "AUH DFW"),
-      route("SYD LAX YYZ HEL DOH CAN ADL", "sea, mountains, sea, mountains, mountains, desert", "YYZ DOH"),
-      route("PER JNB CAI CDG GRU SCL MEL", "sea, jungle+desert, mountains, sea, mountains, sea", "JNB GRU"),
+      route("MEL HKT AUH FCO DFW AKL BNE", "desert, sea, desert, sea, city+sea, sea+city", "AUH DFW"),
+      route("SYD LAX YYZ HEL DOH CAN ADL", "sea, city+mountains, sea, mountains+desert, desert+city, desert", "YYZ DOH"),
+      route("PER JNB CAI CDG GRU SCL MEL", "sea, jungle+desert, desert+city, city+sea, mountains, sea", "JNB GRU"),
     ],
   },
 ];

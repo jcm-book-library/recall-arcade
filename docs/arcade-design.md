@@ -214,3 +214,12 @@ take-off and landing functions are ready to call at mid-leg stops.
 - **No stopping at middle stops.** A transit gives no fuel and a stopover refills the tank while you keep flying. Leg 2 stopovers: MNL and PEK, CPT, DXB, SCL. Leg 3 stopovers: AUH and DFW, YYZ and DOH, JNB and GRU.
 - **Longer legs.** Leg 2 is about 2× leg 1 (about 92 s) and leg 3 is about 2× leg 2 (about 185 s). There are more obstacles per hop, so the sky is as busy per second as before. Fuel was retuned for the longer hops.
 - **Leg 3 thunderclouds.** A light at the top or bottom warns 0.9 s before a 0.4 s bolt goes that way. The checker makes sure both over and under are passable.
+
+**Flyover play-test round 4 (3 Nov 2026), built:**
+- **City name beside the gates:** on leg 1 only.
+- **New leg 3 hazards:** news helicopters patrolling up and down in city skies, dust devils that pulse tall and short in the desert, and gentle heat thermals that lift you.
+  - The checker flies past each moving hazard at 24 different moments to prove there's always a way through.
+  - City was added to some leg 3 hops so the helicopters have somewhere to fly: LAX, DOH to CAN, CAI to CDG, CDG, DFW, BNE.
+- **Tighter fuel** (`climbBurn` only):
+  - Leg 2 goes from 2.6 to 3.25. It lasts at 65% climbing and runs dry at 90%.
+  - Leg 3 goes from 1.8 to 2.05. It lasts at 45% climbing and runs dry at 65%.

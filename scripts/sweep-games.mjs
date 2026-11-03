@@ -17,9 +17,10 @@ page.on("pageerror", (e) => problems.push(`page error: ${e.message}`));
 await page.route("https://en.wikipedia.org/w/api.php*", (r) => r.fulfill({ json: { query: { pages: [] } } }));
 await page.route("https://raw.githubusercontent.com/**", (r) => r.fulfill({ json: { type: "FeatureCollection", features: [] } }));
 
-await page.goto(base);
+// The home page is the island now; the game cards live on the list page.
+await page.goto(`${base}#list`);
 await page.waitForTimeout(500);
-const ids = await page.$$eval(".card", (cards) => cards.map((c) => c.getAttribute("href").slice(1)));
+const ids = await page.$$eval(".card", (cards) => cards.map((c) => c.getAttribute("href").slice(1)).filter((id) => id && !["pong", "labyrinth", "flyover", "hero", "island", "list"].includes(id)));
 for (const id of ids) {
   await page.goto(base);
   await page.goto(`${base}#${id}`);
@@ -33,11 +34,11 @@ for (const id of ids) {
   const giveUp = await page.$("text=Give up");
   if (giveUp && (await giveUp.isVisible())) await giveUp.click({ force: true, timeout: 3000 }).catch(() => {});
 }
-for (const id of ["pong", "labyrinth", "flyover"]) {
+for (const id of ["pong", "labyrinth", "flyover", "hero", "island", "list"]) {
   await page.goto(`${base}#${id}`);
   await page.waitForTimeout(500);
   if ((await page.evaluate(() => document.documentElement.scrollWidth)) > 392) problems.push(`${id}: sideways scroll`);
 }
-console.log(`${ids.length} game cards + 3 arcade pages checked.`, problems.length ? problems : "No problems.");
+console.log(`${ids.length} game cards + arcade pages checked.`, problems.length ? problems : "No problems.");
 await browser.close();
 process.exit(problems.length ? 1 : 0);

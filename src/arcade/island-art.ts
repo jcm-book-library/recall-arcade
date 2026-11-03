@@ -300,6 +300,52 @@ export function makeStopPad(frame: number) {
   return c;
 }
 
+/** The pad again once its game has been played: green, with a tick, so you can see you have been. */
+export function makeStampedPad() {
+  const c = makeCanvas(TILE, TILE);
+  const g = ctxOf(c);
+  oval(g, 8, 8, 7, 5.5, OUT);
+  oval(g, 8, 8, 6, 4.5, "#3fae6a");
+  oval(g, 8, 8, 4, 3, "#bff0cf");
+  for (const [x, y] of [[5, 8], [6, 9], [7, 10], [8, 9], [9, 8], [10, 7], [11, 6]]) R(g, x, y - 1, 2, 2, "#1f7a44"); // the tick
+  return c;
+}
+
+/**
+ * A gate across the path. `along` says which way the path runs through the tile: "x" for left to
+ * right (the gate then runs top to bottom) and "y" for up and down. Closed: a striped bar with a
+ * padlock. Open: the bar is swung back against the post, so the way is clear.
+ */
+export function makeGate(open: boolean, along: "x" | "y") {
+  const c = makeCanvas(TILE, TILE);
+  const g = ctxOf(c);
+  // We draw as if the path runs left to right. For the other way round, every box is flipped.
+  const B = (x: number, y: number, w: number, h: number, colour: string) => (along === "x" ? R(g, x, y, w, h, colour) : R(g, y, x, h, w, colour));
+  for (const y of [0, 13]) { B(4, y, 8, 3, OUT); B(5, y + 1, 6, 1, "#e8c98b"); B(5, y + 2, 6, 1, WOOD.dark); } // the two posts
+  if (open) {
+    B(0, 2, 16, 4, OUT);
+    for (let x = 1; x < 15; x += 4) { B(x, 3, 2, 2, "#d8402f"); B(x + 2, 3, 2, 2, "#f4efe6"); }
+    B(12, 6, 3, 2, "#3fae6a"); // a small green marker
+  } else {
+    B(5, 3, 6, 10, OUT);
+    for (let y = 0; y < 5; y++) { B(6, 4 + y * 2, 4, 1, y % 2 ? "#f4efe6" : "#d8402f"); B(6, 5 + y * 2, 4, 1, y % 2 ? "#e0d8c4" : "#a82f22"); }
+    B(6, 6, 4, 4, OUT); B(7, 7, 2, 2, "#ffd24a"); B(7, 5, 2, 1, "#ffd24a"); // the padlock
+  }
+  return c;
+}
+
+/** The finish line: a chequered strip across the path. While it is shut there is a rope in front. */
+export function makeFinish(open: boolean, along: "x" | "y") {
+  const c = makeCanvas(TILE, TILE);
+  const g = ctxOf(c);
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) R(g, x * 4, y * 4, 4, 4, (x + y) % 2 ? "#2a2018" : "#f4efe6");
+  if (!open) {
+    if (along === "x") { R(g, 7, 0, 2, 16, "#d8402f"); R(g, 6, 0, 4, 2, OUT); R(g, 6, 14, 4, 2, OUT); }
+    else { R(g, 0, 7, 16, 2, "#d8402f"); R(g, 0, 6, 2, 4, OUT); R(g, 14, 6, 2, 4, OUT); }
+  }
+  return c;
+}
+
 // ---------- the buildings ----------
 // Each drawing function paints one building onto a fresh canvas of (w x h) tiles. `door` is the
 // column of the door tile inside the building, so the doorway is drawn where the map says.
@@ -676,8 +722,54 @@ function mirror(w: number, h: number): HTMLCanvasElement {
   return c;
 }
 
+
+/** The arcade hall: a big blue building with a red striped roof, glowing screens and a double door. */
+function hall(w: number, h: number, door: number): HTMLCanvasElement {
+  const c = makeCanvas(w * TILE, h * TILE);
+  const g = ctxOf(c);
+  const W = w * TILE, H = h * TILE;
+  // the roof, with stripes and a row of bulbs along its edge
+  R(g, 0, 8, W, 20, OUT);
+  R(g, 1, 9, W - 2, 18, "#c0392b");
+  R(g, 1, 9, W - 2, 3, "#e0584a");
+  for (let x = 5; x < W - 4; x += 12) R(g, x, 12, 6, 14, "#a82f22");
+  for (let x = 4; x < W - 2; x += 8) { R(g, x, 25, 3, 3, OUT); R(g, x, 25, 2, 2, x % 16 === 4 ? "#ffd24a" : "#fff1b0"); }
+  // the sign on the roof, in letters twice the usual size
+  const label = "ARCADE";
+  const lw = textWidth(label) * 2;
+  R(g, W / 2 - lw / 2 - 5, 0, lw + 10, 16, OUT);
+  R(g, W / 2 - lw / 2 - 4, 1, lw + 8, 14, "#1c2560");
+  g.fillStyle = "#ffd24a";
+  let cx = W / 2 - lw / 2;
+  for (const ch of label) {
+    const rows = FONT[ch] ?? FONT[" "];
+    for (let i = 0; i < 15; i++) if (rows[i] === "1") g.fillRect(cx + (i % 3) * 2, 3 + Math.floor(i / 3) * 2, 2, 2);
+    cx += 8;
+  }
+  // the walls
+  R(g, 2, 28, W - 4, H - 28, OUT);
+  R(g, 3, 29, W - 6, H - 29, "#3b4a7a");
+  R(g, 3, 29, W - 6, 2, "#5566a0");
+  R(g, 3, 29, 2, H - 29, "#5566a0");
+  // the glowing screens either side of the door
+  for (const x of [10, 28, 74, 92]) {
+    R(g, x - 1, 38, 14, 18, OUT);
+    R(g, x, 39, 12, 16, "#0d1a14");
+    R(g, x + 1, 41, 3, 1, "#86f0a8"); R(g, x + 6, 44, 4, 1, "#ffd24a"); R(g, x + 2, 48, 2, 3, "#ff7a8a"); R(g, x + 7, 50, 3, 2, "#7fc4e6");
+  }
+  // the double door, with a step
+  const dx = door * TILE;
+  R(g, dx + 1, H - 28, 14, 28, OUT);
+  R(g, dx + 2, H - 27, 12, 27, "#ffd24a");
+  R(g, dx + 8, H - 27, 1, 27, OUT);
+  R(g, dx + 4, H - 20, 3, 8, "#7fc4e6"); R(g, dx + 10, H - 20, 3, 8, "#7fc4e6");
+  R(g, dx + 6, H - 12, 1, 2, OUT); R(g, dx + 10, H - 12, 1, 2, OUT);
+  R(g, dx - 2, H - 3, 20, 3, "#cfc7b4");
+  return c;
+}
+
 // ---------- put it all together ----------
-export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "cabinet" | "gate" | "airstrip" | "mirror";
+export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "cabinet" | "gate" | "airstrip" | "mirror" | "hall";
 
 /**
  * Paint one building or stop. `w` and `h` are its size in tiles, found from the map. `door` is the
@@ -696,6 +788,7 @@ export function drawSprite(kind: SpriteKind, w: number, h: number, door: number,
     case "gate": return gate(w, h);
     case "airstrip": return airstrip(w, h, [0, 0], extra?.plane ?? [1, 1]);
     case "mirror": return mirror(w, h);
+    case "hall": return hall(w, h, door);
   }
 }
 
@@ -715,6 +808,9 @@ export interface TileArt {
   bridge: HTMLCanvasElement;
   pier: HTMLCanvasElement[]; // [plain, top edge, bottom edge, both]
   pad: HTMLCanvasElement[];
+  stampedPad: HTMLCanvasElement;
+  gate: Record<string, HTMLCanvasElement>; // "open-x", "shut-y" and so on
+  finish: Record<string, HTMLCanvasElement>;
 }
 
 export function makeTileArt(): TileArt {
@@ -735,5 +831,8 @@ export function makeTileArt(): TileArt {
     bridge: makeBridge(),
     pier: [makePier(false, false), makePier(true, false), makePier(false, true), makePier(true, true)],
     pad: [makeStopPad(0), makeStopPad(1)],
+    stampedPad: makeStampedPad(),
+    gate: { "open-x": makeGate(true, "x"), "shut-x": makeGate(false, "x"), "open-y": makeGate(true, "y"), "shut-y": makeGate(false, "y") },
+    finish: { "open-x": makeFinish(true, "x"), "shut-x": makeFinish(false, "x"), "open-y": makeFinish(true, "y"), "shut-y": makeFinish(false, "y") },
   };
 }

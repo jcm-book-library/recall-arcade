@@ -3,7 +3,9 @@ import { AIRPORT_TABLE } from "../decks/airports-data";
 import {
   AIRCRAFT, LEGS, WORLD_H, GATE_RETRY, TAKEOFF_LEN, LAND_AFTER_GATE, ROLL_OUT, RUNWAY_END_PAD, OBSTACLE_INFO,
   FULL_TANK, GLIDE_SPEED, AMBER_BELOW, RED_BELOW, LOW_FUEL_BEEPS, REFUEL_SECONDS, THUNDER_WARN, THUNDER_BOLT,
+  THERMAL_W, THERMAL_TOP, THERMAL_LIFT,
   checkpointAt, gateSlots, groundWidth, hitboxOf, pictureOf, stopKind, thunderAt, boltRect,
+  isMover, moverBox, heliY, devilHeight, devilX, inThermal,
   type Aircraft, type Leg, type ObstacleSpec, type Rect, type Terrain, type ThunderPhase,
 } from "./flyover-data";
 import { buildCourse, makeRng, mixSeed, pickDecoys, terrainBlend, type Course } from "./flyover-gen";
@@ -32,6 +34,11 @@ import type { Blip } from "./kit";
 //  10. A TIMER THAT REPEATS. On leg 3 a thundercloud runs a cycle: quiet, then a warning light,
 //      then a bolt, then round again. The cycle is worked out from the game clock (see thunderAt in
 //      flyover-data.ts), so it is the same for the drawing and the touching.
+//  11. THINGS THAT MOVE ON THEIR OWN. Also on leg 3: a news helicopter over a city swings up and
+//      down, and a dust devil over a desert grows, shrinks and drifts left. Their place is plain
+//      maths of the game clock too (heliY, devilHeight, devilX, moverBox in flyover-data.ts), so what
+//      you see is exactly what can hit you. Heat thermals are the gentle cousin: not a strike,
+//      just an extra push UP while you are inside the shimmering column.
 
 // ---------- the world ----------
 const W = 320; // the canvas is tiny, then the browser scales it up with crisp pixels
@@ -271,6 +278,8 @@ export function renderFlyover(root: HTMLElement): () => void {
   let ac: Aircraft = AIRCRAFT[leg.aircraft];
   let course: Course;
   let obstacles: Obstacle[] = [];
+  let thermals: ObstacleSpec[] = []; // the heat thermals of this leg (they push the plane up, so the flight code keeps its own short list)
+  let lifted = false; // is the plane inside a thermal right now? (only used to show the little arrows)
   let runways: Runway[] = [];
   let best = loadBest(STORE_KEY);
   let newBest = false;
@@ -362,6 +371,8 @@ export function renderFlyover(root: HTMLElement): () => void {
     course = buildCourse(n, seedBase, forcedRoute);
     forcedRoute = undefined;
     obstacles = course.obstacles.map((spec) => ({ spec, hit: hitboxOf(spec), pic: pictureOf(spec), seen: "quiet" as ThunderPhase }));
+    thermals = course.obstacles.filter((spec) => spec.type === "thermal");
+    lifted = false;
     got = course.route.hops.map(() => false);
     lastStop = -1;
     comfort = MAX_COMFORT;
@@ -565,7 +576,10 @@ export function renderFlyover(root: HTMLElement): () => void {
   // We try heights near the current one first, then further away, and take the first free one.
   function safeYFrom(from: number, lookAhead = 110): number {
     const x0 = dist - ac.hitW / 2 - 2;
-    const near = obstacles.filter((o) => o.hit.x < dist + lookAhead && o.hit.x + o.hit.w > x0).map((o) => o.hit);
+    // (A moving hazard counts where it is right now; a thermal is not in the way of anything.)
+    const near = obstacles
+      .filter((o) => o.spec.type !== "thermal" && o.hit.x < dist + lookAhead && o.hit.x + o.hit.w > x0)
+      .map((o) => (isMover(o.spec) ? moverBox(o.spec, dist, legTime) : o.hit));
     const free = (cy: number) => near.every((r) => cy + ac.hitH / 2 + 4 <= r.y || cy - ac.hitH / 2 - 4 >= r.y + r.h);
     for (let d = 0; d <= ac.floor - ac.ceiling; d += 2) {
       for (const cy of [from - d, from + d]) {
@@ -720,6 +734,10 @@ export function renderFlyover(root: HTMLElement): () => void {
       if (up && !down) accel = -ac.climbAccel;
       else if (down && !up) accel = ac.fallAccel * 3;
       else if (pointerY !== null && !up && !down) accel = 0; // a finger resting on the plane holds it level
+      // A HEAT THERMAL (desert, leg 3) adds a gentle push UP while the plane is inside its column. It is less than the descend key,
+      // so you can always fight it, but it costs you control: you drift higher than you meant to.
+      lifted = thermals.some((t) => inThermal(t, dist, y));
+      if (lifted) accel -= THERMAL_LIFT;
       vy += accel * dt; // acceleration changes the velocity...
       vy -= vy * ac.drag * dt; // ...drag bleeds a little off it...
       vy = clamp(vy, -ac.maxUp, ac.maxDown);
@@ -761,7 +779,10 @@ export function renderFlyover(root: HTMLElement): () => void {
         const z = thunderAt(o.spec, legTime);
         if (z.phase === "bolt" && overlaps(me, boltRect(o.spec, z.side))) { struck = "Lightning! Hold on tight"; break; }
       }
-      if (overlaps(me, o.hit)) struck = `${OBSTACLE_INFO[o.spec.type].what}! Hold on tight`;
+      if (o.spec.type === "thermal") continue; // (harmless: it only pushes)
+      // A moving hazard is where the clock says it is right now; everything else has one fixed box.
+      const box = isMover(o.spec) ? moverBox(o.spec, dist, legTime) : o.hit;
+      if (overlaps(me, box)) struck = `${OBSTACLE_INFO[o.spec.type].what}! Hold on tight`;
     }
     if (struck) turbulence("TURBULENCE!", struck);
     // The sounds of the clouds you can see: a crackle as a warning light starts, a zap as the bolt fires. Each sounds once per cycle.
@@ -1135,6 +1156,7 @@ export function renderFlyover(root: HTMLElement): () => void {
   // --- the obstacles ---
   /** Things that rise from the ground. They all lean on `groundWidth`, so the picture matches the box. */
   function drawGroundObstacle(o: Obstacle, t: number) {
+    if (o.spec.type === "devil") return drawDevil(o, t); // (it has its own height and place, from the clock)
     const sx = Math.round(screenX(o.spec.at));
     const hgt = o.spec.y;
     const top = H - hgt;
@@ -1199,6 +1221,87 @@ export function renderFlyover(root: HTMLElement): () => void {
       case "gulls": return drawFlock(o, t, false);
       case "parrots": return drawFlock(o, t, true);
       case "thunder": return drawThunder(o, t);
+      case "heli": return drawHeli(o, t);
+      case "thermal": return drawThermal(o, t);
+    }
+  }
+
+  // A NEWS HELICOPTER (leg 3, over a city). It hangs in a column of sky and swings up and down on a slow, regular
+  // beat (heliY, the same sum the touching uses). A faint dotted line with a small tick at each end shows the column it
+  // patrols, so you can see the whole swing from far off and time your pass. The rotor is a blur that flickers.
+  function drawHeli(o: Obstacle, t: number) {
+    const cx = Math.round(screenX(o.spec.at));
+    const cy = Math.round(heliY(o.spec, legTime));
+    const amp = o.spec.amp ?? 30;
+    // The patrol column: dots from the top of the swing to the bottom, and a tick at each end.
+    const top = Math.round(o.spec.y - amp - 8), bottom = Math.round(o.spec.y + amp + 8);
+    for (let yy = top; yy <= bottom; yy += 6) px(cx, yy, 1, 2, "rgba(255,255,255,0.35)");
+    px(cx - 3, top, 7, 1, "rgba(255,255,255,0.45)");
+    px(cx - 3, bottom, 7, 1, "rgba(255,255,255,0.45)");
+    // The tail boom, fin and a blinking red light (the tail points right; the nose points back at you).
+    px(cx + 8, cy - 1, 13, 3, "#dfe5f0");
+    px(cx + 19, cy - 6, 3, 7, "#c4cde0");
+    px(cx + 20, cy - 7 + (Math.floor(t * 20) % 2) * 3, 1, 3, "rgba(60,70,90,0.8)"); // the little tail rotor, a flicker
+    if (Math.floor(t * 2) % 2) px(cx + 19, cy - 8, 2, 2, "#ff5a4a");
+    // The body: a white pod with a red stripe, a belly in shade and a big blue window at the front.
+    px(cx - 7, cy - 7, 14, 2, "#f2f4f8");
+    px(cx - 10, cy - 5, 20, 9, "#f2f4f8");
+    px(cx - 8, cy + 4, 16, 2, "#aeb8cc");
+    px(cx - 10, cy + 1, 20, 2, "#e0463a");
+    px(cx - 10, cy - 4, 7, 5, "#6fc8f4");
+    px(cx - 10, cy - 4, 2, 1, "#d9f4ff");
+    px(cx - 10, cy - 4, 1, 5, "#3d7fa8");
+    // The skids and the mast, then the rotor on top: a long blur that flickers between two lengths.
+    px(cx - 8, cy + 8, 17, 1, "#3a4156");
+    px(cx - 5, cy + 6, 1, 3, "#3a4156"); px(cx + 4, cy + 6, 1, 3, "#3a4156");
+    px(cx - 1, cy - 10, 2, 3, "#555d70");
+    const long = Math.floor(t * 24) % 2 === 0;
+    px(cx - (long ? 18 : 13), cy - 11, long ? 36 : 26, 1, "rgba(50,60,80,0.9)");
+    px(cx - (long ? 18 : 13), cy - 12, long ? 36 : 26, 1, "rgba(120,130,150,0.35)");
+  }
+
+  // A HEAT THERMAL (leg 3, desert): a column of rising hot air. Harmless, so it is drawn light and see-through:
+  // a faint warm glow, wavy strands of shimmer drifting UP, and little chevrons rising. They tell you it is pushing up.
+  function drawThermal(o: Obstacle, t: number) {
+    const cx = Math.round(screenX(o.spec.at));
+    const left = cx - THERMAL_W / 2, high = THERMAL_TOP;
+    px(left, high, THERMAL_W, H - high, "rgba(255,214,140,0.08)");
+    px(left - 2, H - 5, THERMAL_W + 4, 5, "rgba(255,140,60,0.28)"); // the hot ground at its foot
+    for (let k = 0; k < 4; k++) { // four wavy strands of shimmer
+      const off = (k - 1.5) * 9;
+      for (let yy = high; yy < H - 4; yy += 2) {
+        if (mod(yy + t * 46 + k * 5, 16) < 7) px(cx + off + Math.sin(yy * 0.16 - t * 4 + k * 1.7) * 3, yy, 1, 2, "rgba(255,236,190,0.55)");
+      }
+    }
+    for (let j = 0; j < 5; j++) { // chevrons climbing the column, fading near the top
+      const span = H - high - 10;
+      const yy = Math.round(H - 10 - mod(t * 30 + j * (span / 5), span));
+      const a = clamp((yy - high) / 40, 0.15, 0.8).toFixed(2);
+      px(cx - 3, yy + 2, 2, 1, `rgba(255,240,200,${a})`); px(cx - 1, yy + 1, 2, 1, `rgba(255,240,200,${a})`); px(cx + 1, yy, 2, 1, `rgba(255,240,200,${a})`);
+      px(cx + 3, yy + 1, 2, 1, `rgba(255,240,200,${a})`); px(cx + 5, yy + 2, 2, 1, `rgba(255,240,200,${a})`);
+    }
+  }
+
+  // A DUST DEVIL (leg 3, over a desert): a spinning twister standing on the ground. It is a funnel of sand, narrow at
+  // the foot and wide at the top, drawn a row at a time. Its HEIGHT grows and shrinks on a regular beat (devilHeight) and it
+  // drifts slowly left (devilX): the same two sums the touching uses. Bands of sand spin round it and specks fly off it.
+  function drawDevil(o: Obstacle, t: number) {
+    const cx = Math.round(screenX(devilX(o.spec, dist)));
+    const hgt = Math.round(devilHeight(o.spec, legTime));
+    px(cx - 14, H - 3, 28, 3, "rgba(201,164,106,0.55)"); // a puff of dust at the foot
+    const halfAt = (r: number) => 3 + 10 * Math.pow(r / hgt, 0.85); // half the width, `r` pixels up
+    const swayAt = (r: number) => Math.sin(legTime * 2.6 + r * 0.08) * 3.5 * (r / hgt);
+    for (let r = 0; r < hgt; r++) {
+      const half = halfAt(r), mid = cx + swayAt(r), yy = H - 1 - r;
+      const band = (Math.floor(r / 2) + Math.floor(t * 14)) % 3; // bands of sand that spin round
+      px(mid - half, yy, half * 2, 1, band === 0 ? "#caa070" : band === 1 ? "#a9794a" : "#dcc08f");
+      px(mid + Math.sin(r * 0.5 - t * 11) * half * 0.7, yy, 2, 1, "#7d552f"); // a dark streak, swirling round and round
+    }
+    px(cx + swayAt(hgt) - 14, H - hgt - 1, 28, 2, "#caa070"); // the wide swirl at the very top
+    px(cx + swayAt(hgt) - 10, H - hgt - 3, 20, 2, "#dcc08f");
+    for (let k = 0; k < 7; k++) { // specks of sand flung out
+      const a = t * 4.2 + k * 0.9, r = mod(t * 22 + k * 19, hgt);
+      px(cx + swayAt(r) + Math.cos(a) * (halfAt(r) + 4), H - 1 - r, 2, 2, k % 2 ? "#e0b983" : "#7d552f");
     }
   }
 
@@ -1443,6 +1546,13 @@ export function renderFlyover(root: HTMLElement): () => void {
     for (const o of obstacles) if (!OBSTACLE_INFO[o.spec.type].ground && onScreen(o.pic)) drawFloatingObstacle(o, t);
     const blink = invuln > 0 && Math.floor(t * 14) % 2 === 0;
     if (!blink) drawPlane(t);
+    if (lifted && phase === "flight") { // little arrows rising off the plane while a thermal pushes it up
+      for (let k = 0; k < 2; k++) {
+        const ay = Math.round(y - 12 - mod(t * 26 + k * 7, 14));
+        px(PLANE_X - 2, ay + 2, 2, 1, "#fff0c8"); px(PLANE_X, ay + 1, 2, 1, "#fff0c8"); px(PLANE_X + 2, ay, 2, 1, "#fff0c8");
+        px(PLANE_X + 4, ay + 1, 2, 1, "#fff0c8"); px(PLANE_X + 6, ay + 2, 2, 1, "#fff0c8");
+      }
+    }
     drawPuffs();
     if (gate) drawGate(gate, true, t);
     ctx.restore();
@@ -1464,7 +1574,8 @@ export function renderFlyover(root: HTMLElement): () => void {
       text(msg, W / 2, 8, 8, "#7fd0ff");
     }
     // The city again, right above the gates as they come in, so the question sits next to the answers.
-    if (gate && state === "playing") {
+    // LEG 1 ONLY: on legs 2 and 3 you must remember which city you are heading for (the NEXT STOP plate and the strip above still say it).
+    if (legIndex === 0 && gate && state === "playing") {
       const sx = screenX(gate.x);
       if (sx > PLANE_X + 20 && sx < W - 10) {
         // Just right of the top sign: the sky there is kept clear around every checkpoint.
@@ -1493,6 +1604,7 @@ export function renderFlyover(root: HTMLElement): () => void {
         ...(leg.fuel ? [{ t: "Climbing burns fuel. Gliding down burns none.", size: 8, colour: "#7fd0ff" }] : []),
         ...(leg.fuel ? [{ t: `Stopovers refuel you: ${course.route.stopovers.map(cityOf).join(", ")}`, size: 8, colour: "#ffd34e" }] : []),
         ...(leg.thunder[1] > 0 ? [{ t: "Thunderclouds: a light shows where the bolt goes", size: 8, colour: "#ff8a7a" }] : []),
+        ...(leg.special[1] > 0 ? [{ t: "City helicopters, desert dust devils, hot air lifts", size: 8, colour: "#ff8a7a" }] : []),
         { t: "Space or tap to go", size: 8, colour: "#e8ecff" },
       ], 300);
     } else if (state === "paused") {
@@ -1613,6 +1725,7 @@ export function renderFlyover(root: HTMLElement): () => void {
         safeY: safeYFrom(y, 150),
         obstacles: course.obstacles,
         thunder: obstacles.filter((o) => o.spec.type === "thunder" && o.spec.at > dist - 100).slice(0, 3).map((o) => ({ dx: o.spec.at - dist, y: o.spec.y, ...thunderAt(o.spec, legTime) })),
+        movers: obstacles.filter((o) => isMover(o.spec) && o.spec.at > dist - 120).slice(0, 3).map((o) => ({ dx: o.spec.at - dist, type: o.spec.type, box: moverBox(o.spec, dist, legTime), spec: o.spec })),
         hazards: obstacles.filter((o) => o.hit.x + o.hit.w > dist).slice(0, 3).map((o) => ({ dx: o.spec.at - dist, type: o.spec.type, midY: o.hit.y + o.hit.h / 2 })),
       }),
       // Start a fresh game on leg `n` (1 to 3), with a chosen route (1-based) and seed, straight into the briefing card.
@@ -1645,6 +1758,19 @@ export function renderFlyover(root: HTMLElement): () => void {
           if (z.phase === want && z.side === side && (want === "quiet" || z.left > (want === "warn" ? THUNDER_WARN : THUNDER_BOLT) - into - 0.03)) { legTime = tt + into; return true; }
         }
         return false;
+      },
+      // Move the game clock so the nth moving hazard ahead is at the top or bottom of its swing (a helicopter's highest or lowest point, a dust devil's tallest or shortest).
+      syncMover: (nth: number, want: "high" | "low") => {
+        const o = obstacles.filter((q) => isMover(q.spec) && q.spec.at > dist)[nth];
+        if (!o) return false;
+        const value = (tt: number) => (o.spec.type === "heli" ? -heliY(o.spec, tt) : devilHeight(o.spec, tt)); // (bigger = higher up the screen)
+        let best = legTime, bestV = value(legTime);
+        for (let tt = legTime; tt < legTime + 12; tt += 0.01) {
+          const v = value(tt);
+          if (want === "high" ? v > bestV : v < bestV) { best = tt; bestV = v; }
+        }
+        legTime = best;
+        return true;
       },
       go: () => { if (state === "briefing") { beginTakeoff(dist); setState("playing"); } },
       // Jump to a distance along the leg, in the air at a safe height (use god(true) to ignore obstacles).

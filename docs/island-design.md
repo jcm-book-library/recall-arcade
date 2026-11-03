@@ -82,3 +82,27 @@ the owner's own picture in `public/arcade/island/`, and the Hero Workshop idea c
 - **Home page:** the "Explore the island" banner.
 - **Coming back:** quizzes and games opened from the island come back to it at the same door, through a sessionStorage key handled in `main.ts`.
 - **Next is step 2:** flags, opening fences, fireworks, the arcade hall.
+
+## The island becomes a route (decided 3 Nov 2026)
+The owner's original vision: a route you walk, not a park to wander. This replaces step 2 above.
+- **A loop you stick to.** Fences or hedges line the path:
+
+  > Start → **Geography** → *Planet Pong* → **Science** → (scenic walk) → **History** → *The Labyrinth* → **Travel** → (scenic walk) → **Nature** → *Flyover* → **Music** → back to Start: **free roam**
+
+  The order is fine for now. The owner will likely re-order it once all the arcade levels exist, so each game relates to the stop next to it (for example, Flyover beside Travel).
+- **A gate across the path at each building.** It opens when that stop's quizzes are done: on Easy, 1 challenge; on Intermediate, 3; on Hard, all of them (targets to be set later). This replaces the old "Labyrinth after 3 subjects, Flyover after 5" rule.
+- **Arcade stops are skippable.** They're a break from the quizzes if you want one, not needed to finish the loop. Playing one earns a badge or stamp.
+- **Empty gaps** are scenic walks with funny signs until more games exist.
+- **Finishing the loop** brings fireworks, the arcade hall, and **free roam**: walk anywhere, everything is open. Easter eggs and the new flying games will live there (rather than as separate games).
+- **The island is the home page.** The list is one button away.
+- **Progress is worked out from the challenges already saved**, so nothing earned is lost.
+
+## Built: the island as a route (3 Nov 2026)
+- **The map:** a 60 × 44 loop in `src/arcade/island-map.ts`, as letters. Edit it, then run `node scripts/check-island.mjs`.
+- **Gates:** each gate belongs to the building before it. They block the path, but walking back is always allowed.
+- **The finish line** at Start lets you through only after all six gates. Stepping on it with every gate open starts free roam: fireworks, the fences vanish, and the arcade hall appears.
+- **The first lap is always Easy** (1 challenge per stop), even for a player with lots of quizzes done already.
+- **Arcade stops** are 1-tile spurs, so they're skippable. Play earns a stamp, saved in `learning-arcade:stamps`.
+- **Saved progress:** `learning-arcade:island` holds `{freeRoam, track}`. The hero's spot is kept in sessionStorage.
+- **Routes:** `#` and `#island` show the island, and `#list` shows the cards.
+- **Testing:** `scripts/sweep-games.mjs` now reads the cards from `#list` and also opens the island, the list and the Hero Workshop.

@@ -2,23 +2,32 @@ import "../island.css";
 import type { Deck } from "../engine/types";
 import { h } from "../ui/dom";
 import { ARCADE_GAMES } from "../ui/home";
-import { ARCADE_OPENS_AT, CHALLENGES, challengeDone, clearedSubjects, rememberTrack, trackFor } from "../engine/progress";
+import { CHALLENGES, challengeDone, clearedSubjects, currentTrack, rememberTrack, trackFor } from "../engine/progress";
+import type { Track } from "../engine/progress";
 import { loadSavedHero, makeHeroSheet } from "./hero-art";
 import { clamp, noise, startLoop } from "./kit";
-import { BUILDINGS, ROWS, SIGNS, STOPS } from "./island-map";
+import { BUILDINGS, HALL, MAP_H, MAP_W, SIGNS, STOPS, blocked, findTiles, gateOrder, tileAt } from "./island-map";
+import type { WalkState } from "./island-map";
 import { TILE, drawSprite, makeFence, makeTileArt } from "./island-art";
 import type { Sprite, SpriteKind } from "./island-art";
 
-// THE ISLAND: the Overworld. A little top-down world that ties the whole arcade together.
-// Each subject is a building, the arcade games are stops along the path, and you walk between
-// them with the arrow keys (or the buttons on a phone). It borrows the Labyrinth's way of
-// moving: the map is a grid of tiles, the hero slides smoothly from tile to tile, a key you tap
-// is remembered for a moment (the "buffer"), and the camera follows. The map itself is in
-// island-map.ts (rows of letters, easy to edit) and the pictures are in island-art.ts.
+// THE ISLAND: the Overworld. A little top-down world that ties the whole arcade together, and
+// it is the front page of the site. It is a ROUTE: a gravel path makes one big loop round the
+// island, lined with fences, and you walk it in order. Each subject is a building on the loop,
+// and just past each building is a GATE that stays shut until you have done enough challenges in
+// that subject. The arcade games are stops beside the path: step onto one to play it, or skip it.
+//
+// It borrows the Labyrinth's way of moving: the map is a grid of tiles, the hero slides smoothly
+// from tile to tile, a key you tap is remembered for a moment (the "buffer"), and the camera
+// follows. The map itself is in island-map.ts (rows of letters, easy to edit) and the pictures
+// are in island-art.ts.
 //
 // What happens when you walk:
 //   - into a DOOR or a SIGNPOST (they are solid, you bump them): a panel opens.
-//   - onto an ARCADE STOP's glowing pad: a panel opens with Play (or Preview if it is still locked).
+//   - into a shut GATE: a panel says what is left to do, with a button to the right quizzes.
+//   - onto an ARCADE STOP's glowing pad: a panel opens with Play and Skip.
+//   - all the way round the loop and back to the start: fireworks, and FREE ROAM. The side fences
+//     vanish, every gate stays open, and the arcade hall appears.
 // While a panel is open the island stands still. Esc, or the Close button, goes back to walking.
 
 // ---------- sizes and speeds ----------
@@ -36,53 +45,80 @@ const KEY_DIRS: Record<string, Dir> = {
   ArrowDown: 0, s: 0, S: 0, ArrowLeft: 1, a: 1, A: 1, ArrowRight: 2, d: 2, D: 2, ArrowUp: 3, w: 3, W: 3,
 };
 
-// ---------- coming back from a quiz or game ----------
-// When you open a quiz or game from the island, we remember where you were standing in
-// sessionStorage (it lasts until the tab closes). Every quiz has a "◂ Arcade" link that goes to
-// the home page ("#"). main.ts asks `islandReturnPending()` when it opens the home page, and if
-// it says yes it shows the island instead, with the hero back at the door he came out of.
-//
-// The `pending` flag is what stops this bouncing you somewhere you did not ask to go. It is
-// switched ON only when you click a link in an island panel, and switched OFF again as soon as
-// the island opens (or when you press "List view"). So: the island's own "List view" button, or
-// typing the home address by hand, always gives you the normal home page.
-const RETURN_KEY = "learning-arcade:island-return";
-interface ReturnSpot { x: number; y: number; facing: Dir; pending: boolean }
-function readReturn(): ReturnSpot | null {
+// ---------- what is remembered ----------
+// Forever (localStorage): whether free roam is on, the track the gates were set for, and the stamps.
+// Only until the tab closes (sessionStorage): where the hero is standing and how many gates he has
+// walked through, so coming back from a quiz puts him exactly where he was.
+const ISLAND_KEY = "learning-arcade:island";
+const STAMPS_KEY = "learning-arcade:stamps";
+const SPOT_KEY = "learning-arcade:island-spot";
+
+interface IslandSave { freeRoam?: boolean; track?: Track }
+function readIsland(): IslandSave {
   try {
-    const v = JSON.parse(sessionStorage.getItem(RETURN_KEY) ?? "null");
-    if (v && Number.isInteger(v.x) && Number.isInteger(v.y) && [0, 1, 2, 3].includes(v.facing)) return v as ReturnSpot;
+    const v = JSON.parse(localStorage.getItem(ISLAND_KEY) ?? "{}");
+    if (v && typeof v === "object") return v as IslandSave;
   } catch {
-    // Storage can be blocked (private windows). Then the island simply starts at the signpost.
+    // Storage can be blocked (private windows). The island then simply starts fresh each time.
+  }
+  return {};
+}
+function writeIsland(v: IslandSave) {
+  try {
+    localStorage.setItem(ISLAND_KEY, JSON.stringify(v));
+  } catch {
+    // Nothing to do: free roam just won't be remembered.
+  }
+}
+function readStamps(): Set<string> {
+  try {
+    const v = JSON.parse(localStorage.getItem(STAMPS_KEY) ?? "[]");
+    if (Array.isArray(v)) return new Set(v.filter((x) => typeof x === "string"));
+  } catch {
+    // see above
+  }
+  return new Set();
+}
+function writeStamps(s: Set<string>) {
+  try {
+    localStorage.setItem(STAMPS_KEY, JSON.stringify([...s]));
+  } catch {
+    // see above
+  }
+}
+
+interface Spot { x: number; y: number; facing: Dir; passed: number }
+function readSpot(): Spot | null {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(SPOT_KEY) ?? "null");
+    if (v && Number.isInteger(v.x) && Number.isInteger(v.y) && [0, 1, 2, 3].includes(v.facing)) return { passed: 0, ...v } as Spot;
+  } catch {
+    // see above
   }
   return null;
 }
-function writeReturn(spot: ReturnSpot) {
+function writeSpot(s: Spot) {
   try {
-    sessionStorage.setItem(RETURN_KEY, JSON.stringify(spot));
+    sessionStorage.setItem(SPOT_KEY, JSON.stringify(s));
   } catch {
-    // Nothing to do: you will start at the signpost next time.
+    // Nothing to do: next time the hero starts at the signpost.
   }
-}
-function clearPending() {
-  const r = readReturn();
-  if (r?.pending) writeReturn({ ...r, pending: false });
-}
-/** True when the player went from the island into a quiz or game and has now come "back". */
-export function islandReturnPending(): boolean {
-  return readReturn()?.pending === true;
 }
 
 // ---------- reading the map ----------
-const MAP_W = ROWS[0].length;
-const MAP_H = ROWS.length;
-const tileAt = (x: number, y: number) => ROWS[y]?.[x] ?? "~";
 const isDigit = (c: string) => c >= "1" && c <= "9";
 
-/** Tiles you can not walk into. Doors, signposts and the scenery round an arcade stop count: you bump them instead. */
-const SOLID = new Set("~wTrFGgSsHhAaNnMmCLYX123456789");
-const STOP_SCENERY = new Set(STOPS.flatMap((s) => [...s.scenery].filter((c) => c !== "_"))); // tarmac (_) is walkable
-const isSolid = (c: string) => SOLID.has(c);
+const START = findTiles("P")[0] ?? [MAP_W >> 1, MAP_H >> 1];
+const GATES = gateOrder(); // the gate tiles, in the order you meet them: gate 0 belongs to BUILDINGS[0], and so on
+const gateIndexAt = new Map<string, number>(GATES.map(([x, y], i) => [`${x},${y}`, i]));
+// Doors by tile ("x,y"), and arcade spots by tile.
+const doorAt = new Map<string, (typeof BUILDINGS)[number]>();
+for (const b of BUILDINGS) for (const [x, y] of findTiles(b.door)) doorAt.set(`${x},${y}`, b);
+const stopAt = new Map<string, (typeof STOPS)[number]>();
+for (const s of STOPS) for (const [x, y] of findTiles(s.spot)) stopAt.set(`${x},${y}`, s);
+const stopByScenery = (c: string) => STOPS.find((s) => s.scenery.includes(c));
+const STOP_SCENERY = new Set(STOPS.flatMap((s) => [...s.scenery]));
+const STAMP_GAMES = STOPS.filter((s) => s.stamp).map((s) => s.game);
 
 /** The smallest rectangle (in tiles) that holds every tile with one of these letters. */
 function bounds(letters: string) {
@@ -93,20 +129,9 @@ function bounds(letters: string) {
   }
   return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
-function findTiles(letter: string) {
-  const out: [number, number][] = [];
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) if (tileAt(x, y) === letter) out.push([x, y]);
-  return out;
-}
 
-const START = findTiles("P")[0] ?? [MAP_W >> 1, MAP_H >> 1];
-// Doors by tile ("x,y"), and arcade spots by tile.
-const doorAt = new Map<string, (typeof BUILDINGS)[number]>();
-for (const b of BUILDINGS) for (const [x, y] of findTiles(b.door)) doorAt.set(`${x},${y}`, b);
-const stopAt = new Map<string, (typeof STOPS)[number]>();
-for (const s of STOPS) for (const [x, y] of findTiles(s.spot)) stopAt.set(`${x},${y}`, s);
-const stopByScenery = (c: string) => STOPS.find((s) => s.scenery.includes(c));
-const buildingByLetter = (c: string) => BUILDINGS.find((b) => b.body === c || b.door === c);
+// Letters the path is made of, so a gate can tell which way the path runs through it.
+const PATHY = new Set("=PbZE%&^p@");
 
 // ---------- the island screen ----------
 export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
@@ -115,33 +140,80 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     width: String(W),
     height: String(H),
     role: "img",
-    "aria-label": "Recall Arcade Island: walk with the arrow keys. Each subject is a building with a door, and the arcade games are stops along the path. The List view button shows the same things as a list.",
+    "aria-label": "Recall Arcade Island: walk the path round the island with the arrow keys. Each subject is a building with a door, and a gate after it opens when you have done enough challenges. The arcade games are stops beside the path. The List view button shows the same things as a list.",
   });
   const padDirs: [Dir, string, string][] = [[3, "up", "▲"], [1, "left", "◀"], [2, "right", "▶"], [0, "down", "▼"]];
   const padButtons = padDirs.map(([, name, arrow]) =>
     h("button", { class: `lab-key ${name}`, type: "button", tabindex: "-1", "aria-label": `Move ${name}` }, arrow),
   );
-  const listLink = h("a", { class: "btn ghost isl-list", href: "#" }, "List view");
+  const listLink = h("a", { class: "btn ghost isl-list", href: "#list" }, "List view");
+  const hud = h("p", { class: "isl-hud" });
+  const toast = h("div", { class: "isl-toast", role: "status", "aria-live": "polite" });
   const screen = h("div", { class: "lab-screen isl-screen" }, canvas);
   const page = h(
     "main",
     { class: "play labyrinth island" },
     h("div", { class: "play-top" }, h("h1", { class: "play-title" }, "Recall Arcade Island"), listLink),
+    hud,
     screen,
     h("div", { class: "lab-controls" }, h("div", { class: "lab-pad", "aria-label": "Direction buttons" }, ...padButtons)),
     h(
       "p",
       { class: "lab-howto muted" },
-      "Arrow keys or WASD to walk (or the buttons on a phone). Walk into a door to see that subject's quizzes. Step onto a glowing pad to play an arcade game. Walk into a sign to read it.",
+      "Arrow keys or WASD to walk (or the buttons on a phone). Follow the path round the island. Walk into a door to see that subject's quizzes. A gate opens once you have done enough challenges there. Step onto a glowing pad to play an arcade game, or just walk past it.",
     ),
+    toast,
   );
   root.replaceChildren(page);
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = false;
 
-  // The arcade games read the track the home page leaves in storage, so leave it here too.
+  // ---------- progress ----------
   const deckSubjects = () => Object.fromEntries(decks.map((d) => [d.id, d.subject ?? ""]));
+  const save = readIsland();
+  // The gates are set for one track and stay that way until the loop is done. (Otherwise clearing
+  // the last subject would flip the track to Intermediate and shut gates you had already earned.)
+  // The FIRST lap is always the Easy track (one challenge per stop), even for a player who has
+  // already played lots of quizzes: the first lap is the Easy playthrough. Harder laps come later.
+  if (!save.track) { save.track = "easy"; writeIsland(save); }
+  // The arcade games read the track the home page leaves in storage, so leave it here too.
   rememberTrack(trackFor(clearedSubjects(deckSubjects()).size));
+
+  let freeRoam = save.freeRoam === true;
+  let passed = 0; // how many gates the hero has walked through, in order, on this trip round
+  const stamps = readStamps();
+  const ws: WalkState = { freeRoam, openGates: new Set(), finishOpen: false };
+
+  interface GateInfo { building: (typeof BUILDINGS)[number]; need: number; done: number; total: number; open: boolean }
+  let gateInfos: GateInfo[] = [];
+  /** Work out each gate from the saved challenges: how many are needed, how many are done. */
+  function refreshGates() {
+    const track = save.track ?? "easy";
+    gateInfos = BUILDINGS.map((b) => {
+      const quizzes = decks.filter((d) => d.subject === b.subject && !d.hidden && CHALLENGES[d.id]);
+      const total = quizzes.length;
+      const need = Math.min(total, track === "easy" ? 1 : track === "intermediate" ? 3 : total);
+      const done = quizzes.filter((d) => challengeDone(d.id)).length;
+      return { building: b, need, done, total, open: freeRoam || done >= need };
+    });
+    syncWalk();
+  }
+  /** Copy the gate states into the walking rules (cheap, so it can run whenever `passed` changes). */
+  function syncWalk() {
+    ws.freeRoam = freeRoam;
+    ws.openGates = new Set(GATES.filter((_, i) => gateInfos[i]?.open).map(([x, y]) => `${x},${y}`));
+    ws.finishOpen = passed >= GATES.length && ws.openGates.size === GATES.length;
+    updateHud();
+  }
+  function updateHud() {
+    const have = STAMP_GAMES.filter((g) => stamps.has(g)).length;
+    const open = gateInfos.filter((g) => g.open).length;
+    hud.replaceChildren(
+      h("span", { class: "isl-hud-item" }, h("span", { class: "isl-hud-icon", "aria-hidden": "true" }, "★"), `Stamps ${have}/${STAMP_GAMES.length}`),
+      h("span", { class: "isl-hud-item" }, h("span", { class: "isl-hud-icon", "aria-hidden": "true" }, "▮"), `Gates open ${open}/${GATES.length}`),
+    );
+    if (freeRoam) hud.append(h("span", { class: "isl-hud-item free" }, "Free roam"));
+  }
 
   // ---------- pictures ----------
   const tiles = makeTileArt();
@@ -174,6 +246,13 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     const plane = findTiles("Y")[0];
     sprites.push({ canvas: drawSprite(s.sprite as SpriteKind, box.w, box.h, 0, { plane: [plane[0] - box.x, plane[1] - box.y] }), ...box });
   }
+  // The arcade hall is only built once free roam is on.
+  let hallSprite: Sprite | null = null;
+  function ensureHall() {
+    if (hallSprite || !findTiles(HALL.body).length) return;
+    const box = bounds(HALL.body + HALL.door);
+    hallSprite = { canvas: drawSprite("hall", box.w, box.h, findTiles(HALL.door)[0][0] - box.x), ...box };
+  }
 
   // ---------- the hero ----------
   // `x, y` is the tile the hero is leaving, `nx, ny` the tile he is heading for, and `t` how long
@@ -186,37 +265,39 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
   let bufferAge = 0;
   let lastStop: string | null = null; // the stop we are standing on, so its panel doesn't keep reopening
 
-  const saved = readReturn();
-  if (saved) {
-    // Back from a quiz or game: stand where we left, and switch the "pending" flag off.
-    Object.assign(player, { x: saved.x, y: saved.y, nx: saved.x, ny: saved.y });
-    facing = saved.facing;
-    if (stopAt.has(`${saved.x},${saved.y}`)) lastStop = `${saved.x},${saved.y}`;
-    if (saved.pending) writeReturn({ ...saved, pending: false });
+  refreshGates();
+  const spot = readSpot();
+  if (spot && !blocked(spot.x, spot.y, ws)) {
+    // Back from a quiz or game (or a trip to the list): stand where we left.
+    Object.assign(player, { x: spot.x, y: spot.y, nx: spot.x, ny: spot.y });
+    facing = spot.facing;
+    passed = Math.min(spot.passed, GATES.length);
+    syncWalk();
+    if (stopAt.has(`${spot.x},${spot.y}`)) lastStop = `${spot.x},${spot.y}`;
   }
+  if (freeRoam) ensureHall();
   const moving = () => player.nx !== player.x || player.ny !== player.y;
+  const rememberSpot = () => writeSpot({ x: player.x, y: player.y, facing, passed });
 
   // ---------- the panels ----------
   let panel: HTMLElement | null = null;
-  let panelReturn: ReturnSpot | null = null; // where to stand when we come back, if a link in this panel is followed
   let panelOpener = "";
 
   function closePanel() {
     if (!panel) return;
     panel.remove();
     panel = null;
-    panelReturn = null;
     heldDirs = [];
     buffer = null;
     canvas.focus({ preventScroll: true });
   }
 
-  function openPanel(opener: string, title: string, body: (Node | null)[], ret: ReturnSpot | null, wide = true) {
+  function openPanel(opener: string, title: string, body: (Node | null)[], wide = true, closeLabel = "Close") {
     closePanel();
     heldDirs = [];
     buffer = null;
     const titleId = "isl-panel-title";
-    const closeBtn = h("button", { class: "btn ghost isl-close", type: "button", onclick: () => closePanel() }, "Close");
+    const closeBtn = h("button", { class: "btn ghost isl-close", type: "button", onclick: () => closePanel() }, closeLabel);
     const box = h(
       "section",
       { class: `isl-panel${wide ? "" : " isl-small"}`, role: "dialog", "aria-modal": "true", "aria-labelledby": titleId, tabindex: "-1" },
@@ -225,17 +306,16 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
       h("div", { class: "isl-actions" }, closeBtn),
     );
     const overlay = h("div", { class: "isl-overlay" }, box);
-    // A click on the dim backdrop closes it. A click on a link inside remembers where to come back to.
+    // A click on the dim backdrop closes it. A click on a "Play" link earns that game its stamp.
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) { closePanel(); return; }
-      const link = (e.target as Element).closest("a[href]");
-      if (link && panelReturn && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) writeReturn({ ...panelReturn, pending: true });
+      const link = (e.target as Element).closest<HTMLElement>("a[data-game]");
+      if (link) addStamp(link.dataset.game ?? "");
     });
     page.append(overlay);
     panel = overlay;
-    panelReturn = ret;
     panelOpener = opener;
-    // Move the keyboard focus into the panel: the first link if there is one, else the Close button.
+    // Move the keyboard focus into the panel: the first link or button if there is one, else the box.
     const first = box.querySelector<HTMLElement>("a[href], button");
     (first ?? box).focus({ preventScroll: true });
   }
@@ -251,9 +331,18 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 
-  function openSubject(b: (typeof BUILDINGS)[number], doorX: number, doorY: number) {
+  /** Playing a game from the island earns its stamp (a proper badge system comes later). */
+  function addStamp(game: string) {
+    if (!STAMP_GAMES.includes(game) || stamps.has(game)) return;
+    stamps.add(game);
+    writeStamps(stamps);
+    updateHud();
+  }
+
+  function openSubject(b: (typeof BUILDINGS)[number]) {
     const list = decks.filter((d) => d.subject === b.subject && !d.hidden); // DECKS order, like the home page
     const doneCount = list.filter((d) => challengeDone(d.id)).length;
+    const gate = gateInfos[BUILDINGS.indexOf(b)];
     const items = list.map((d) => {
       const c = CHALLENGES[d.id];
       const done = challengeDone(d.id);
@@ -269,79 +358,164 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
         ),
       );
     });
+    const gateLine = freeRoam || !gate
+      ? `${list.length} ${list.length === 1 ? "quiz" : "quizzes"}${doneCount ? ` · ${doneCount} challenge${doneCount === 1 ? "" : "s"} done` : ""}`
+      : `${list.length} ${list.length === 1 ? "quiz" : "quizzes"} · gate needs ${gate.need} challenge${gate.need === 1 ? "" : "s"} (${doneCount} done)`;
+    openPanel(`door:${b.id}`, b.title, [h("p", { class: "isl-kicker" }, gateLine), h("ul", { class: "isl-quizzes" }, ...items)]);
+  }
+
+  function openGate(index: number) {
+    const g = gateInfos[index];
+    if (!g) return;
+    const what = g.need === 1 ? "1 challenge" : `${g.need} challenges`;
     openPanel(
-      `door:${b.id}`,
-      b.title,
+      `gate:${g.building.id}`,
+      "The gate",
       [
-        h("p", { class: "isl-kicker" }, `${list.length} ${list.length === 1 ? "quiz" : "quizzes"}${doneCount ? ` · ${doneCount} challenge${doneCount === 1 ? "" : "s"} done` : ""}`),
-        h("ul", { class: "isl-quizzes" }, ...items),
+        h("p", { class: "isl-text isl-sign" }, `Gate closed. Do ${what} at the ${g.building.place} to open it (${g.done} of ${g.need} done).`),
+        h("button", { class: "btn isl-play", type: "button", onclick: () => openSubject(g.building) }, `See the ${g.building.subject.replace(" & ", " and ")} quizzes ▸`),
       ],
-      { x: doorX, y: doorY + 1, facing: 0, pending: false }, // back outside the door, facing out
+      false,
     );
   }
 
-  function openStop(s: (typeof STOPS)[number], x: number, y: number) {
+  function openFinish() {
+    openPanel(
+      "finish",
+      "Finish line",
+      [h("p", { class: "isl-text isl-sign" }, "Finish line. This end only opens for people who have been all the way round the island. The path goes the other way. It is a one-way sort of path.")],
+      false,
+    );
+  }
+
+  function openStop(s: (typeof STOPS)[number]) {
     const game = ARCADE_GAMES.find((g) => g.id === s.game);
     if (!game) return;
-    const need = ARCADE_OPENS_AT[game.id] ?? 0;
-    const have = clearedSubjects(deckSubjects()).size;
-    const open = have >= need;
+    const stamped = stamps.has(game.id);
     openPanel(
       `stop:${game.id}`,
       game.title,
       [
         h("p", { class: "isl-kicker" }, game.kicker ?? "Arcade game"),
         h("p", { class: "isl-text" }, game.blurb),
-        open ? null : h("p", { class: "isl-lock" }, `🔒 Opens after challenges in ${need} subjects (you have ${have}). You can still have a go.`),
-        h("a", { class: "btn isl-play", href: `#${game.id}` }, open ? "Play ▸" : "Preview ▸"),
+        s.stamp ? h("p", { class: `isl-stamp${stamped ? " got" : ""}` }, stamped ? "★ Stamp collected" : "☆ Play it once to earn a stamp. Or skip it: nothing on the path needs it.") : null,
+        h("a", { class: "btn isl-play", href: `#${game.id}`, "data-game": s.stamp ? game.id : false }, s.stamp ? "Play ▸" : "Open ▸"),
       ],
-      { x: stopTile(s, x, y)[0], y: stopTile(s, x, y)[1], facing, pending: false },
+      true,
+      "Skip",
     );
   }
-  /** The spot to stand on when we come back: the pad itself. */
-  function stopTile(s: (typeof STOPS)[number], x: number, y: number): [number, number] {
-    const spot = findTiles(s.spot)[0];
-    return spot ?? [x, y];
+
+  /** The arcade hall's door: every arcade game, and the Hero Workshop. */
+  function openHall() {
+    const items = ARCADE_GAMES.map((g) => {
+      const stampable = STAMP_GAMES.includes(g.id);
+      const got = stamps.has(g.id);
+      return h(
+        "li",
+        {},
+        h(
+          "a",
+          { class: `isl-quiz${got ? " done" : ""}`, href: `#${g.id}`, "data-game": stampable ? g.id : false },
+          h("span", { class: "isl-quiz-name" }, g.title),
+          h("span", { class: "isl-quiz-challenge" }, got ? `★ Stamp collected · ${g.blurb}` : g.blurb),
+          h("span", { class: "isl-go", "aria-hidden": "true" }, "Play ▸"),
+        ),
+      );
+    });
+    openPanel("hall", HALL.title, [h("p", { class: "isl-kicker" }, "Everything is open. Pick one."), h("ul", { class: "isl-quizzes" }, ...items)]);
   }
 
   function openSign(n: number) {
-    openPanel(`sign:${n}`, "Sign", [h("p", { class: "isl-text isl-sign" }, SIGNS[n - 1] ?? "")], null, false);
+    openPanel(`sign:${n}`, "Sign", [h("p", { class: "isl-text isl-sign" }, SIGNS[n - 1] ?? "")], false);
+  }
+
+  // ---------- finishing the loop: free roam ----------
+  interface Spark { x: number; y: number; vx: number; vy: number; age: number; life: number; colour: string }
+  let sparks: Spark[] = [];
+  let burstsLeft = 0;
+  let burstTimer = 0;
+  let toastTimer = 0;
+  const reduceMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const SPARK_COLOURS = ["#ffd24a", "#ff7a8a", "#7fd3ff", "#86f0a8", "#ffffff", "#ffb52b"];
+
+  function burst() {
+    const cx = 40 + Math.random() * (W - 80), cy = 20 + Math.random() * (H * 0.5);
+    const colour = SPARK_COLOURS[Math.floor(Math.random() * SPARK_COLOURS.length)];
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 2, sp = 30 + Math.random() * 40;
+      sparks.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, life: 1.2 + Math.random() * 0.8, colour });
+    }
+  }
+  function tickFx(dt: number) {
+    if (burstsLeft > 0) {
+      burstTimer -= dt;
+      if (burstTimer <= 0) { burst(); burstsLeft--; burstTimer = 0.4; }
+    }
+    for (const p of sparks) {
+      p.age += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 55 * dt; // gravity
+    }
+    if (sparks.length) sparks = sparks.filter((p) => p.age < p.life);
+  }
+  function showToast(text: string) {
+    toast.textContent = text;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => toast.classList.remove("show"), 8000);
+  }
+
+  /** The hero has walked all the way round and back into the start. */
+  function completeLoop() {
+    freeRoam = true;
+    save.freeRoam = true;
+    writeIsland(save);
+    ensureHall();
+    refreshGates();
+    if (!reduceMotion) { burstsLeft = 9; burstTimer = 0; }
+    showToast("You've been all the way round! Free roam is open.");
   }
 
   // ---------- walking ----------
-  /** Try to start a step in direction d. Solid things stop you (doors, signs and arcade scenery open a panel instead). */
+  /** Try to start a step in direction d. Solid things stop you (doors, signs, gates and arcade scenery open a panel instead). */
   function tryStep(d: Dir) {
     facing = d;
     const tx = player.x + DX[d], ty = player.y + DY[d];
     const c = tileAt(tx, ty);
-    if (c !== "~" && doorAt.has(`${tx},${ty}`)) {
-      const b = doorAt.get(`${tx},${ty}`)!;
-      openSubject(b, tx, ty);
-      return;
-    }
+    const key = `${tx},${ty}`;
+    if (doorAt.has(key)) { openSubject(doorAt.get(key)!); return; }
+    if (c === HALL.door) { if (freeRoam) openHall(); return; }
     if (isDigit(c)) { openSign(Number(c)); return; }
-    if (STOP_SCENERY.has(c)) {
+    if (c === "Z" && blocked(tx, ty, ws)) { openGate(gateIndexAt.get(key) ?? 0); return; }
+    if (c === "E" && blocked(tx, ty, ws)) { openFinish(); return; }
+    if (STOP_SCENERY.has(c) && c !== "_" && !stopAt.has(`${player.x},${player.y}`) && blocked(tx, ty, ws)) {
       const s = stopByScenery(c);
-      if (s && isSolid(c)) { openStop(s, player.x, player.y); return; }
+      if (s) { openStop(s); return; }
     }
-    if (isSolid(c)) return;
+    if (blocked(tx, ty, ws)) return;
     player.nx = tx;
     player.ny = ty;
     player.t = 0;
   }
 
-  /** Called when a step finishes: did we just walk onto an arcade pad? */
+  /** Called when a step finishes: gates passed, the finish line, or an arcade pad. */
   function arrive() {
     player.x = player.nx;
     player.y = player.ny;
     player.t = 0;
     stepCount++;
     const key = `${player.x},${player.y}`;
+    const gate = gateIndexAt.get(key);
+    if (gate !== undefined && gate === passed) { passed++; syncWalk(); }
+    if (tileAt(player.x, player.y) === "E" && !freeRoam && ws.finishOpen) completeLoop();
+    rememberSpot();
     const s = stopAt.get(key);
     if (!s) { lastStop = null; return; }
     if (lastStop === key) return;
     lastStop = key;
-    openStop(s, player.x, player.y);
+    openStop(s);
   }
 
   function chooseDir(): Dir | null {
@@ -350,6 +524,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
   }
 
   function update(dt: number) {
+    tickFx(dt);
     bufferAge += dt;
     if (bufferAge > BUFFER_TIME) buffer = null;
     let spare = 0; // time left over when a step finishes part-way through this tick
@@ -378,16 +553,20 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     return c === "p" || c === "@" || c === "C" || (isDigit(c) && [[0, 1], [0, -1], [1, 0], [-1, 0]].some(([a, b]) => tileAt(x + a, y + b) === "p"));
   };
   // Fence pieces join up with their neighbours, so there are 16 shapes. Each is made the first time it is needed.
+  // Free-roam fences count as fence only while they are still standing.
   const fenceShapes = new Map<number, HTMLCanvasElement>();
+  const isFence = (x: number, y: number) => { const c = tileAt(x, y); return c === "F" || (c === "f" && !freeRoam); };
   const fenceFor = (x: number, y: number) => {
-    const l = tileAt(x - 1, y) === "F", r = tileAt(x + 1, y) === "F", u = tileAt(x, y - 1) === "F", dn = tileAt(x, y + 1) === "F";
+    const l = isFence(x - 1, y), r = isFence(x + 1, y), u = isFence(x, y - 1), dn = isFence(x, y + 1);
     const k = (l ? 1 : 0) | (r ? 2 : 0) | (u ? 4 : 0) | (dn ? 8 : 0);
     let c = fenceShapes.get(k);
     if (!c) { c = makeFence(l, r, u, dn); fenceShapes.set(k, c); }
     return c;
   };
+  /** Which way the path runs through a gate or finish tile: "x" (left to right) or "y". */
+  const alongOf = (x: number, y: number): "x" | "y" => (PATHY.has(tileAt(x - 1, y)) || PATHY.has(tileAt(x + 1, y)) ? "x" : "y");
 
-  function drawTile(x: number, y: number, sx: number, sy: number, t: number) {
+  function drawTile(ctx: CanvasRenderingContext2D, x: number, y: number, sx: number, sy: number, t: number) {
     const c = tileAt(x, y);
     const n = noise(x, y, 1);
     const frame = (Math.floor(t * 1.3) + (n % 2)) % 2;
@@ -411,13 +590,23 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
       if (tileAt(x - 1, y) === "~") ctx.fillRect(sx, sy, 2, TILE);
       if (tileAt(x + 1, y) === "~") ctx.fillRect(sx + TILE - 2, sy, 2, TILE);
       if (isDigit(c)) ctx.drawImage(tiles.sign, sx, sy);
-    } else if (c === "=" || c === "P" || c === "%" || c === "&" || c === "^" || c === "_" || c === "Y") {
+    } else if (c === "=" || c === "P" || c === "%" || c === "&" || c === "^" || c === "_" || c === "Y" || c === "Z" || c === "E") {
       ctx.drawImage(tiles.gravel[n % 4], sx, sy);
-    } else if (c === "d") {
+      if (c === "Z") {
+        const open = ws.freeRoam || ws.openGates.has(`${x},${y}`);
+        ctx.drawImage(tiles.gate[`${open ? "open" : "shut"}-${alongOf(x, y)}`], sx, sy);
+      } else if (c === "E") {
+        const open = ws.freeRoam || ws.finishOpen;
+        ctx.drawImage(tiles.finish[`${open ? "open" : "shut"}-${alongOf(x, y)}`], sx, sy);
+      }
+    } else if (c === "d" || ((c === "U" || c === "u") && !freeRoam)) {
+      // The hall's plot is bare dirt until free roam builds the hall on top of it.
       ctx.drawImage(tiles.dirt[n % 3], sx, sy);
+    } else if (c === "U" || c === "u") {
+      grass();
     } else {
       grass();
-      if (c === "." || c === "T" || c === "*" || c === "r" || c === "F" || isDigit(c)) {
+      if (c === "." || c === "T" || c === "*" || c === "r" || c === "F" || c === "f" || isDigit(c)) {
         // a darker green lip where the grass meets the beach
         for (let side = 0; side < 4; side++) {
           const near = tileAt(x + (side === 1 ? 1 : side === 3 ? -1 : 0), y + (side === 0 ? -1 : side === 2 ? 1 : 0));
@@ -427,8 +616,34 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
       if (c === "*") ctx.drawImage(tiles.flowers[n % tiles.flowers.length], sx, sy);
       else if (c === "T") ctx.drawImage(tiles.trees[(n >>> 3) % 3], sx, sy);
       else if (c === "r") ctx.drawImage(tiles.rock, sx, sy);
-      else if (c === "F") ctx.drawImage(fenceFor(x, y), sx, sy);
+      else if (c === "F" || (c === "f" && !freeRoam)) ctx.drawImage(fenceFor(x, y), sx, sy);
       else if (isDigit(c)) ctx.drawImage(tiles.sign, sx, sy);
+    }
+  }
+
+  /** Paint the map, the buildings and the pads onto any canvas, from the camera position (camX, camY). */
+  function paintWorld(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number, t: number) {
+    ctx.fillStyle = "#2f7fc4";
+    ctx.fillRect(0, 0, vw, vh);
+    const x0 = Math.floor(camX / TILE), y0 = Math.floor(camY / TILE);
+    for (let y = y0; y <= y0 + Math.ceil(vh / TILE); y++) {
+      for (let x = x0; x <= x0 + Math.ceil(vw / TILE); x++) {
+        if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) continue;
+        drawTile(ctx, x, y, x * TILE - camX, y * TILE - camY, t);
+      }
+    }
+    const all = freeRoam && hallSprite ? [...sprites, hallSprite] : sprites;
+    for (const s of all) {
+      const sx = s.x * TILE - camX, sy = s.y * TILE - camY;
+      if (sx > vw || sy > vh || sx + s.w * TILE < 0 || sy + s.h * TILE < 0) continue;
+      ctx.drawImage(s.canvas, sx, sy);
+    }
+    // the glowing pads that mark an arcade stop (green with a tick once the game has been played)
+    const pulse = Math.floor(t * 2.5) % 2;
+    for (const [key, s] of stopAt) {
+      const [px, py] = key.split(",").map(Number);
+      const sx = px * TILE - camX, sy = py * TILE - camY;
+      if (sx > -TILE && sy > -TILE && sx < vw && sy < vh) ctx.drawImage(stamps.has(s.game) ? tiles.stampedPad : tiles.pad[pulse], sx, sy);
     }
   }
 
@@ -436,38 +651,26 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     const p = where();
     const camX = Math.round(clamp(p.x * TILE + TILE / 2 - W / 2, 0, MAP_W * TILE - W));
     const camY = Math.round(clamp(p.y * TILE + TILE / 2 - H / 2, 0, MAP_H * TILE - H));
-    ctx.fillStyle = "#2f7fc4";
-    ctx.fillRect(0, 0, W, H);
-    const x0 = Math.floor(camX / TILE), y0 = Math.floor(camY / TILE);
-    for (let y = y0; y <= y0 + VIEW_H; y++) {
-      for (let x = x0; x <= x0 + VIEW_W; x++) {
-        if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) continue;
-        drawTile(x, y, x * TILE - camX, y * TILE - camY, t);
-      }
-    }
-    for (const s of sprites) {
-      const sx = s.x * TILE - camX, sy = s.y * TILE - camY;
-      if (sx > W || sy > H || sx + s.w * TILE < 0 || sy + s.h * TILE < 0) continue;
-      ctx.drawImage(s.canvas, sx, sy);
-    }
-    // the glowing pads that mark an arcade stop
-    const pulse = Math.floor(t * 2.5) % 2;
-    for (const key of stopAt.keys()) {
-      const [px, py] = key.split(",").map(Number);
-      const sx = px * TILE - camX, sy = py * TILE - camY;
-      if (sx > -TILE && sy > -TILE && sx < W && sy < H) ctx.drawImage(tiles.pad[pulse], sx, sy);
-    }
+    paintWorld(ctx, camX, camY, W, H, t);
     // the hero: a little shadow, then the right frame of the picture sheet
     const hx = Math.round(p.x * TILE - camX), hy = Math.round(p.y * TILE - camY);
     ctx.fillStyle = "rgba(0,0,0,0.22)";
     ctx.fillRect(hx + 4, hy + 13, 8, 2);
     const frameNo = moving() ? stepCount % 2 : 0;
     ctx.drawImage(heroSheet, frameNo * heroFrameW, facing * heroFrameH, heroFrameW, heroFrameH, hx, hy, TILE, TILE);
+    // fireworks, drawn over everything
+    for (const sp of sparks) {
+      ctx.globalAlpha = clamp(1 - sp.age / sp.life, 0, 1);
+      ctx.fillStyle = sp.colour;
+      ctx.fillRect(Math.round(sp.x), Math.round(sp.y), 3, 3);
+    }
+    ctx.globalAlpha = 1;
   }
 
   const stopLoop = startLoop({
     playing: () => !panel,
     update,
+    idle: tickFx, // the fireworks keep going behind a panel
     draw,
   });
 
@@ -528,33 +731,67 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     on(btn, "contextmenu", (e: Event) => e.preventDefault());
   });
 
-  // "List view" is a deliberate trip to the home page, so make sure it can't bounce back here.
-  on(listLink, "click", () => clearPending());
-
   // Test helpers. These only exist in the development copy, never in the real site.
   if (import.meta.env.DEV) {
+    const DONE_KEY = "learning-arcade:challenges"; // the list progress.ts keeps of ticked challenges
     (window as any).__island = {
       info: () => ({
         x: player.x, y: player.y, facing, moving: moving(), panel: panel ? panelOpener : null,
         tile: tileAt(player.x, player.y), start: START, size: [MAP_W, MAP_H],
+        freeRoam, passed, track: save.track, stamps: [...stamps], sparks: sparks.length,
+        gates: gateInfos.map((g, i) => ({ id: g.building.id, at: GATES[i], need: g.need, done: g.done, total: g.total, open: g.open })),
+        hud: hud.textContent, toast: toast.classList.contains("show") ? toast.textContent : "",
       }),
       find: (letter: string) => findTiles(letter),
-      teleport: (x: number, y: number, f: Dir = facing) => {
+      /** The whole map in one picture (a PNG data address), for looking at the layout. */
+      overview: () => {
+        const c = document.createElement("canvas");
+        c.width = MAP_W * TILE;
+        c.height = MAP_H * TILE;
+        const g = c.getContext("2d")!;
+        g.imageSmoothingEnabled = false;
+        paintWorld(g, 0, 0, c.width, c.height, 0);
+        return c.toDataURL("image/png");
+      },
+      teleport: (x: number, y: number, f: Dir = facing, gatesPassed?: number) => {
         closePanel();
         Object.assign(player, { x, y, nx: x, ny: y, t: 0 });
         facing = f;
+        if (gatesPassed !== undefined) { passed = gatesPassed; syncWalk(); }
         lastStop = stopAt.has(`${x},${y}`) ? `${x},${y}` : null;
+        rememberSpot();
       },
       close: () => closePanel(),
       doors: () => [...doorAt.entries()].map(([k, b]) => ({ at: k, id: b.id })),
       stops: () => [...stopAt.entries()].map(([k, s]) => ({ at: k, game: s.game })),
+      gates: () => GATES,
+      /** Pin the track the gates use ("easy" needs 1 challenge, "intermediate" 3, "hard" all). */
+      setTrack: (t: Track) => { save.track = t; writeIsland(save); refreshGates(); },
+      /** Tick the first `n` challenges of a subject, as if they had been done. */
+      giveChallenges: (subject: string, n: number) => {
+        const ids = decks.filter((d) => d.subject === subject && !d.hidden && CHALLENGES[d.id]).slice(0, n).map((d) => d.id);
+        const done = new Set<string>(JSON.parse(localStorage.getItem(DONE_KEY) ?? "[]"));
+        ids.forEach((id) => done.add(id));
+        localStorage.setItem(DONE_KEY, JSON.stringify([...done]));
+        refreshGates();
+        return ids;
+      },
+      setFreeRoam: (on: boolean) => {
+        freeRoam = on;
+        save.freeRoam = on;
+        writeIsland(save);
+        if (on) ensureHall();
+        refreshGates();
+      },
     };
     undo.push(() => { delete (window as any).__island; });
   }
 
-  // Cleanup: stop the loop and remove every listener when leaving this screen.
+  // Cleanup: remember where the hero is, stop the loop and remove every listener when leaving this screen.
   return () => {
+    rememberSpot();
     disposed = true;
+    clearTimeout(toastTimer);
     stopLoop();
     undo.forEach((f) => f());
   };
