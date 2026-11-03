@@ -71,3 +71,14 @@ the owner's own picture in `public/arcade/island/`, and the Hero Workshop idea c
 3. Tap-to-walk (my pick) and keys, or keys and pad only?
 4. Anything to find while walking? **Decided: later.** Easter-egg hidden items are on the cards,
    but not in v1.
+
+## Built: island v1 (3 Nov 2026)
+`#island`.
+- **Files:**
+  - `src/arcade/island.ts`: the engine and panels.
+  - `src/arcade/island-map.ts`: the map as letters. Edit it, then run `node scripts/check-island.mjs`.
+  - `src/arcade/island-art.ts`: the tiles and buildings, drawn in code.
+  - `src/island.css`.
+- **Home page:** the "Explore the island" banner.
+- **Coming back:** quizzes and games opened from the island come back to it at the same door, through a sessionStorage key handled in `main.ts`.
+- **Next is step 2:** flags, opening fences, fireworks, the arcade hall.
