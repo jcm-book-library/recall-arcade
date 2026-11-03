@@ -1,4 +1,6 @@
-# The island (the Overworld): design proposal (3 Nov 2026)
+# The island (the Overworld): design (3 Nov 2026)
+
+**Decided 3 Nov:** the owner said yes to the proposals, with one change: you get around with the keys only (the on-screen arrow pad on phones), so people try the engine before the arcade games. No tap-to-walk. Hidden easter-egg items come later, not in v1.
 
 The place that ties Recall Arcade together. Your pixel hero walks around an island. Each subject is
 a building, and the arcade games are stops along the path. It grows as you clear challenges. Labels:
@@ -13,8 +15,8 @@ a building, and the arcade games are stops along the path. It grows as you clear
   you already know. About 48 × 32 tiles, so the camera scrolls a little but you can't get lost.
 
 ## Getting around
-- **Proposed:** **tap or click a building** and the hero walks there by himself along the path (the
-  computer finds the route). Arrow keys or WASD, or the on-screen pad, still work for walking freely.
+- **Decided:** walk with the arrow keys or WASD, or the on-screen arrow pad on a phone. No tap-to-walk:
+  the island is where people get the feel of the game engine before the arcade games.
 - Walk into a door, and a **sign** pops up listing that subject's quizzes, each with its challenge and a
   tick if it's done. Pick one to play. "◂ Island" on the quiz screen brings you back to the same spot.
 - Walk onto an arcade stop to play that game. A locked stop has a fence and a sign ("Clear a
@@ -67,5 +69,5 @@ the owner's own picture in `public/arcade/island/`, and the Hero Workshop idea c
 1. Are the buildings right (see the table)?
 2. Should the island be the front door, or a banner on the home page (my pick)?
 3. Tap-to-walk (my pick) and keys, or keys and pad only?
-4. Anything to find while walking? For example a hidden gem per subject, as a light collectable
-   (step 2 or later).
+4. Anything to find while walking? **Decided: later.** Easter-egg hidden items are on the cards,
+   but not in v1.
