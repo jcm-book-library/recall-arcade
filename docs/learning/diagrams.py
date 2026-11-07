@@ -156,3 +156,58 @@ ax.text(-0.55,1.7,"owed\ntime",ha="right",va="center",fontsize=8,color=MUTED)
 ax.text(5.9,-1.15,"Pale = time owed when the picture starts.  Solid = what's left after paying whole slices.",ha="center",fontsize=9,color=MUTED)
 ax.text(5.9,-1.6,"Pattern: 0, 1, 1, 1, 1, 1, then again. 5 updates every 6 pictures = exactly 120 a second.",ha="center",fontsize=9,color=INK,weight="bold")
 save(fig,"d11-owed-jar.png")
+
+# 12. The mirror trick (kit.ts paint): the Labyrinth bat, half typed, half reflected
+labsrc=open("/home/user/recall-arcade/src/arcade/labyrinth.ts").read()
+blk=labsrc[labsrc.index("const BAT_WINGS_UP = ["):]; blk=blk[:blk.index("];")]
+half=re.findall(r'"([^"]*)"',blk)
+batpal={"o":"#120d18","p":"#5b3f7a","b":"#3a2a4f","r":"#ff4a3a"}
+full=[r+r[::-1] for r in half]
+fig,axs=plt.subplots(1,3,figsize=(10,4.2),gridspec_kw={"width_ratios":[1,0.35,2]})
+a=axs[0]; a.set_xlim(0,8); a.set_ylim(len(half),0); a.axis("off"); a.set_title("What we type (left half only)",fontsize=10,weight="bold")
+for y,row in enumerate(half):
+    for x,ch in enumerate(row):
+        a.add_patch(Rectangle((x,y),1,1,fc=batpal.get(ch,"#ffffff"),ec="#dddddd",lw=.5))
+        a.text(x+.5,y+.55,ch,ha="center",va="center",fontsize=7,color="white" if ch in batpal else "#bbbbbb")
+m=axs[1]; m.axis("off"); m.set_xlim(0,1); m.set_ylim(0,1)
+m.add_patch(FancyArrowPatch((0.05,.5),(0.95,.5),arrowstyle="-|>",mutation_scale=25,lw=3,color=INK))
+m.text(.5,.62,"mirror",ha="center",fontsize=10,weight="bold"); m.text(.5,.36,"each row +\nits reverse",ha="center",fontsize=8,color=MUTED,va="top")
+b=axs[2]; b.set_xlim(0,16); b.set_ylim(len(full),0); b.axis("off"); b.set_title("What appears in the game",fontsize=10,weight="bold")
+for y,row in enumerate(full):
+    for x,ch in enumerate(row):
+        if ch in batpal: b.add_patch(Rectangle((x,y),1,1,fc=batpal[ch],ec="none"))
+b.plot([8,8],[0,len(full)],color=ACC,lw=2,ls="--"); b.text(8,len(full)-.3,"fold line",ha="center",fontsize=8,color=ACC)
+fig.text(.5,.02,"o = outline   p = wing   b = body   r = red eye   . = see-through.  Half the typing, and both sides always match.",ha="center",fontsize=8.5,color=MUTED)
+save(fig,"d12-mirror-bat.png")
+
+# 13. noise() vs Math.random: speckled floor that never flickers
+def knoise(x,y,seed):
+    M=0xffffffff
+    def s32(v): v&=M; return v-(1<<32) if v>>31 else v
+    n=s32(x*374761393+y*668265263+seed*144665)
+    n=s32((((n&M)^((n&M)>>13))*1274126177))
+    return ((n&M)^((n&M)>>16))&M
+FL={"floor":"#2d2923","lit":"#5a5244","dark":"#151210","edge":"#0c0b09"}  # floor colours, contrast boosted so the speckles show
+def floor(seed,rand=None):
+    import random
+    g=[]
+    for y in range(16):
+        r=[]
+        for x in range(16):
+            if x==0 or y==0: r.append(FL["edge"]); continue
+            a=rand.randrange(9) if rand else knoise(x,y,seed)%9
+            b=rand.randrange(13) if rand else knoise(x,y,seed+5)%13
+            r.append(FL["lit"] if a==0 else FL["dark"] if b==0 else FL["floor"])
+        g.append(r)
+    return g
+import random
+fig,axs=plt.subplots(2,3,figsize=(8,6.2)); fig.subplots_adjust(hspace=0.45)
+for i in range(3):
+    for row,(grid,lab) in enumerate([(floor(0),f"noise, picture {i+1}"),(floor(0,random.Random(i+1)),f"Math.random, picture {i+1}")]):
+        a=axs[row][i]; a.axis("off"); a.set_xlim(0,16); a.set_ylim(16,0)
+        for y in range(16):
+            for x in range(16): a.add_patch(Rectangle((x,y),1,1,fc=grid[y][x],ec="none"))
+        a.set_title(lab,fontsize=9,color=GREEN if row==0 else RED,weight="bold")
+fig.text(.5,.5,"Same spot + same seed = same speckles, every picture. Calm floor.",ha="center",fontsize=9.5,color=GREEN,weight="bold")
+fig.text(.5,.03,"A fresh random roll every picture = speckles jump about 60+ times a second. Looks like TV static.",ha="center",fontsize=9.5,color=RED,weight="bold")
+save(fig,"d13-noise-floor.png")
