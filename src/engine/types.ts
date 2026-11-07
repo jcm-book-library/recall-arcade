@@ -33,6 +33,8 @@ export interface DeckOption {
   label: string;
   hint: string;
   default: boolean;
+  /** Only changes how the board looks, not the game, so it's left out of the best-score key. */
+  display?: boolean;
 }
 
 export interface ProgressGroup {

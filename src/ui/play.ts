@@ -218,7 +218,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   }
 
   const bestKey = () =>
-    [variant.id, ...deck.options.filter((o) => options[o.id]).map((o) => o.id)].join("+");
+    [variant.id, ...deck.options.filter((o) => options[o.id] && !o.display).map((o) => o.id)].join("+");
 
   function selectItems(): Item[] {
     let list = deck.items.filter(variant.filter);
