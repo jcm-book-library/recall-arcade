@@ -1,6 +1,9 @@
 import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
+import type { Period } from "../decks/periods";
+import { periodYears } from "../decks/periods";
+import "./eras.css";
 
 const ROUND = 10;
 
@@ -11,6 +14,12 @@ export interface Era {
   /** Years where the axis bends. Each gap gets an equal share of the width. */
   breaks: number[];
   ticks: number[];
+  /** A small heading shown above this chip (and the ones after it) on the setup screen. */
+  heading?: string;
+  /** Picks the items for this round, when "has the era tag" isn't the rule ("Inside World War II"). */
+  filter?: (item: Item) => boolean;
+  /** A round that zooms in on one period: the same period never repeats, so allow it here. */
+  inside?: Period;
 }
 
 export const yearText = (y: number) => (y < 0 ? `${-y} BC` : y < 1000 ? `AD ${y}` : `${y}`);
@@ -28,7 +37,21 @@ export function score(guess: number, from: number, to = from) {
   return Math.round(100 * Math.max(0, 1 - off / tol));
 }
 
-function scale(era: Era) {
+/**
+ * The score for one guess. Closeness first (see score above). Then, if the event belongs to a
+ * period and the guess lands anywhere inside that period, it is worth at least 70: you knew
+ * the right part of history even if the year is off. The higher of the two counts.
+ */
+export function scoreFor(guess: number, item: Item): number {
+  const from = (item.data!.from ?? item.data!.year) as number;
+  const to = (item.data!.to ?? item.data!.year) as number;
+  const base = score(guess, from, to);
+  const period = item.data!.period as Period | undefined;
+  if (period && guess >= period.start && guess <= period.end) return Math.max(base, 70);
+  return base;
+}
+
+export function scale(era: Pick<Era, "breaks">) {
   const b = era.breaks;
   const seg = 1 / (b.length - 1);
   return {
@@ -96,14 +119,31 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
     ),
   );
 
+  const poolOf = (e: Era) => deck.items.filter((i) => (e.filter ? e.filter(i) : e.id === "all" || i.tags.includes(e.id)));
+
+  /** Picks a round's items. No two come from the same period, so one war can't fill the round. */
+  function draw(e: Era): Item[] {
+    const picked: Item[] = [];
+    const usedPeriods = new Set<string>();
+    for (const item of shuffle(poolOf(e))) {
+      const p = item.data!.period as Period | undefined;
+      if (p && !e.inside && usedPeriods.has(p.id)) continue;
+      if (p) usedPeriods.add(p.id);
+      picked.push(item);
+      if (picked.length === ROUND) break;
+    }
+    return picked;
+  }
+
   function renderSetup() {
-    const pool = deck.items.filter((i) => i.tags.includes(era.id) || era.id === "all");
+    const pool = poolOf(era);
     const best = bestFor(deck.id, era.id);
     setup.replaceChildren(
       h(
         "div",
         { class: "chips", role: "group", "aria-label": "Choose an era" },
-        ...eras.map((e) =>
+        ...eras.flatMap((e, n) => [
+          ...(e.heading && e.heading !== eras[n - 1]?.heading ? [h("p", { class: "chip-heading" }, e.heading)] : []),
           h(
             "button",
             {
@@ -117,12 +157,12 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
             },
             e.starter ? `★ ${e.label}` : e.label,
           ),
-        ),
+        ]),
       ),
       h(
         "div",
         { class: "setup-row" },
-        h("p", { class: "muted tl-how" }, `${text.how} ${ROUND} at a time from ${pool.length}, up to 100 points each for being close.`),
+        h("p", { class: "muted tl-how" }, `${text.how} ${Math.min(ROUND, pool.length)} at a time from ${pool.length}, up to 100 points each for being close.${pool.some((i) => i.data!.period) ? " Landing inside the right period always earns at least 70." : ""}`),
         h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
         h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
       ),
@@ -130,8 +170,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
   }
 
   function start() {
-    const pool = deck.items.filter((i) => era.id === "all" || i.tags.includes(era.id));
-    round = shuffle(pool).slice(0, ROUND);
+    round = draw(era);
     index = 0;
     total = 0;
     results.length = 0;
@@ -160,6 +199,10 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
     });
     const bar = h("div", { class: "tl-bar" });
     track.append(bar);
+    // On the reveal, a shaded band shows the period the event belongs to.
+    const band = h("span", { class: "tl-period" });
+    band.hidden = true;
+    track.append(band);
     for (const t of era.ticks) {
       track.append(h("span", { class: "tl-tick", style: `left:${sc.toPct(t)}%` }, h("span", {}, yearText(t))));
     }
@@ -178,6 +221,8 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
     const readout = h("p", { class: "tl-readout" }, "Tap or drag on the line to place your guess.");
     const lockBtn = h("button", { type: "button", class: "btn primary", disabled: true }, "Lock in");
     const feedback = h("p", { class: "tl-feedback", "aria-live": "polite" });
+    const bandLabel = h("p", { class: "tl-period-label" });
+    bandLabel.hidden = true;
 
     const place = (year: number) => {
       if (locked) return;
@@ -219,7 +264,16 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
       locked = true;
       const from = fromOf(item);
       const to = toOf(item);
-      const points = score(guess, from, to);
+      const points = scoreFor(guess, item);
+      const period = item.data!.period as Period | undefined;
+      if (period) {
+        const a = sc.toPct(period.start);
+        band.hidden = false;
+        band.style.left = `${a}%`;
+        band.style.width = `${sc.toPct(period.end) - a}%`;
+        bandLabel.hidden = false;
+        bandLabel.replaceChildren(h("span", { class: "tl-swatch", "aria-hidden": "true" }), `${period.name}, ${periodYears(period)}`);
+      }
       total += points;
       results.push({ item, guess, points });
       const isSpan = from !== to;
@@ -244,7 +298,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
           : `They lived ${about}${span(item)}. You were ${off} ${off === 1 ? "year" : "years"} ${guess < from ? "before they were born" : "after they died"}. +${points}`
         : off === 0
           ? `Spot on: ${yearText(from)}. +${points}`
-          : `It was ${about}${yearText(from)}. You were ${off} ${off === 1 ? "year" : "years"} off. +${points}`;
+          : `It was ${about}${yearText(from)}. You were ${off} ${off === 1 ? "year" : "years"} off${period && score(guess, from, to) < 70 && points >= 70 ? `, but inside ${period.name}` : ""}. +${points}`;
       lockBtn.textContent = index + 1 < round.length ? "Next ▸" : "See results ▸";
       lockBtn.onclick = next;
       scoreLine.textContent = `Score: ${total}`;
@@ -262,7 +316,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
         item.data!.note ? h("span", { class: "muted" }, item.data!.note as string) : null,
         item.data!.approx ? h("span", { class: "muted tl-approx" }, "The exact year is debated, so close counts.") : null,
       ),
-      h("div", { class: "tl-wrap" }, track),
+      h("div", { class: "tl-wrap" }, track, bandLabel),
       h("div", { class: "tl-actions" }, readout, scoreLine, lockBtn),
       feedback,
     );

@@ -1,0 +1,193 @@
+/* Eras & Dynasties, and the period band on Big Moments' timeline. Uses the colours from style.css. */
+
+/* ----- Big Moments: the period shown as a shaded band on the reveal ----- */
+.tl-period {
+  position: absolute;
+  top: 4px;
+  height: 26px;
+  border-radius: 3px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--nucleus-edge) 28%, transparent);
+  border: 1px solid color-mix(in srgb, var(--nucleus-edge) 70%, transparent);
+}
+.tl-period-label {
+  margin: 34px 0 -22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.tl-swatch {
+  width: 18px;
+  height: 12px;
+  border-radius: 3px;
+  flex: none;
+  background: color-mix(in srgb, var(--nucleus-edge) 28%, transparent);
+  border: 1px solid var(--nucleus-edge);
+}
+
+/* ----- Eras & Dynasties ----- */
+.er-game {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.er-learn {
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: var(--r);
+}
+.er-learn summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.er-learn p {
+  margin: 8px 0 0;
+  max-width: 70ch;
+}
+.er-row {
+  justify-content: center;
+}
+.er-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.er-results li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 2px 12px;
+  padding: 6px 8px;
+  border-left: 4px solid var(--line);
+}
+.er-results li.good {
+  border-color: var(--found);
+}
+.er-results li.ok {
+  border-color: var(--accent);
+}
+.er-results li.bad {
+  border-color: var(--missed);
+}
+.er-results .tl-y {
+  overflow-wrap: anywhere;
+}
+.er-results .tl-e {
+  font-variant-numeric: tabular-nums;
+}
+.er-results .tl-g {
+  grid-column: 1 / -1;
+}
+
+/* The two-handled line for "Place the era" */
+.er-wrap {
+  padding: 28px 30px 18px;
+  overflow: hidden;
+}
+.er-track {
+  position: relative;
+  height: 124px;
+  touch-action: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.er-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.er-tick {
+  position: absolute;
+  top: 28px;
+  width: 2px;
+  height: 12px;
+  background: var(--muted);
+  transform: translateX(-1px);
+}
+.er-tick span {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.er-mine {
+  position: absolute;
+  top: 24px;
+  height: 20px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+  border: 2px solid var(--accent);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.er-true {
+  position: absolute;
+  top: 52px;
+  height: 18px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--found) 70%, transparent);
+  border: 2px solid var(--found);
+  box-sizing: border-box;
+  min-width: 4px;
+  pointer-events: none;
+}
+.er-true::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 20px;
+  left: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--found);
+  white-space: nowrap;
+}
+/* A handle is a tall, easy-to-grab bar; its invisible padding makes the touch target about 44px wide */
+.er-handle {
+  position: absolute;
+  top: 10px;
+  width: 14px;
+  height: 48px;
+  margin-left: -7px;
+  border-radius: 4px;
+  cursor: ew-resize;
+  background: var(--accent);
+  border: 2px solid var(--ink);
+  box-sizing: border-box;
+  touch-action: none;
+}
+.er-handle::before {
+  content: "";
+  position: absolute;
+  inset: 0 -15px;
+}
+.er-handle:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+.er-track[data-locked] .er-handle {
+  cursor: default;
+}
+@media (max-width: 480px) {
+  .er-wrap {
+    padding: 28px 24px 14px;
+  }
+  .er-tick span {
+    font-size: 0.68rem;
+  }
+}
