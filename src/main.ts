@@ -28,6 +28,7 @@ import { lifeDeck } from "./decks/choice-decks";
 import { famousForDeck, mythPairsDeck } from "./decks/pairs-decks";
 import { animalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/picture-decks";
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
+import { nrlDeck, aflDeck, footballDeck, motorsportDeck, olympicsDeck, sprintDeck } from "./decks/sport";
 import { tailFinsDeck } from "./decks/tail-fins";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
@@ -51,6 +52,8 @@ const DECKS: Deck[] = [
   animalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
+  // Sport
+  nrlDeck, aflDeck, footballDeck, motorsportDeck, olympicsDeck, sprintDeck,
   // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells), Countries (#neighbours),
   // The Scale of Things (#units, the old quiz, kept so its saved scores still work) or Eras & Dynasties (#empires, the map quiz)
   mythPairsDeck, mythWhoDeck, mythSymbolsDeck, cellsDeck, neighboursDeck, unitsDeck, empiresDeck,

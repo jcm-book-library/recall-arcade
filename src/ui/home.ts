@@ -3,7 +3,7 @@ import { gamesFor } from "../engine/storage";
 import { h } from "./dom";
 import { ARCADE_OPENS_AT, CHALLENGES, SUBJECT_NAMES, challengeDone, clearedSubjects, rememberTrack, trackFor } from "../engine/progress";
 
-// The subjects, six quizzes each. Planned ones would show as "coming".
+// The subjects, about six quizzes each. Planned ones would show as "coming".
 const SUBJECTS: { name: string; planned: string[] }[] = [
   { name: "Geography", planned: [] },
   { name: "Science", planned: [] },
@@ -11,6 +11,7 @@ const SUBJECTS: { name: string; planned: string[] }[] = [
   { name: "Travel & Transport", planned: [] },
   { name: "Nature & Animals", planned: [] },
   { name: "Music", planned: [] },
+  { name: "Sport", planned: [] },
 ];
 
 /** The quiz's Easy challenge, ticked once it's done. */
@@ -144,7 +145,7 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
         h(
           "p",
           { class: "arcade-how" },
-          "Do the challenge on any one quiz in a subject to count that subject. More subjects open more arcade games. All six moves you up to the Intermediate track.",
+          "Do the challenge on any one quiz in a subject to count that subject. More subjects open more arcade games. Every subject done moves you up to the Intermediate track.",
         ),
         h("div", { class: "cards" }, ...ARCADE_GAMES.map((g) => arcadeCard(g, cleared.size))),
       ),

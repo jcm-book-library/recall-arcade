@@ -76,9 +76,16 @@ export const CHALLENGES: Record<string, Challenge> = {
   rhythm: count(3, "Name 3 note lengths"),
   symbols: count(5, "Name 5 signs"),
   ear: share(0.6, "Get 60% right"),
+  // Sport
+  nrl: share(0.5, "Score half marks in any round"),
+  afl: share(0.5, "Score half marks in any round"),
+  football: share(0.5, "Score half marks in any round"),
+  motorsport: share(0.5, "Score half marks in any round"),
+  olympics: share(0.5, "Score half marks in any round"),
+  sprint: share(0.5, "Score half marks in any round"),
 };
 
-export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music"];
+export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music", "Sport"];
 
 // Ticked challenges are also kept in their own list, because storage.ts only keeps the
 // last 200 rounds and a challenge must never "untick" itself.
@@ -121,9 +128,15 @@ export function clearedSubjects(deckSubjects: Record<string, string>): Set<strin
 
 export type Track = "easy" | "intermediate" | "hard";
 
-/** Every subject cleared finishes the Easy track. The Hard track's targets are still to be set. */
+/**
+ * Every subject cleared finishes the Easy track. The Hard track's targets are still to be set.
+ * A track once reached is never taken away: when Sport became the 7th subject, players who had
+ * already cleared the first six stayed on Intermediate (decided 7 Nov 2026).
+ */
 export function trackFor(cleared: number): Track {
-  return cleared >= SUBJECT_NAMES.length ? "intermediate" : "easy";
+  const earned: Track = cleared >= SUBJECT_NAMES.length ? "intermediate" : "easy";
+  const saved = currentTrack();
+  return saved !== "easy" && earned === "easy" ? saved : earned;
 }
 
 // How many cleared subjects open each arcade game. Missing = always open.

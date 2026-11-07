@@ -4,7 +4,7 @@
 // fancy syntax) and prints every problem it finds. Exit code 1 means something needs fixing.
 //
 // The island is a ROUTE, so most of the checks are about the loop:
-//   - the six buildings are met in order, each with a gate just past it
+//   - the seven buildings are met in order, each with a gate just past it
 //   - nothing is reachable before its gate is open (the route is linear)
 //   - the arcade stops, signs and the Hero Workshop can be reached along the route
 //   - the plots, the hall and the off-path grass can only be reached through the free-roam fences
@@ -14,7 +14,7 @@ import { ROWS, SIGNS, BUILDINGS, STOPS, HALL, MAP_W, MAP_H, tileAt, blocked, rea
 const problems = [];
 const bad = (msg) => problems.push(msg);
 
-const KNOWN = new Set("~.,=*dpbPwTrFf123456789GgSsHhAaNnMmUuCLY_X@%&^ZE");
+const KNOWN = new Set("~.,=*dpbPwTrFf1234567890GgSsHhAaNnMmOoUuCLY_X@%&^ZE");
 const W = MAP_W;
 const H = MAP_H;
 ROWS.forEach((r, y) => {
@@ -58,10 +58,10 @@ for (const s of STOPS) {
 
 // Signs: every digit used must have words, and every line of words should be placed.
 const digits = new Set();
-for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (/[1-9]/.test(tileAt(x, y))) digits.add(Number(tileAt(x, y)));
+for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (/[0-9]/.test(tileAt(x, y))) digits.add(tileAt(x, y) === "0" ? 10 : Number(tileAt(x, y)));
 for (const d of digits) if (!SIGNS[d - 1]) bad(`signpost ${d} has no words in SIGNS`);
 SIGNS.forEach((_, i) => { if (!digits.has(i + 1)) bad(`SIGNS line ${i + 1} is not placed on the map`); });
-if (SIGNS.length > 9) bad("at most 9 signposts");
+if (SIGNS.length > 10) bad("at most 10 signposts (digits 1 to 9 and 0)");
 
 // The finish line and the gates.
 const finishes = find("E");
@@ -136,13 +136,13 @@ function routeChecks() {
 
   // 5. SIGNS: each one can be reached along the route (with every gate open and the finish line open).
   const wholeRoute = reach(sx, sy, { freeRoam: false, openGates: new Set(order.map(gk)), finishOpen: true });
-  for (const d of digits) for (const [x, y] of find(String(d))) {
+  for (const d of digits) for (const [x, y] of find(d === 10 ? "0" : String(d))) {
     if (!touching(wholeRoute, x, y)) bad(`signpost ${d} at ${x},${y} can not be read from the route`);
   }
   // A scenic walk needs 2 to 3 funny signs. Count the ones read between two particular gates.
   const between = (a, b) => {
     const A = reachWith(a), B = reachWith(b);
-    return [...digits].filter((d) => find(String(d)).some(([x, y]) => touching(B, x, y) && !touching(A, x, y))).length;
+    return [...digits].filter((d) => find(d === 10 ? "0" : String(d)).some(([x, y]) => touching(B, x, y) && !touching(A, x, y))).length;
   };
   // After gate 2 (Science) and before gate 3 (History) is the first walk; after gate 4 (Travel) and before gate 5 (Nature) the second.
   const walk1 = between(1, 2), walk2 = between(3, 4);
@@ -204,7 +204,7 @@ function routeChecks() {
   // In free roam every door, stop and sign can be reached, and no walkable tile is sealed off.
   for (const b of BUILDINGS) { const [fx, fy] = doorFront(b); if (!free.has(key(fx, fy))) bad(`${b.id}: not reachable in free roam`); }
   for (const s of STOPS) { const [px, py] = find(s.spot)[0] ?? []; if (px !== undefined && !free.has(key(px, py))) bad(`${s.game}: not reachable in free roam`); }
-  for (const d of digits) for (const [x, y] of find(String(d))) if (!touching(free, x, y)) bad(`signpost ${d} not reachable in free roam`);
+  for (const d of digits) for (const [x, y] of find(d === 10 ? "0" : String(d))) if (!touching(free, x, y)) bad(`signpost ${d} not reachable in free roam`);
   const sealed = [];
   const walkableTile = (x, y) => !blocked(x, y, { freeRoam: true, openGates: new Set(), finishOpen: false });
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walkableTile(x, y) && !free.has(key(x, y))) sealed.push(`${x},${y}`);

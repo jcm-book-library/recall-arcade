@@ -106,7 +106,7 @@ function writeSpot(s: Spot) {
 }
 
 // ---------- reading the map ----------
-const isDigit = (c: string) => c >= "1" && c <= "9";
+const isDigit = (c: string) => c >= "0" && c <= "9"; // 1 to 9, and 0 for the tenth sign
 
 const START = findTiles("P")[0] ?? [MAP_W >> 1, MAP_H >> 1];
 const GATES = gateOrder(); // the gate tiles, in the order you meet them: gate 0 belongs to BUILDINGS[0], and so on
@@ -358,6 +358,10 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
         ),
       );
     });
+    if (!list.length) {
+      openPanel(`door:${b.id}`, b.title, [h("p", { class: "isl-kicker" }, "Coming soon"), h("p", { class: "isl-text" }, "The quizzes are still being picked. The gate is not fussed.")]);
+      return;
+    }
     const gateLine = freeRoam || !gate
       ? `${list.length} ${list.length === 1 ? "quiz" : "quizzes"}${doneCount ? ` · ${doneCount} challenge${doneCount === 1 ? "" : "s"} done` : ""}`
       : `${list.length} ${list.length === 1 ? "quiz" : "quizzes"} · gate needs ${gate.need} challenge${gate.need === 1 ? "" : "s"} (${doneCount} done)`;
@@ -487,7 +491,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     const key = `${tx},${ty}`;
     if (doorAt.has(key)) { openSubject(doorAt.get(key)!); return; }
     if (c === HALL.door) { if (freeRoam) openHall(); return; }
-    if (isDigit(c)) { openSign(Number(c)); return; }
+    if (isDigit(c)) { openSign(c === "0" ? 10 : Number(c)); return; }
     if (c === "Z" && blocked(tx, ty, ws)) { openGate(gateIndexAt.get(key) ?? 0); return; }
     if (c === "E" && blocked(tx, ty, ws)) { openFinish(); return; }
     if (STOP_SCENERY.has(c) && c !== "_" && !stopAt.has(`${player.x},${player.y}`) && blocked(tx, ty, ws)) {

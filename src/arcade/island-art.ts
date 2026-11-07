@@ -622,6 +622,69 @@ function bandstand(w: number, h: number, door: number) {
   return c;
 }
 
+function stadium(w: number, h: number, door: number) {
+  const c = makeCanvas(w * TILE, h * TILE);
+  const g = ctxOf(c);
+  const W = w * TILE, H = h * TILE;
+  const cx = Math.round(W / 2);
+  // the oval stands: a dark rim, grey concrete, then a ring of red and blue seats
+  oval(g, cx, 40, 53, 29, OUT);
+  oval(g, cx, 40, 52, 28, "#aab2c0");
+  oval(g, cx, 41, 47, 24, OUT);
+  oval(g, cx, 41, 46, 23, "#c0503a");
+  // blue seats on the sides, so the crowd looks mixed
+  for (let y = 22; y < 62; y++) for (let x = 6; x < W - 6; x++) {
+    const dx = (x + 0.5 - cx) / 46, dy = (y + 0.5 - 41) / 23;
+    if (dx * dx + dy * dy <= 1 && (Math.abs(x - cx) > 28)) R(g, x, y, 1, 1, "#2f6fb5");
+  }
+  // crowd dots
+  for (let x = 12; x < W - 12; x += 4) for (const y of [24, 28, 54, 58]) {
+    const dx = (x - cx) / 44, dy = (y - 41) / 21;
+    if (dx * dx + dy * dy < 0.9 && dx * dx + dy * dy > 0.35) R(g, x + (y % 8 === 0 ? 1 : 0), y, 2, 2, ["#f6e6bd", "#ffd24a", "#ffffff"][(x + y) % 3]);
+  }
+  // the green field with stripes, white lines and a centre circle
+  oval(g, cx, 41, 36, 16, OUT);
+  oval(g, cx, 41, 35, 15, GRASS.base);
+  for (let x = cx - 33; x < cx + 33; x += 12) {
+    for (let y = 27; y < 56; y++) for (let xx = x; xx < x + 6; xx++) {
+      const dx = (xx + 0.5 - cx) / 35, dy = (y + 0.5 - 41) / 15;
+      if (dx * dx + dy * dy <= 1) R(g, xx, y, 1, 1, GRASS.light);
+    }
+  }
+  R(g, cx, 27, 1, 29, "#f4efe6");
+  disc(g, cx, 41, 6, "#f4efe6"); disc(g, cx, 41, 5, GRASS.base);
+  R(g, cx - 1, 40, 3, 3, "#f4efe6");
+  R(g, cx - 31, 36, 6, 1, "#f4efe6"); R(g, cx - 31, 46, 6, 1, "#f4efe6"); R(g, cx - 31, 36, 1, 11, "#f4efe6");
+  R(g, cx + 26, 36, 6, 1, "#f4efe6"); R(g, cx + 26, 46, 6, 1, "#f4efe6"); R(g, cx + 31, 36, 1, 11, "#f4efe6");
+  // the scoreboard on top
+  R(g, cx - 17, 1, 34, 12, OUT);
+  R(g, cx - 16, 2, 32, 10, "#1d2a3a");
+  R(g, cx - 16, 2, 32, 1, "#3a4a60");
+  for (const [px, py] of [[-12, 5], [-12, 8], [-9, 5], [-9, 8], [8, 5], [8, 8], [11, 5]]) R(g, cx + px, py, 2, 2, "#ffd24a");
+  R(g, cx - 1, 6, 3, 1, "#ffd24a");
+  R(g, cx - 12, 13, 2, 5, OUT); R(g, cx + 10, 13, 2, 5, OUT);
+  // two light towers, one on each side
+  for (const lx of [7, W - 9]) {
+    R(g, lx, 12, 3, 40, OUT);
+    R(g, lx + 1, 12, 1, 40, "#d0d4dc");
+    R(g, lx - 5, 3, 13, 9, OUT);
+    R(g, lx - 4, 4, 11, 7, "#8d95a3");
+    for (let i = 0; i < 3; i++) { R(g, lx - 3 + i * 4, 5, 3, 2, "#fff6c0"); R(g, lx - 3 + i * 4, 8, 3, 2, "#fff6c0"); }
+  }
+  // the front wall, with a wide tunnel entrance where the door is
+  R(g, 8, 56, W - 16, H - 56, OUT);
+  R(g, 9, 57, W - 18, H - 58, "#dcd3bd");
+  R(g, 9, 57, W - 18, 3, "#efe7d2");
+  for (let x = 14; x < W - 14; x += 14) R(g, x, 62, 1, H - 64, "#c3b189");
+  R(g, 8, 56, W - 16, 1, OUT);
+  for (const fx of [16, W - 24]) { R(g, fx, 52, 1, 9, OUT); R(g, fx + 1, 52, 7, 4, "#d8402f"); R(g, fx + 1, 52, 7, 1, "#ff7a5c"); } // flags
+  doorway(g, door * TILE + 2, H - 17, 12, 17, "#3a2f2a");
+  R(g, door * TILE + 2, H - 17, 12, 3, "#c0503a");
+  board(g, "SPORT", cx, 61);
+  R(g, door * TILE, H - 1, 16, 1, OUT);
+  return c;
+}
+
 // ---------- the arcade stops ----------
 function cabinet(w: number, h: number): HTMLCanvasElement {
   const c = makeCanvas(w * TILE, h * TILE);
@@ -769,7 +832,7 @@ function hall(w: number, h: number, door: number): HTMLCanvasElement {
 }
 
 // ---------- put it all together ----------
-export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "cabinet" | "gate" | "airstrip" | "mirror" | "hall";
+export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "stadium" | "cabinet" | "gate" | "airstrip" | "mirror" | "hall";
 
 /**
  * Paint one building or stop. `w` and `h` are its size in tiles, found from the map. `door` is the
@@ -784,6 +847,7 @@ export function drawSprite(kind: SpriteKind, w: number, h: number, door: number,
     case "terminal": return terminal(w, h, door);
     case "zoo": return zoo(w, h, door);
     case "bandstand": return bandstand(w, h, door);
+    case "stadium": return stadium(w, h, door);
     case "cabinet": return cabinet(w, h);
     case "gate": return gate(w, h);
     case "airstrip": return airstrip(w, h, [0, 0], extra?.plane ?? [1, 1]);
