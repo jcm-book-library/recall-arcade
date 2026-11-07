@@ -226,6 +226,8 @@ export const empiresDeck: Deck = {
   title: "Empires Through Time",
   blurb: "The world map at six moments, from Alexander the Great to 1914. Name the empires and kingdoms of the day.",
   noun: "states",
+  hidden: true, // replaced on the home page by Eras & Dynasties; still reachable at #empires so saved scores survive
+  related: { href: "#eras", label: "◂ Eras & Dynasties" },
   items,
   variants: SNAPSHOTS.map((s) => ({ id: s.id, label: s.label, minutes: s.minutes, starter: s.id === "ad100", filter: (i: Item) => i.tags.includes(s.id) })),
   options: [{ id: "big", label: "The big ones only", hint: "Just the largest empires of each year", default: false }],

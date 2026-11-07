@@ -77,4 +77,73 @@ export const PEOPLE_TABLE = `
 1940|1980|John Lennon|Musician, The Beatles||
 1942|2018|Stephen Hawking|Physicist, black holes||
 1955|2011|Steve Jobs|Co-founder of Apple||
+1815|1898|Otto von Bismarck|First chancellor of a united Germany||
+1863|1947|Henry Ford|Car maker who brought in the moving assembly line||
+1542|1587|Mary, Queen of Scots|Scottish queen executed by Elizabeth I||
+1929|1945|Anne Frank|Jewish girl whose wartime diary became famous||
+1961|1997|Diana, Princess of Wales|Princess known for her charity work||
+1888|1946|John Logie Baird|Scottish inventor who demonstrated television||
+1570|1606|Guy Fawkes|Plotter in the Gunpowder Plot||
+1913|2005|Rosa Parks|Civil rights activist, Montgomery bus boycott||
+1835|1909|Leopold II|King of the Belgians, cruel ruler of the Congo Free State||
+1908|1974|Oskar Schindler|Saved about 1,200 Jewish workers in WWII||
+1889|1977|Charlie Chaplin|Silent film star, the Tramp||
+1822|1895|Louis Pasteur|Proved germ theory, invented pasteurisation||
+1280|1337|Mansa Musa|Ruler of Mali, said to be the richest person ever|c|
+-325|-265|Euclid|Greek mathematician, the father of geometry|c|
+1791|1867|Michael Faraday|Scientist of electricity and magnetism||
+1867|1912|Wilbur Wright|Aviation pioneer, first powered flight||
+1871|1948|Orville Wright|Aviation pioneer, flew the first powered flight||
+1723|1790|Adam Smith|Economist, The Wealth of Nations||
+1599|1658|Oliver Cromwell|Led England as Lord Protector after the Civil War||
+1847|1922|Alexander Graham Bell|Inventor of the telephone||
+1743|1826|Thomas Jefferson|Wrote the Declaration of Independence, 3rd US president||
+1878|1953|Joseph Stalin|Soviet dictator||
+1856|1939|Sigmund Freud|Founder of psychoanalysis||
+1870|1924|Vladimir Lenin|Led the Russian Revolution, founded the Soviet Union||
+1893|1976|Mao Zedong|Founder of the People's Republic of China||
+1480|1521|Ferdinand Magellan|Led the first voyage around the world (died on the way)|c|
+30|61|Boudica|British queen who rebelled against Rome|c|
+1122|1204|Eleanor of Aquitaine|Queen of France, then of England|c|
+1157|1199|Richard I|King of England, the Lionheart, a crusader||
+1428|1477|Vlad the Impaler|Prince of Wallachia, the inspiration for Dracula|c|
+1452|1485|Richard III|Last Plantagenet king of England||
+1485|1536|Catherine of Aragon|First wife of Henry VIII||
+1540|1596|Francis Drake|Sailor and privateer, sailed around the world|c|
+1485|1540|Thomas Cromwell|Henry VIII's chief minister|c|
+1729|1796|Catherine the Great|Empress of Russia||
+1755|1793|Marie Antoinette|Queen of France, executed in the Revolution||
+1755|1804|Alexander Hamilton|US founding father, first Treasury Secretary|c|
+1758|1805|Horatio Nelson|British admiral, won at Trafalgar||
+1831|1890|Sitting Bull|Lakota leader at the Battle of the Little Bighorn|c|
+1868|1918|Tsar Nicholas II|Last tsar of Russia||
+1869|1916|Grigori Rasputin|Mystic at the Russian royal court||
+1912|1954|Alan Turing|Codebreaker and father of computer science||
+50|121|Cai Lun|Chinese court official credited with inventing paper|c|
+1749|1823|Edward Jenner|Created the first vaccine (smallpox)||
+1832|1898|Lewis Carroll|Author of Alice's Adventures in Wonderland||
+1926|2016|Fidel Castro|Led the Cuban Revolution, ruled Cuba||
+1901|1966|Walt Disney|Animator, created Mickey Mouse||
+1802|1870|Alexandre Dumas|Author of The Three Musketeers||
+1934|1968|Yuri Gagarin|First person in space||
+1928|1967|Che Guevara|Revolutionary in the Cuban Revolution||
+1899|1961|Ernest Hemingway|Author of The Old Man and the Sea||
+1902|1968|John Steinbeck|Author of The Grapes of Wrath||
+1874|1926|Harry Houdini|Escape artist and magician||
+1802|1885|Victor Hugo|Author of Les Misérables||
+1937|2006|Saddam Hussein|Dictator of Iraq||
+1880|1968|Helen Keller|Deafblind author and activist||
+1881|1938|Mustafa Kemal Atatürk|Founder of modern Turkey||
+1608|1674|John Milton|Poet, Paradise Lost||
+1840|1926|Claude Monet|Impressionist painter, Water Lilies||
+1833|1896|Alfred Nobel|Invented dynamite, founded the Nobel Prizes||
+1829|1902|Levi Strauss|Made the first blue jeans||
+1828|1910|Leo Tolstoy|Author of War and Peace||
+1892|1973|J. R. R. Tolkien|Author of The Lord of the Rings||
+1898|1963|C. S. Lewis|Author of The Chronicles of Narnia||
+1835|1910|Mark Twain|Author of The Adventures of Tom Sawyer||
+1931|2021|Desmond Tutu|Archbishop who fought apartheid||
+1854|1900|Oscar Wilde|Playwright, The Importance of Being Earnest||
+1460|1524|Vasco da Gama|First to sail from Europe to India|c|
+1336|1405|Timur|Founder of the Timurid Empire, also called Tamerlane||
 `;

@@ -47,6 +47,7 @@ export const CHALLENGES: Record<string, Challenge> = {
   history: share(0.5, "Score half marks on a timeline"),
   people: share(0.5, "Score half marks on a timeline"),
   pms: count(10, "Name 10 leaders"),
+  eras: share(0.5, "Score half marks"),
   empires: count(6, "Name 6 empires"),
   myths: count(5, "Name 5 gods"),
   famousfor: share(0.5, "Match half the pairs"),

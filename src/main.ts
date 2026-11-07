@@ -17,6 +17,7 @@ import { bodyDeck } from "./decks/body";
 import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
 import { empiresDeck } from "./decks/history-maps";
+import { erasDeck } from "./decks/eras";
 import { airportsDeck } from "./decks/airports";
 import { currenciesDeck } from "./decks/travel-maps";
 import { natoDeck, pmDeck, unitsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
@@ -40,16 +41,16 @@ const DECKS: Deck[] = [
   // Science
   zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, scaleDeck, earthSkyDeck,
   // History
-  historyDeck, peopleDeck, pmDeck, empiresDeck, mythDeck, famousForDeck,
+  historyDeck, peopleDeck, pmDeck, erasDeck, mythDeck, famousForDeck,
   // Travel & Transport
   airportsDeck, airlinesDeck, tailFinsDeck, natoDeck, currenciesDeck, landmarksDeck,
   // Nature & Animals
   animalsDeck, lifeDeck, petsDeck, babyDeck, dinosaursDeck,
   // Music
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
-  // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells), Countries (#neighbours)
-  // or The Scale of Things (#units, the old quiz, kept so its saved scores still work)
-  mythPairsDeck, cellsDeck, neighboursDeck, unitsDeck,
+  // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells), Countries (#neighbours),
+  // The Scale of Things (#units, the old quiz, kept so its saved scores still work) or Eras & Dynasties (#empires, the map quiz)
+  mythPairsDeck, cellsDeck, neighboursDeck, unitsDeck, empiresDeck,
 ];
 
 // While developing, catch two items in one game sharing an id (they'd count as one).
