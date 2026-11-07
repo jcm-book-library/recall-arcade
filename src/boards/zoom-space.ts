@@ -7,7 +7,7 @@ import { ARMS, SKY_RING, SKY_Y, STAGES, STAGE_ORDER, SUN_X, orbit } from "../dec
 
 const W = 1000;
 
-function drawBackdrop(stage: number, g: SVGGElement) {
+function drawBackdrop(stage: number, g: SVGGElement, southUp = false) {
   if (stage === 1) {
     el("circle", { cx: SUN_X, cy: 290, r: 150, class: "z-sun" }, g);
     for (const x of [150, 210, 272, 330, 458, 622, 770, 900]) {
@@ -49,7 +49,9 @@ function drawBackdrop(stage: number, g: SVGGElement) {
   if (stage === 4) {
     el("circle", { cx: 500, cy: SKY_Y, r: SKY_RING, class: "z-orbit" }, g);
     el("text", { x: 20, y: 30, class: "z-small" }, g).textContent = "The ring: the Sun's path through the year";
-    el("text", { x: 20, y: 48, class: "z-small" }, g).textContent = "Real star patterns, north up, as seen looking up";
+    el("text", { x: 20, y: 48, class: "z-small" }, g).textContent = southUp
+      ? "Real star patterns, south up, as seen from Australia"
+      : "Real star patterns, north up, as seen looking up";
     el("circle", { cx: 500, cy: SKY_Y, r: 10, class: "z-earth" }, g);
     el("text", { x: 500, y: SKY_Y + 26, class: "z-small z-centre" }, g).textContent = "Earth";
   }
@@ -77,4 +79,25 @@ export const SPACE_SET: ZoomSet = {
   drawBackdrop,
   drawOverlay,
   itemOf: (i: Item) => i.data as unknown as ZoomItem,
+};
+
+/**
+ * The same quiz with the night sky turned round, as it looks from the Southern Hemisphere:
+ * from Australia you face north to see the zodiac, so the patterns appear upside down
+ * (Orion becomes "the saucepan"). Each star pattern is rotated half a turn in place.
+ */
+export const SPACE_SET_SOUTH: ZoomSet = {
+  ...SPACE_SET,
+  drawBackdrop: (stage, g) => drawBackdrop(stage, g, true),
+  itemOf: (i: Item) => {
+    const z = i.data as unknown as ZoomItem;
+    if (!z.pattern) return z;
+    return {
+      ...z,
+      pattern: {
+        stars: z.pattern.stars.map(([x, y, m]) => [-x, -y, m] as [number, number, number]),
+        lines: z.pattern.lines,
+      },
+    };
+  },
 };
