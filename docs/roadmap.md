@@ -186,8 +186,9 @@ For more accuracy, swap in real sources:
 - **Anatomy and cells:** freely licensed SVG diagrams from Wikimedia Commons, with clickable
   regions laid over them.
 - **Space:** real star positions and constellation lines (public star catalogues),
-  NASA images (public domain). **Wanted:** a real star chart in Infinity & Beyond's Night Sky
-  stage, so the constellation *shapes* are learned, not just their names.
+  NASA images (public domain). **Done (7 Nov 2026):** Infinity & Beyond's Night Sky draws each
+  constellation's real star pattern (d3-celestial data, BSD licence, from the Yale Bright Star
+  Catalogue), north up as seen looking up. Regenerate with `scripts/constellations-from-celestial.py`.
 - **3D:** a rotatable skeleton or solar system with three.js and open 3D models.
 - **Pixel art for The Overworld:** Josh wants to draw this himself (Piskel or Aseprite).
   Free packs (e.g. Kenney, CC0) can stand in as placeholders while learning.

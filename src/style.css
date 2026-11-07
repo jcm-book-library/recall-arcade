@@ -1048,3 +1048,9 @@ a.btn { text-decoration: none; }
 @media (min-width: 700px) { .flagwall.cities.choosing { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
 .flagwall.cities.choosing h3 { display: none; }
 .flagwall.cities.choosing .flaggrid { display: contents; }
+
+/* Night Sky: real constellation lines (Infinity & Beyond). */
+.zitem .cline { stroke: #5d6894; stroke-width: 1.2; opacity: 0.7; }
+.zitem.found .cline { stroke: #ffe9a8; opacity: 0.6; }
+.zitem.missed .cline { stroke: #ff7a6e; opacity: 0.5; }
+.zitem .zhit { fill: transparent; stroke: none; pointer-events: all; }

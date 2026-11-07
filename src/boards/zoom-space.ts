@@ -3,7 +3,7 @@
 // themselves are drawn on top by the board.
 import { el, type ZoomItem, type ZoomSet } from "./zoomBoard";
 import type { Item } from "../engine/types";
-import { ARMS, STAGES, STAGE_ORDER, SUN_X, orbit } from "../decks/zoomout-data";
+import { ARMS, SKY_RING, SKY_Y, STAGES, STAGE_ORDER, SUN_X, orbit } from "../decks/zoomout-data";
 
 const W = 1000;
 
@@ -47,10 +47,11 @@ function drawBackdrop(stage: number, g: SVGGElement) {
     el("text", { x: 500, y: 300, class: "z-small z-centre" }, g).textContent = "Sun";
   }
   if (stage === 4) {
-    el("circle", { cx: 500, cy: 280, r: 225, class: "z-orbit" }, g);
-    el("text", { x: 500, y: 40, class: "z-small z-centre" }, g).textContent = "The Sun's path through the year";
-    el("circle", { cx: 500, cy: 280, r: 10, class: "z-earth" }, g);
-    el("text", { x: 500, y: 302, class: "z-small z-centre" }, g).textContent = "Earth";
+    el("circle", { cx: 500, cy: SKY_Y, r: SKY_RING, class: "z-orbit" }, g);
+    el("text", { x: 20, y: 30, class: "z-small" }, g).textContent = "The ring: the Sun's path through the year";
+    el("text", { x: 20, y: 48, class: "z-small" }, g).textContent = "Real star patterns, north up, as seen looking up";
+    el("circle", { cx: 500, cy: SKY_Y, r: 10, class: "z-earth" }, g);
+    el("text", { x: 500, y: SKY_Y + 26, class: "z-small z-centre" }, g).textContent = "Earth";
   }
   if (stage === 5) {
     el("ellipse", { cx: 500, cy: 280, rx: 360, ry: 230, class: "z-halo" }, g);

@@ -5,6 +5,7 @@
 // (The ZoomItem and ZoomStage shapes are defined in boards/zoomBoard.ts, shared with Inner Space.)
 
 import type { ZoomItem, ZoomStage } from "../boards/zoomBoard";
+import { PATTERNS } from "./constellation-data";
 export type { ZoomItem, ZoomStage };
 
 /** One arm of a spiral galaxy as a smooth path, plus a point to hang its label on. */
@@ -42,6 +43,9 @@ export const STAGE_ORDER = [4, 1, 2, 3, 5, 6];
 export const rankOf = (stage: number) => STAGE_ORDER.indexOf(stage) + 1;
 
 const SUN_X = -70;
+// The Night Sky: the zodiac sits on a ring (the Sun's path through the year) around Earth.
+export const SKY_RING = 205;
+export const SKY_Y = 285;
 const orbit = (x: number) => x - SUN_X;
 
 export const ZOOM_ITEMS: ZoomItem[] = [
@@ -85,6 +89,7 @@ export const ZOOM_ITEMS: ZoomItem[] = [
   { id: "61cyg", name: "61 Cygni", stage: 3, shape: "body", x: 680, y: 100, r: 5, color: "#ffb26b", label: "right" },
 
   // 4. Night sky: the 13 constellations the Sun passes through, in order, plus four famous others.
+  // Each is drawn with its real star pattern (see constellation-data.ts), north up, as seen looking up.
   ...[
     ["aries", "Aries", []], ["taurus", "Taurus", []], ["gemini", "Gemini", []], ["cancer", "Cancer", []],
     ["leo", "Leo", []], ["virgo", "Virgo", []], ["libra", "Libra", []], ["scorpius", "Scorpius", ["Scorpio"]],
@@ -94,14 +99,15 @@ export const ZOOM_ITEMS: ZoomItem[] = [
     const a = (i / 13) * Math.PI * 2 - Math.PI / 2;
     return {
       id: id as string, name: name as string, aliases: aliases as string[], stage: 4, shape: "stars",
-      x: Math.round(500 + Math.cos(a) * 225), y: Math.round(280 + Math.sin(a) * 225),
+      pattern: PATTERNS[id as string], r: 40,
+      x: Math.round(500 + Math.cos(a) * SKY_RING), y: Math.round(SKY_Y + Math.sin(a) * SKY_RING),
       label: Math.cos(a) > 0.3 ? "right" : Math.cos(a) < -0.3 ? "left" : Math.sin(a) < 0 ? "above" : "below",
     };
   }),
-  { id: "orion", name: "Orion", aliases: ["The Hunter"], stage: 4, shape: "stars", x: 430, y: 220, label: "left" },
-  { id: "ursamajor", name: "Ursa Major", aliases: ["Great Bear", "The Great Bear", "Big Dipper", "The Plough"], stage: 4, shape: "stars", x: 570, y: 220, label: "right" },
-  { id: "crux", name: "Crux", aliases: ["Southern Cross", "The Southern Cross"], stage: 4, shape: "stars", x: 430, y: 345, label: "left" },
-  { id: "cassiopeia", name: "Cassiopeia", stage: 4, shape: "stars", x: 570, y: 345, label: "right" },
+  { id: "orion", name: "Orion", aliases: ["The Hunter"], stage: 4, shape: "stars", pattern: PATTERNS["orion"], r: 34, x: 420, y: 215, label: "above" },
+  { id: "ursamajor", name: "Ursa Major", aliases: ["Great Bear", "The Great Bear", "Big Dipper", "The Plough"], stage: 4, shape: "stars", pattern: PATTERNS["ursamajor"], r: 34, x: 580, y: 215, label: "above" },
+  { id: "crux", name: "Crux", aliases: ["Southern Cross", "The Southern Cross"], stage: 4, shape: "stars", pattern: PATTERNS["crux"], r: 34, x: 420, y: 352, label: "below" },
+  { id: "cassiopeia", name: "Cassiopeia", stage: 4, shape: "stars", pattern: PATTERNS["cassiopeia"], r: 34, x: 580, y: 352, label: "below" },
 
   // 5. Milky Way: spiral arms drawn by the board; x/y is where each label sits.
   { id: "centre", name: "Galactic Centre", aliases: ["Galactic Center", "Sagittarius A*", "Sagittarius A", "Sgr A*", "The Centre", "Center", "Centre", "Supermassive Black Hole"], stage: 5, shape: "body", x: 500, y: 280, r: 16, color: "#ffe9a8", label: "below" },
