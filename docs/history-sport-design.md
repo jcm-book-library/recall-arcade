@@ -87,3 +87,5 @@ into the data files.
 - **Later ideas:**
   - an **"After Dark"** extension for grimmer history (for example Jack the Ripper);
   - **religions** as their own topic, rather than merged into Mythology, so it's handled with care.
+  - a **"Born when"** quiz for living people (for example Bill Gates): guess the birth year,
+    since a "lived when" bar has no end yet. Bill Gates is held back in the sheet for it.
