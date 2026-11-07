@@ -16,6 +16,7 @@ import { earthSkyDeck } from "./decks/earthsky";
 import { bodyDeck } from "./decks/body";
 import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
+import { bornWhenDeck } from "./decks/bornwhen";
 import { empiresDeck } from "./decks/history-maps";
 import { erasDeck } from "./decks/eras";
 import { afterlifeDeck, realmsDeck } from "./decks/myth-specials";
@@ -30,6 +31,7 @@ import { animalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/pic
 import { keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck } from "./decks/music";
 import { nrlDeck, aflDeck, footballDeck, motorsportDeck, olympicsDeck, sprintDeck } from "./decks/sport";
 import { tailFinsDeck } from "./decks/tail-fins";
+import { oscarsDeck, boxOfficeDeck, whoPlayedDeck, threeCluesDeck, releasedDeck, ausAwardsDeck } from "./decks/entertainment";
 import { renderHome } from "./ui/home";
 import { renderPlay } from "./ui/play";
 import { renderPong } from "./arcade/pong";
@@ -54,9 +56,11 @@ const DECKS: Deck[] = [
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
   // Sport
   nrlDeck, aflDeck, footballDeck, motorsportDeck, olympicsDeck, sprintDeck,
+  // Entertainment
+  oscarsDeck, boxOfficeDeck, whoPlayedDeck, threeCluesDeck, releasedDeck, ausAwardsDeck,
   // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells), Countries (#neighbours),
-  // The Scale of Things (#units, the old quiz, kept so its saved scores still work) or Eras & Dynasties (#empires, the map quiz)
-  mythPairsDeck, mythWhoDeck, mythSymbolsDeck, cellsDeck, neighboursDeck, unitsDeck, empiresDeck,
+  // The Scale of Things (#units, the old quiz, kept so its saved scores still work), Eras & Dynasties (#empires, the map quiz) or Who Lived When (#bornwhen)
+  mythPairsDeck, mythWhoDeck, mythSymbolsDeck, cellsDeck, neighboursDeck, unitsDeck, empiresDeck, bornWhenDeck,
   // Hidden Mythology specials, reached from the Mythology page (#afterlife, #realms)
   afterlifeDeck, realmsDeck,
 ];

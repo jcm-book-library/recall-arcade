@@ -32,6 +32,7 @@ a building, and the arcade games are stops along the path. It grows as you clear
 | Nature & Animals | a zoo gate and a greenhouse | animals, pets, dinosaurs |
 | Music | a bandstand / concert shell | the piano games |
 | Sport | a stadium: oval stands, a green field, light towers | the Sport quizzes |
+| Entertainment | a movie theatre: lit marquee, posters, red carpet, ticket booth | films and shows |
 
 Arcade stops along the path:
 - **Planet Pong:** an old arcade cabinet on the pier.
@@ -61,7 +62,7 @@ the owner's own picture in `public/arcade/island/`, and the Hero Workshop idea c
 "Island Workshop".
 
 ## Build steps (Proposed)
-1. **The island v1:** the map, walking (tap-to-walk and keys), all seven buildings opening their quiz
+1. **The island v1:** the map, walking (tap-to-walk and keys), all eight buildings opening their quiz
    signs, the arcade stops with locks and previews, "◂ Island" back from quizzes, and the home banner.
 2. **Progress on the island:** flags, opening fences, fireworks, the arcade hall, funny signs.
 3. **Your art:** swappable building and tile pictures, and an Island Workshop page.
@@ -101,7 +102,7 @@ The owner's original vision: a route you walk, not a park to wander. This replac
 ## Built: the island as a route (3 Nov 2026)
 - **The map:** a 60 × 44 loop in `src/arcade/island-map.ts`, as letters. Edit it, then run `node scripts/check-island.mjs`.
 - **Gates:** each gate belongs to the building before it. They block the path, but walking back is always allowed.
-- **The finish line** at Start lets you through only after all seven gates. Stepping on it with every gate open starts free roam: fireworks, the fences vanish, and the arcade hall appears.
+- **The finish line** at Start lets you through only after all eight gates. Stepping on it with every gate open starts free roam: fireworks, the fences vanish, and the arcade hall appears.
 - **The first lap is always Easy** (1 challenge per stop), even for a player with lots of quizzes done already.
 - **Arcade stops** are 1-tile spurs, so they're skippable. Play earns a stamp, saved in `learning-arcade:stamps`.
 - **Saved progress:** `learning-arcade:island` holds `{freeRoam, track}`. The hero's spot is kept in sessionStorage.
@@ -111,7 +112,18 @@ The owner's original vision: a route you walk, not a park to wander. This replac
 ## Built: the stadium (7 Nov 2026)
 Sport is the seventh building, so the route is now: Start → … → **Music** → **Sport** → back to Start.
 - **Where:** on the south lane, just after the corner. It is a 7 × 5 block (`O`, door `o`) with its door on the path. Its gate sits 7 tiles further west, the last one before the finish line. The map size did not change.
-- **Gates and finish:** the gate list comes from `BUILDINGS`, so the finish line now needs all seven gates. A saved `freeRoam` is kept. The first lap is still Easy.
+- **Gates and finish:** the gate list comes from `BUILDINGS`, so the finish line now needs all eight gates. A saved `freeRoam` is kept. The first lap is still Easy.
 - **Sign:** a tenth signpost, written `0` on the map (the digits 1 to 9 were all used). It is the stadium joke by the corner. The checker accepts up to ten signs.
 - **Quizzes:** the sign lists every deck with `subject: "Sport"`, in `DECKS` order. With none yet it says "Coming soon", and the gate is open (no challenges to do).
 - **Art:** `stadium()` in `island-art.ts`.
+
+## Built: the theatre, flags and stamp book (7 Nov 2026)
+Entertainment is the eighth building, so the route is now: Start → … → Music → Sport → **Entertainment** → back to Start. The finish line needs all eight gates.
+- **The theatre:** a 7 × 5 block (`K`, door `k`) on the south lane, west of the Sport gate. Its gate (the last one, just before the finish line) is 7 tiles further west, and the sign is "Cinema ahead" (`Q`). Two sea rows were turned into sand so it sits on dry land. The art is `theatre()` in `island-art.ts`: a lit "MOVIES" marquee, four posters, red carpet and rope posts, a ticket booth and a popcorn stand.
+- **No quizzes yet:** with no decks for the subject the sign says "Coming soon", and its gate is open (no challenges to do). The first deck with `subject: "Entertainment"` fills the sign and sets the gate by itself.
+- **More signs:** the digits 1 to 9 and 0 were all used, so signs now come from `SIGN_KEYS` in `island-map.ts` (`1234567890QR`). Key number n shows line n of `SIGNS`. To add one, put a spare capital letter on the end of `SIGN_KEYS` (B, D, I, J, V and W are free) and a line on the end of `SIGNS`. The second new sign ("Nearly home", `R`) is beside the last stretch to the finish line.
+- **Flags:** a building flies a flag on its roof once any challenge in its subject is done (`gateInfos[i].done >= 1`). Each building has its own colour (`FLAG_COLOURS`) and its pole sits at a spot in `FLAG_AT` in `island.ts`; the flag ripples between two frames. It reads the saved challenges, so earlier progress shows up straight away.
+- **Stamp book:** a "Stamp book" button in the island status line opens a panel (Esc closes it) with each arcade stamp, collected or not, and each building's flag with its state ("Flag flying", "No flag yet", "Coming soon"). It uses the same saved data as before (`learning-arcade:stamps`, the saved challenges), so nothing was migrated.
+- **Already there from the route work:** gates, the finish fireworks, free roam, the arcade hall and stamps. Flags and the stamp book were the missing parts of step 2.
+- **Checker:** `scripts/check-island.mjs` now reads `SIGN_KEYS` and accepts the theatre. The tiny pixel font's `V` was redrawn so "MOVIES" reads properly.
+- **Dev helper:** `__island.book()` opens the stamp book in the dev copy.

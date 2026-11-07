@@ -89,3 +89,17 @@
 /* The stamp line in an arcade stop's panel. */
 .isl-stamp { margin: 0; padding: 8px 10px; border: 2px dashed var(--line); border-radius: var(--r); color: var(--muted); font-size: 0.95rem; }
 .isl-stamp.got { border-style: solid; border-color: var(--found); color: var(--found); }
+
+/* The stamp book button in the status line, and the book panel. */
+.isl-hud { align-items: center; }
+.isl-book { padding: 4px 12px; font: 0.8rem var(--font-pixel); text-transform: uppercase; color: var(--ink); border-color: var(--line); background: var(--panel); }
+.isl-book:hover { border-color: var(--accent); }
+.isl-book-head { margin: 10px 0 4px; font: 0.9rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.isl-book-note { margin: 0 0 6px; font-size: 0.9rem; }
+.isl-book-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.isl-book-row { display: grid; grid-template-columns: 1.6em 1fr auto; align-items: center; gap: 8px; padding: 3px 10px; border: 2px dashed var(--line); border-radius: var(--r); color: var(--muted); }
+.isl-book-row.got { border-style: solid; border-color: var(--found); color: var(--ink); }
+.isl-book-mark { font-size: 1.2rem; text-align: center; }
+.isl-book-row.got .isl-book-mark:not(.isl-book-flag) { color: var(--found); }
+.isl-book-name { font-weight: 600; font-size: 0.95rem; }
+.isl-book-state { font-size: 0.8rem; text-align: right; }

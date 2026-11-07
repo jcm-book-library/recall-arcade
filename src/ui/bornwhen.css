@@ -1,0 +1,14 @@
+/* Born When? : the person card with a portrait, on top of the shared timeline styles. */
+.bw-card { grid-template-columns: minmax(0, 1fr); }
+.bw-person { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; max-width: 34rem; }
+.bw-pic { flex: none; width: 96px; height: 120px; border-radius: 8px; overflow: hidden; background: var(--line); }
+.bw-pic.pending { opacity: 0.5; }
+.bw-pic img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.bw-text { justify-items: start; text-align: left; display: grid; gap: 4px; min-width: 0; }
+.bw-person .tl-event { max-width: none; }
+.bw-known { margin: 0; color: var(--muted); }
+.bw-credit { font-size: 0.7rem; color: var(--muted); overflow-wrap: anywhere; }
+.bw-reveal { display: grid; gap: 4px; }
+.bw-reveal[hidden] { display: none; }
+.bw-note { margin: 0; color: var(--muted); font-size: 0.9rem; }
+@media (max-width: 480px) { .bw-pic { width: 76px; height: 96px; } }

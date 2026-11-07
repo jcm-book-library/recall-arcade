@@ -46,6 +46,7 @@ export const CHALLENGES: Record<string, Challenge> = {
   // History
   history: share(0.5, "Score half marks on a timeline"),
   people: share(0.5, "Score half marks on a timeline"),
+  bornwhen: share(0.5, "Score half marks"),
   pms: count(10, "Name 10 leaders"),
   eras: share(0.5, "Score half marks"),
   empires: count(6, "Name 6 empires"),
@@ -83,9 +84,16 @@ export const CHALLENGES: Record<string, Challenge> = {
   motorsport: share(0.5, "Score half marks in any round"),
   olympics: share(0.5, "Score half marks in any round"),
   sprint: share(0.5, "Score half marks in any round"),
+  // Entertainment
+  oscars: share(0.5, "Score half marks in any round"),
+  boxoffice: share(0.5, "Score half marks in any round"),
+  whoplayed: share(0.5, "Score half marks in any round"),
+  threeclues: count(10, "Earn 10 points in a round"),
+  released: share(0.5, "Score half marks in any round"),
+  ausawards: share(0.5, "Score half marks in any round"),
 };
 
-export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music", "Sport"];
+export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music", "Sport", "Entertainment"];
 
 // Ticked challenges are also kept in their own list, because storage.ts only keeps the
 // last 200 rounds and a challenge must never "untick" itself.

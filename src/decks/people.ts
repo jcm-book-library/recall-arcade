@@ -33,6 +33,7 @@ export const peopleDeck: Deck = {
   subject: "History",
   blurb: "A famous person appears. Place them in time: anywhere in their lifetime scores full marks.",
   noun: "people",
+  related: { href: "#bornwhen", label: "Born When? Guess the birth year of someone alive today ▸" },
   items,
   variants: [],
   options: [],

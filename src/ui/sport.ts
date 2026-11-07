@@ -14,6 +14,7 @@ import { normalize } from "../engine/matcher";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
 import { SPORT_LISTS, type SportChamp, type SportList, type SportWin } from "../decks/sport-data";
+import { ENT_LISTS } from "../decks/entertainment-data";
 import {
   DECK_LISTS,
   LIST_CONFIG,
@@ -23,6 +24,9 @@ import {
   type SportRange,
 } from "../decks/sport-config";
 import "./sport.css";
+
+// Sport and Entertainment lists share this screen (the Oscars and Aussie Awards use it too).
+const LISTS: Record<string, SportList> = { ...SPORT_LISTS, ...ENT_LISTS };
 
 const QUESTIONS = 10;
 const PUZZLES = 3;
@@ -44,7 +48,7 @@ function shuffle<T>(list: T[]): T[] {
 }
 
 /** True when a and b are the same, or differ by one letter (insert, delete or change). */
-function withinOne(a: string, b: string): boolean {
+export function withinOne(a: string, b: string): boolean {
   if (a === b) return true;
   if (Math.abs(a.length - b.length) > 1) return false;
   let i = 0;
@@ -130,7 +134,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
   const cfgOf = () => LIST_CONFIG[listId];
   const rangeOf = () => cfgOf().ranges.find((r) => r.id === rangeId) ?? cfgOf().ranges[0];
   const context = (): Ctx => {
-    const list = SPORT_LISTS[listId];
+    const list = LISTS[listId];
     const range = rangeOf();
     return {
       deckId: deck.id,
@@ -274,6 +278,8 @@ export function renderSport(root: HTMLElement, deck: Deck) {
 
   const modeLabel = (m: ModeId) => (listId === "sprint" && m === "more" ? "Who was faster?" : MODE_INFO[m].label);
   function modeNote() {
+    const own = cfgOf().notes?.[mode];
+    if (own) return own;
     if (listId === "sprint" && mode === "more")
       return "Two record holders appear. Pick the one who ran faster. 10 questions.";
     if (listId === "sprint" && mode === "year")
@@ -367,8 +373,12 @@ export function renderSport(root: HTMLElement, deck: Deck) {
     let groups: SportWin[][];
     if (listId === "sprint") groups = c.wins.map((w) => [w]);
     else {
-      const byYear = new Map<number, SportWin[]>();
-      for (const w of c.wins) byYear.set(w.year, [...(byYear.get(w.year) ?? []), w]);
+      // Results in one year go together (NRL 1997 has two premiers), unless the list gives each its own key (`gid`).
+      const byYear = new Map<string, SportWin[]>();
+      for (const w of c.wins) {
+        const k = w.gid ?? String(w.year);
+        byYear.set(k, [...(byYear.get(k) ?? []), w]);
+      }
       groups = [...byYear.values()];
     }
     const qs = shuffle(groups).slice(0, QUESTIONS);
@@ -427,6 +437,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
       });
       shell(`Question ${i + 1} of ${qs.length} · ${c.range.label}`, [
         sprint ? null : h("p", { class: "sp-year" }, g[0].label),
+        g[0].sub ? h("p", { class: "muted sp-sub" }, g[0].sub) : null,
         h("p", { class: "tl-event sp-ask" }, sprint ? `${recordClue(g[0])}. Who ran it?` : c.cfg.ask(g[0].label)),
         h("div", { class: "sp-input-row" }, input, checkBtn, giveUp),
         feedback,
@@ -456,6 +467,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
       return out;
     }
     out.push(h("p", { class: "sp-answer" }, sentence(g.map((w) => w.shown))));
+    for (const x of [...new Set(g.map((w) => w.extra).filter((t): t is string => !!t))]) out.push(h("p", {}, x));
     for (const n of noteLines(g)) out.push(h("p", { class: "muted" }, n));
     return out;
   }
@@ -497,9 +509,10 @@ export function renderSport(root: HTMLElement, deck: Deck) {
             cellsEl.append(h("span", { class: "sp-cell ghost", "aria-hidden": "true" }, "·"));
             continue;
           }
-          const stripped = rangeWins.some((w) => w.year === y && w.stripped) && !c.wins.some((w) => w.year === y);
-          if (stripped) {
-            cellsEl.append(h("span", { class: "sp-cell ghost", title: "Stripped, so not counted" , "aria-label": `${labelOf(y)}: stripped, not counted` }, "S"));
+          const offWin = rangeWins.find((w) => w.year === y && (w.stripped || w.cancelled));
+          if (offWin && !c.wins.some((w) => w.year === y)) {
+            const why = offWin.cancelled ? (offWin.off ?? "Cancelled") : "Stripped";
+            cellsEl.append(h("span", { class: "sp-cell ghost", title: `${why}, so not counted`, "aria-label": `${labelOf(y)}: ${why.toLowerCase()}, not counted` }, offWin.cancelled ? "\u2013" : "S"));
             continue;
           }
           const b = h(
@@ -611,7 +624,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
       for (const w of rangeWins) {
         const same = rangeWins.filter((o) => o.year === w.year);
         const tag = same.length > 1 ? ` (${same.indexOf(w) + 1} of ${same.length})` : "";
-        const slot = h("span", { class: "sp-name" }, askable(w) ? "?" : w.cancelled ? "Cancelled" : "Stripped");
+        const slot = h("span", { class: "sp-name" }, askable(w) ? "?" : w.cancelled ? (w.off ?? "Cancelled") : "Stripped");
         const li = h(
           "li",
           { class: `sp-tile${askable(w) ? "" : " off"}`, title: w.note ?? "" },
@@ -704,7 +717,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
         }
       });
       shell(`Block ${i + 1} of ${blocks.length} · ${b.start}–${b.end}`, [
-        h("p", { class: "tl-event sp-ask" }, `Who ${c.cfg.verb === "hosted" ? "hosted" : "won"} in ${b.start}–${b.end}?`),
+        h("p", { class: "tl-event sp-ask" }, c.cfg.blockAsk ? c.cfg.blockAsk(`${b.start}–${b.end}`) : `Who ${c.cfg.verb === "hosted" ? "hosted" : "won"} in ${b.start}–${b.end}?`),
         h("p", { class: "muted" }, "Type a name and press Enter. It fills every year in the block that name won."),
         list,
         h("div", { class: "sp-input-row" }, input, fillBtn, giveUp),

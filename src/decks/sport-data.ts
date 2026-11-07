@@ -16,6 +16,9 @@ export interface SportWin {
   /** Champion keys (see SportList.champs). Empty for cancelled and stripped years. */
   who: string[];
   note?: string; stripped?: boolean; cancelled?: boolean; rec?: SportRecord;
+  /** Optional extras used by the Entertainment lists: a line under the year, a line on the reveal, a key that keeps
+   *  two results in one year apart, and the word shown in place of a name when there was no award. */
+  sub?: string; extra?: string; gid?: string; off?: string;
 }
 export interface SportList { id: string; title: string; wins: SportWin[]; champs: Record<string, SportChamp> }
 
