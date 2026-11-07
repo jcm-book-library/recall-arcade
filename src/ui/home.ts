@@ -12,7 +12,6 @@ const SUBJECTS: { name: string; planned: string[] }[] = [
   { name: "Nature & Animals", planned: [] },
   { name: "Music", planned: [] },
   { name: "Sport", planned: [] },
-  { name: "Entertainment", planned: [] },
 ];
 
 /** The quiz's Easy challenge, ticked once it's done. */

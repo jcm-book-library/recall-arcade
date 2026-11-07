@@ -85,7 +85,7 @@ export const CHALLENGES: Record<string, Challenge> = {
   sprint: share(0.5, "Score half marks in any round"),
 };
 
-export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music", "Sport", "Entertainment"];
+export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music", "Sport"];
 
 // Ticked challenges are also kept in their own list, because storage.ts only keeps the
 // last 200 rounds and a challenge must never "untick" itself.
