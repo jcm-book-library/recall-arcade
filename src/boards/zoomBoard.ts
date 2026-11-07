@@ -36,6 +36,11 @@ export interface ZoomItem {
   cls?: string;
   /** A thin line from the label to this point, shown once the item is named. */
   to?: [number, number];
+  /**
+   * For "stars": a real star pattern (positions within a circle of radius 1, and the lines that
+   * join them), drawn at radius `r`. Without one, a small made-up cluster is drawn.
+   */
+  pattern?: { stars: [number, number, number][]; lines: [number, number][] };
   /** For "custom": adds the drawing to the item's group. Parts that change colour use class "mark". */
   draw?: (g: SVGGElement) => void;
 }
@@ -86,6 +91,20 @@ function drawItem(item: Item, z: ZoomItem, g: SVGGElement) {
     el("path", { d: z.d!, class: `mark ${z.cls ?? ""}`, "data-color": z.color ?? "" }, group);
   } else if (z.shape === "custom") {
     z.draw?.(group);
+  } else if (z.pattern) {
+    // A real constellation: faint lines, then stars sized by brightness (magnitude).
+    const R = z.r ?? 40;
+    const at = (i: number) => [z.x + z.pattern!.stars[i][0] * R, z.y + z.pattern!.stars[i][1] * R];
+    el("circle", { cx: z.x, cy: z.y, r: R + 6, class: "zhit" }, group);
+    for (const [a, b] of z.pattern.lines) {
+      const [x1, y1] = at(a);
+      const [x2, y2] = at(b);
+      el("line", { x1, y1, x2, y2, class: "cline" }, group);
+    }
+    z.pattern.stars.forEach(([, , mag], i) => {
+      const [cx, cy] = at(i);
+      el("circle", { cx, cy, r: Math.max(1.1, Math.min(4.2, 3.6 - mag * 0.55)), class: "mark star" }, group);
+    });
   } else {
     // A little cluster of stars.
     for (const [dx, dy, rr] of [[0, 0, 3], [-9, 6, 2], [8, 8, 2.2], [3, -9, 1.8], [-6, -6, 1.6]]) {
@@ -93,7 +112,7 @@ function drawItem(item: Item, z: ZoomItem, g: SVGGElement) {
     }
   }
   const pos = z.label ?? "below";
-  const off = z.gap ?? (z.shape === "body" ? r + 14 : 18);
+  const off = z.gap ?? (z.shape === "body" ? r + 14 : z.pattern ? (z.r ?? 40) + 12 : 18);
   if (z.to) el("line", { x1: z.x, y1: z.y, x2: z.to[0], y2: z.to[1], class: "zlead" }, group);
   const tx = pos === "left" ? lx - off : pos === "right" ? lx + off : lx;
   const ty = pos === "above" ? ly - off + 4 : pos === "below" ? ly + off + 4 : ly + 5;
