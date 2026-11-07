@@ -52,6 +52,10 @@ export const CHALLENGES: Record<string, Challenge> = {
   myths: count(5, "Name 5 gods"),
   famousfor: share(0.5, "Match half the pairs"),
   mythpairs: share(0.5, "Score half marks"),
+  afterlife: share(0.6, "Get 60% of the steps in place"),
+  realms: share(0.6, "Label 6 realms first time"),
+  mythwho: share(0.6, "Get 60% right"),
+  mythsymbols: share(0.6, "Get 60% right"),
   // Travel & Transport
   airports: count(10, "Get 10 airport codes"),
   airlines: count(8, "Get 8 airline codes"),

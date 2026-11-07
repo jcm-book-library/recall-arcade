@@ -32,3 +32,10 @@ Wikipedia pictures (free licences, with credits) as now.
 ## Later
 - Famous For grows from the owner's new History lists.
 - More cultures.
+
+## Built (7 Nov 2026)
+- **The hub** (`#myths`, `src/ui/mythology.ts`): four culture tabs, each with the ladder (Meet the gods → Who's who → Symbols and sacred animals → Type the name) and a "Special challenges" row. Celtic, Inca and Aboriginal Dreaming stay as typed rounds in a "More cultures" strip.
+- **Data:** `src/decks/myth-data.ts` (gods, days, afterlife steps, the Nine Realms). Ids are explicit; don't change them.
+- **New hidden games:** `mythwho` (Who's who), `mythsymbols` (symbols, animals, Egyptian animal heads, days of the week), `afterlife` (put the journey in order), `realms` (label Yggdrasil). Each has its own challenge.
+- **Kept:** the `myths` typed game, its items m0–m51 and its round ids, so saved scores still count. `#myths/type/<round>` opens it at a round.
+- **Notes:** Tyr has no symbol question (no reliable one). The Nine Realms layout follows the version most often drawn, and the game says sources vary.

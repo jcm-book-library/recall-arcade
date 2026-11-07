@@ -117,7 +117,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     h(
       "main",
       { class: "play" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), title),
+      h("div", { class: "play-top" }, h("a", { class: "back", href: deck.back?.href ?? "#" }, deck.back?.label ?? "◂ Arcade"), title),
       setup,
       studyBar,
       hud,

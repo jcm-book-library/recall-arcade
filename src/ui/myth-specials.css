@@ -1,0 +1,115 @@
+/* Mythology specials: The Journey to the Afterlife and The Nine Realms. Uses the colours from style.css. */
+
+:root {
+  --ms-sky: #dbe9ef; --ms-earth: #cdb48e; --ms-grass: #6f9f45;
+  --ms-bark: #8a5a34; --ms-bark-edge: #4e301a; --ms-leaf: #7fb556; --ms-leaf-edge: #4d7a3a;
+  --ms-wood: #8a5a34; --ms-chain: #7a8a99; --ms-heart: #cc4136; --ms-feather: #e8dcb0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ms-sky: #14222d; --ms-earth: #2a2119; --ms-grass: #3f6a2c;
+    --ms-bark: #9a6a40; --ms-bark-edge: #cfa97c; --ms-leaf: #4d7a3a; --ms-leaf-edge: #8fcb6e;
+    --ms-wood: #b98a5a; --ms-chain: #91a2ad; --ms-heart: #ec5a4f; --ms-feather: #e8dcb0;
+  }
+}
+:root[data-theme="dark"] {
+  --ms-sky: #14222d; --ms-earth: #2a2119; --ms-grass: #3f6a2c;
+  --ms-bark: #9a6a40; --ms-bark-edge: #cfa97c; --ms-leaf: #4d7a3a; --ms-leaf-edge: #8fcb6e;
+  --ms-wood: #b98a5a; --ms-chain: #91a2ad; --ms-heart: #ec5a4f; --ms-feather: #e8dcb0;
+}
+
+.ms-play { min-width: 0; }
+.ms-game { display: grid; gap: 16px; min-width: 0; }
+.ms-intro { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 12px 14px; background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); }
+.ms-intro p { margin: 0 0 4px; max-width: 60ch; }
+.ms-intro > div { flex: 1 1 240px; min-width: 0; }
+.ms-pic { width: 120px; height: 90px; flex: none; }
+.ms-wood { fill: var(--ms-wood); }
+.ms-chain { fill: var(--ms-chain); }
+.ms-heart { fill: var(--ms-heart); }
+.ms-feather { fill: var(--ms-feather); stroke: var(--line); stroke-width: 1; }
+
+.ms-learn { padding: 10px 14px; background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); }
+.ms-learn summary { cursor: pointer; font-weight: 700; }
+.ms-learn p { margin: 8px 0 0; max-width: 70ch; }
+.ms-learn-list { margin: 8px 0 0; padding-left: 1.2em; columns: 16rem; column-gap: 24px; }
+.ms-learn-list li { margin-bottom: 3px; break-inside: avoid; }
+
+/* ----- Afterlife ----- */
+.ms-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.ms-row .sc-card { max-width: none; }
+@media (min-width: 860px) {
+  .ms-row { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+}
+.ms-fixed { cursor: default; touch-action: auto; background: var(--panel); border-style: dashed; }
+.ms-fixed.right { border-style: solid; }
+.ms-order { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ms-order li { display: grid; grid-template-columns: 2em minmax(0, 1fr); gap: 4px 10px; align-items: start; padding: 6px 8px; border-left: 4px solid var(--line); }
+.ms-order li.good { border-color: var(--found); }
+.ms-order li.bad { border-color: var(--missed); }
+.ms-order .sc-o-name { font-weight: 700; }
+.ms-order .sc-o-val { display: block; color: var(--muted); }
+.ms-yours { display: block; color: var(--missed); font-weight: 700; }
+
+/* ----- Realms ----- */
+.ms-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 760px) {
+  .ms-layout { grid-template-columns: minmax(0, 460px) minmax(0, 1fr); }
+}
+.ms-tree-wrap { min-width: 0; border: 2px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--ms-sky); }
+.ms-tree { display: block; width: 100%; height: auto; }
+.ms-tree text { font-family: var(--font-body); font-weight: 700; }
+.ms-sky { fill: var(--ms-sky); }
+.ms-earth { fill: var(--ms-earth); }
+.ms-grass { fill: var(--ms-grass); }
+.ms-bark { fill: var(--ms-bark); stroke: var(--ms-bark-edge); stroke-width: 3; }
+.ms-bark-line { stroke: var(--ms-bark); }
+.ms-leaf { fill: var(--ms-leaf); stroke: var(--ms-leaf-edge); stroke-width: 2; }
+
+.ms-spot { cursor: pointer; outline: none; }
+.ms-spot.off:not(.filled) { cursor: default; }
+.ms-spot-bg { fill: var(--panel); stroke: var(--ink); stroke-width: 3; }
+.ms-q { fill: var(--ink); font-size: 22px; }
+.ms-pill { fill: var(--panel); stroke: var(--found); stroke-width: 3; display: none; }
+.ms-pill-text { fill: var(--ink); font-size: 15px; display: none; }
+.ms-spot.filled .ms-pill, .ms-spot.filled .ms-pill-text { display: block; }
+.ms-spot.filled .ms-spot-bg, .ms-spot.filled .ms-q { display: none; }
+.ms-spot:hover:not(.off) .ms-spot-bg, .ms-spot.hover .ms-spot-bg { stroke: var(--accent); fill: color-mix(in srgb, var(--accent) 30%, var(--panel)); }
+.ms-spot.picked .ms-spot-bg { stroke: var(--accent); stroke-width: 5; fill: color-mix(in srgb, var(--accent) 45%, var(--panel)); }
+.ms-spot:focus-visible .ms-spot-bg { stroke: var(--accent); stroke-width: 6; }
+.ms-spot:focus-visible { outline: none; }
+.ms-spot.lit .ms-spot-bg { stroke: var(--accent); stroke-width: 5; fill: color-mix(in srgb, var(--accent) 55%, var(--panel)); animation: ms-pulse 1s ease-in-out infinite; }
+.ms-spot.shake { animation: nope 0.35s; }
+@keyframes ms-pulse { 50% { stroke-width: 8; } }
+
+.ms-panel { display: grid; gap: 12px; min-width: 0; }
+.ms-feedback { min-height: 3em; }
+.ms-side { display: grid; gap: 10px; min-width: 0; }
+.ms-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ms-chip, .ms-opt {
+  font: inherit; font-weight: 700; color: var(--ink); background: var(--panel);
+  border: 2px solid var(--line); border-radius: var(--r); padding: 8px 14px; cursor: pointer; min-height: 44px;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.ms-opt { text-align: left; font-weight: 400; touch-action: manipulation; }
+.ms-chip:hover:not(:disabled), .ms-opt:hover:not(:disabled) { border-color: var(--muted); }
+.ms-chip:focus-visible, .ms-opt:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.ms-chip.picked { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+.ms-chip:disabled { opacity: 0.4; cursor: default; }
+.ms-chip.shake, .ms-opt.shake { animation: nope 0.35s; }
+.ms-opt { width: 100%; }
+.ms-opt.right { border-color: var(--found); background: color-mix(in srgb, var(--found) 16%, var(--panel)); opacity: 1; color: var(--ink); }
+.ms-opt.wrong { border-color: var(--missed); background: color-mix(in srgb, var(--missed) 16%, var(--panel)); }
+.ms-options { display: grid; gap: 8px; }
+.ms-ghost {
+  position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -120%);
+  padding: 6px 12px; font-weight: 700; background: var(--accent); color: var(--on-accent);
+  border: 2px solid var(--ink); border-radius: var(--r); box-shadow: 3px 3px 0 var(--ink);
+}
+.ms-who { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ms-who li { padding: 5px 8px; border-left: 4px solid var(--found); overflow-wrap: anywhere; }
+.ms-who li.bad { border-color: var(--missed); }
+.ms-note { margin: 4px 0 0; max-width: 60ch; }
+.ms-results { min-width: 0; }
+.ms-row .sc-card { padding-inline: 6px; }
+.ms-row .sc-name { overflow-wrap: break-word; hyphens: manual; font-size: 0.92rem; }
