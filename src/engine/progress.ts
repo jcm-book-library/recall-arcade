@@ -76,6 +76,13 @@ export const CHALLENGES: Record<string, Challenge> = {
   rhythm: count(3, "Name 3 note lengths"),
   symbols: count(5, "Name 5 signs"),
   ear: share(0.6, "Get 60% right"),
+  // Sport
+  nrl: share(0.5, "Score half marks in any round"),
+  afl: share(0.5, "Score half marks in any round"),
+  football: share(0.5, "Score half marks in any round"),
+  motorsport: share(0.5, "Score half marks in any round"),
+  olympics: share(0.5, "Score half marks in any round"),
+  sprint: share(0.5, "Score half marks in any round"),
 };
 
 export const SUBJECT_NAMES = ["Geography", "Science", "History", "Travel & Transport", "Nature & Animals", "Music", "Sport"];

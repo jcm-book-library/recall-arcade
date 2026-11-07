@@ -1,0 +1,74 @@
+/* Sport: the shared screen for Rugby League, Australian Rules, Football, Motorsport, Olympics and General Sports.
+   Uses the colours from style.css; the order cards reuse .sc-row and .sc-card. */
+.sp-setup { display: grid; gap: 14px; }
+.sp-group { display: grid; gap: 6px; }
+.sp-heading { margin: 0; }
+.sp-about { margin: 0; max-width: 70ch; }
+.sp-game { display: grid; gap: 16px; min-width: 0; }
+.sp-card { padding: 18px 16px; }
+.sp-card > * { min-width: 0; max-width: 100%; }
+.sp-year { margin: 0; font: clamp(2rem, 8vw, 3rem)/1.1 var(--font-pixel); color: var(--accent); font-variant-numeric: tabular-nums; }
+.sp-ask { margin: 0; }
+.sp-small { font-size: 0.85rem; margin: 0; }
+.sp-input-row { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; max-width: 560px; justify-content: center; margin-top: 6px; }
+.sp-input-row .answer { flex: 1 1 100%; text-align: center; }
+.sp-input-row .btn.primary { margin-left: 0; }
+.answer.nope { animation: nope 0.3s; }
+.sp-actions { justify-content: center; margin-top: 6px; }
+.sp-card .sc-reveal { text-align: left; }
+.sp-reveal { text-align: left; width: 100%; max-width: 560px; justify-self: center; }
+.sp-reveal p { margin: 0; }
+.sp-answer { font-weight: 700; font-size: 1.1rem; }
+.sp-fb { min-height: 1.5em; }
+
+/* Fill in their years: one row per decade */
+.sp-grid { display: grid; gap: 6px; width: 100%; max-width: 560px; }
+.sp-drow { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); align-items: center; gap: 6px; }
+.sp-dlabel { font: 0.75rem var(--font-pixel); color: var(--muted); text-align: left; }
+.sp-cells { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; }
+.sp-cell {
+  position: relative; display: grid; place-items: center; min-height: 36px; padding: 0; font-size: 0.82rem; font-variant-numeric: tabular-nums;
+  border: 2px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); cursor: pointer;
+}
+.sp-cell:hover:not(:disabled):not(.ghost) { border-color: var(--muted); }
+.sp-cell.ghost { border-color: transparent; background: transparent; color: var(--muted); cursor: default; opacity: 0.6; }
+.sp-cell.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+.sp-cell:disabled { cursor: default; color: var(--ink); opacity: 1; }
+.sp-cell.hit { background: color-mix(in srgb, var(--found) 28%, var(--panel)); border-color: var(--found); }
+.sp-cell.slip { background: color-mix(in srgb, var(--missed) 22%, var(--panel)); border-color: var(--missed); }
+.sp-cell.miss { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
+.sp-sym { position: absolute; top: -6px; right: -3px; font-size: 0.7rem; font-weight: 700; line-height: 1; background: var(--panel); border-radius: 50%; padding: 1px 2px; }
+.sp-tally { min-width: 7ch; }
+
+/* Decade blocks: one tile per year */
+.sp-tiles { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.sp-tile { display: grid; gap: 2px; padding: 8px; text-align: left; background: var(--bg); border: 2px solid var(--line); border-radius: var(--r); min-width: 0; }
+.sp-tile.off { opacity: 0.65; border-style: dashed; }
+.sp-tile.hit { border-color: var(--found); background: color-mix(in srgb, var(--found) 14%, var(--panel)); }
+.sp-tile.miss { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.sp-tyear { font: 0.72rem var(--font-pixel); color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp-name { font-weight: 700; font-size: 0.92rem; line-height: 1.25; overflow-wrap: anywhere; }
+
+/* Who won more? */
+.sp-picks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 560px; }
+.sp-pick {
+  display: grid; gap: 4px; align-content: center; justify-items: center; min-height: 88px; padding: 12px 10px;
+  font-weight: 700; font-size: 1.05rem; line-height: 1.25; text-align: center; overflow-wrap: anywhere;
+  border: 2px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); cursor: pointer;
+}
+.sp-pick:hover:not(:disabled) { border-color: var(--muted); }
+.sp-pick:disabled { cursor: default; color: var(--ink); }
+.sp-pick.right { border-color: var(--found); background: color-mix(in srgb, var(--found) 16%, var(--panel)); }
+.sp-pick.wrong { border-color: var(--missed); background: color-mix(in srgb, var(--missed) 16%, var(--panel)); }
+.sp-pick-sub { font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+
+.sp-order { justify-content: center; width: 100%; }
+
+@media (max-width: 600px) {
+  .sp-card { padding: 14px 10px; }
+  .sp-picks { gap: 8px; }
+  .sp-pick { font-size: 0.95rem; }
+  .sp-cell { min-height: 34px; font-size: 0.75rem; }
+  .sp-drow { grid-template-columns: 3rem minmax(0, 1fr); gap: 4px; }
+  .sp-dlabel { font-size: 0.65rem; }
+}
