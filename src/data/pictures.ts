@@ -48,8 +48,26 @@ export function loadPictures(set: keyof typeof TITLES): Promise<Map<string, Pict
   return cache.get(set)!;
 }
 
+/**
+ * Look up pictures for any list of "our id -> Wikipedia article title" (used by Leaders &
+ * Changemakers, which asks only for the people in the current round). Results are remembered
+ * under `key`, so replaying the same round does not ask Wikipedia again.
+ */
+export function loadPicturesFor(key: string, titles: Record<string, string>): Promise<Map<string, Picture>> {
+  if (!cache.has(key)) {
+    cache.set(key, fetchTitles(titles).catch((e) => {
+      cache.delete(key);
+      throw e;
+    }));
+  }
+  return cache.get(key)!;
+}
+
 async function fetchSet(set: keyof typeof TITLES) {
-  const titles = TITLES[set] as Record<string, string>;
+  return fetchTitles(TITLES[set] as Record<string, string>);
+}
+
+async function fetchTitles(titles: Record<string, string>) {
   const out = new Map<string, Picture>();
   const entries = Object.entries(titles);
   // 1. Each article's main image (free licences only) and a 500px thumbnail.
