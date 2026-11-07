@@ -59,3 +59,31 @@ into the data files.
 4. Who Lived When additions.
 5. Sport: the subject, the lists, the five ways to play, the island stadium.
 6. Entertainment.
+
+## Update (7 Nov 2026): sheet tidied, and more decisions
+**The sheet tidy-up is done** (by the lead session, with dated backup tabs of each tab touched, "… backup 2026-11-06"):
+- **Big Moments:** 151 rows (ids 1–151), 25 of them periods.
+  - New columns: type, start year, end year, period it belongs to.
+  - Existing events are linked to their periods (for example Pearl Harbor goes in World War II).
+  - Duplicates were deleted, Gettysburg was corrected to 1863, and the Whitechapel murders were left out.
+- **Who Lived When:** 146 people (ids 1–146). The 70 newcomers have dates and a "who they were".
+  Abraham, Homer and Zoroaster were removed (no reliable dates), along with 3 duplicates.
+- **World Leaders:** 152 rows (ids 1–152).
+  - Columns `round` and `role` were added.
+  - The UK years were moved into the right column.
+  - **Rounds:** Australian PMs; UK PMs from WW2 (Chamberlain on); US presidents from WW2 (FDR on);
+    Big names before WW2; Changemakers; Rulers through history; World leaders since 1900; spare.
+- **Marking:** everything Claude filled is marked "Filled by Claude, please check" in the notes.
+  The owner confirmed the 2026 sports results.
+
+**More decisions:**
+- **Sport has 6 sub-topics**, one sport each, with a few variants:
+  1. Rugby League (NRL premiers)
+  2. Australian Rules (AFL premiers)
+  3. Football (Premier League, FIFA World Cup, Champions League / European Cup)
+  4. Motorsport (F1 world champions, Bathurst 1000)
+  5. Olympics (host cities for now)
+  6. General Sports (fastest man alive; more to come)
+- **Later ideas:**
+  - an **"After Dark"** extension for grimmer history (for example Jack the Ripper);
+  - **religions** as their own topic, rather than merged into Mythology, so it's handled with care.
