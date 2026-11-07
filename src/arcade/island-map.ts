@@ -6,7 +6,7 @@
 //
 // THE ISLAND IS A ROUTE. A gravel path makes one big loop, and you walk it in order:
 //   Start > Geography > (Planet Pong) > Science > scenic walk > History > (The Labyrinth) > Travel
-//   > scenic walk > Nature > (Flyover) > Music > back to Start.
+//   > scenic walk > Nature > (Flyover) > Music > Sport > back to Start.
 // Hedges and fences line the path so you can not wander off it. A GATE across the path just past
 // each subject building stays shut until you have done enough challenges in that subject. When the
 // loop is finished you get FREE ROAM: the side fences open and the arcade hall appears.
@@ -20,15 +20,15 @@
 //   ~  sea          w  river or pond      T  tree     r  rock     F  fence that never opens
 //   f  FREE-ROAM FENCE. Solid until free roam is on, then it vanishes. The path is lined with
 //      these, and so are the two plots.
-//   SIGNPOSTS: the digits 1 to 9. Walk into one to read it. Digit 1 shows the first line of SIGNS
-//   (below), digit 2 the second, and so on.
+//   SIGNPOSTS: the digits 1 to 9, then 0 for the tenth. Walk into one to read it. Digit 1 shows the first line of SIGNS
+//   (below), digit 2 the second, and so on (0 shows the tenth).
 //   GATES AND THE FINISH LINE
 //   Z  a gate across the path. The gates are counted in the order you meet them on the route
 //      (the first one you reach from the start is Geography's, then Science's, and so on, in the
-//      same order as BUILDINGS below). It is solid until its subject has enough challenges done.
+//      same order as BUILDINGS below; Sport's is the last, just before the finish line). It is solid until its subject has enough challenges done.
 //   E  the finish line, just outside the start area. It only opens once you have walked round
 //      the whole loop, which also stops anyone sneaking round the loop the wrong way.
-//   THE SIX SUBJECT BUILDINGS. Each is a block of its capital letter, as big as the picture is.
+//   THE SEVEN SUBJECT BUILDINGS. Each is a block of its capital letter, as big as the picture is.
 //   One tile on the bottom row of the block is the DOOR (the small letter). The door is where
 //   the sign panel opens when you walk into it. A building must be a filled rectangle.
 //   G g  Geography: the lighthouse and giant globe (5 wide, 7 tall)
@@ -37,6 +37,7 @@
 //   A a  Travel & Transport: the airport terminal (7 x 5)
 //   N n  Nature & Animals: the greenhouse and zoo gate (7 x 4)
 //   M m  Music: the concert shell (5 x 4)
+//   O o  Sport: the stadium (7 x 5), on the south lane just before the last gate
 //   U u  The ARCADE HALL (7 x 5). It only appears in free roam; until then the plot is empty dirt.
 //   THE ARCADE STOPS. Each has a SPOT tile that you step onto (it glows), plus scenery beside it.
 //   They sit just off the path, so you can walk past them. Stepping on the spot opens a panel.
@@ -85,12 +86,12 @@ export const ROWS: string[] = [
   "~~~f=^============Z===============Z====f,w,..rTT*..Tf=f,~~~~",
   "~~~f====P=rffffTff~~~@CC~~~~~~~~~~~~~~~~~~,..T..T...T=f,~~~~",
   "~~~f======TT.....,~~~pCC~~~~~~~~~~~~~~~~~~,*..*.**T.f=f,~~~~",
-  "~~~f======f.T....,~~~~~~~~~~~~~~~~~~~~~~~~,.*...T...f=f,~~~~",
-  "~~~,fffEff.T*..TT,~~~~~~~~~~~~~~~~~~~~~~~~,.r...*TT.f=f,~~~~",
-  "~~~,,.f=f.....*..,,,,,,,,,,,,,,,,,,,,,,,,,,...T**T..r=f,~~~~",
-  "~~~,,.f=f....*....T.**.........*....TT*..TTr.T*...TTf=f,~~~~",
-  "~~~~,,f=fTfffffffffffffffrTfffffffTfffTfffTfffTfffTTf=f~~~~~",
-  "~~~~~,f===============================================~~~~~~",
+  "~~~f======f.T....,~~~~~~~~~~~~~~~~~~~~~~~~,.OOOOOOO.f=f,~~~~",
+  "~~~,fffEff.T*..TT,~~~~~~~~~~~~~~~~~~~~~~~~,.OOOOOOO.f=f,~~~~",
+  "~~~,,.f=f.....*..,,,,,,,,,,,,,,,,,,,,,,,,,,.OOOOOOO.r=f,~~~~",
+  "~~~,,.f=f....*....T.**.........*....TT*..TTrOOOOOOOTf=f,~~~~",
+  "~~~~,,f=fTfffffffffffffffrTfffffffTfffTfffTfOOOoOOOT0=f~~~~~",
+  "~~~~~,f=================================Z=============~~~~~~",
   "~~~~~~,ffffffffffffffffffffffffffffffffffffffffffffff~~~~~~~",
   "~~~~~~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~~~~~~~~",
   "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
@@ -111,6 +112,7 @@ export const SIGNS: string[] = [
   "Beach. Sand, sea, and a great deal of both.",
   "You are on a path. Paths are very good at this.",
   "Zoo. Please do not feed the quiz questions to the animals. They have opinions.",
+  "Stadium. The crowd is very keen. The crowd is also painted on. Please clap anyway.",
 ];
 
 // What each building is. `body` is its capital letter in the map and `door` its small letter.
@@ -125,6 +127,7 @@ export const BUILDINGS: BuildingInfo[] = [
   { id: "terminal", subject: "Travel & Transport", title: "Travel and Transport", place: "Travel terminal", body: "A", door: "a" },
   { id: "zoo", subject: "Nature & Animals", title: "Nature and Animals", place: "Nature zoo", body: "N", door: "n" },
   { id: "bandstand", subject: "Music", title: "Music", place: "Music bandstand", body: "M", door: "m" },
+  { id: "stadium", subject: "Sport", title: "Sport", place: "Sport stadium", body: "O", door: "o" },
 ];
 
 // The arcade hall, which only exists in free roam.
@@ -150,7 +153,7 @@ export const MAP_H = ROWS.length;
 export const tileAt = (x: number, y: number) => ROWS[y]?.[x] ?? "~";
 
 /** Always solid: sea, river, trees, rocks, the buildings (and their doors), scenery, signposts. */
-const HARD_SOLID = new Set("~wTrFGgSsHhAaNnMmUuCLYX_123456789");
+const HARD_SOLID = new Set("~wTrFGgSsHhAaNnMmOoUuCLYX_1234567890");
 
 /** What can change while you play. */
 export interface WalkState {

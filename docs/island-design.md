@@ -31,6 +31,7 @@ a building, and the arcade games are stops along the path. It grows as you clear
 | Travel & Transport | a small airport terminal with a windsock | airports, airlines, tail fins |
 | Nature & Animals | a zoo gate and a greenhouse | animals, pets, dinosaurs |
 | Music | a bandstand / concert shell | the piano games |
+| Sport | a stadium: oval stands, a green field, light towers | the Sport quizzes |
 
 Arcade stops along the path:
 - **Planet Pong:** an old arcade cabinet on the pier.
@@ -60,7 +61,7 @@ the owner's own picture in `public/arcade/island/`, and the Hero Workshop idea c
 "Island Workshop".
 
 ## Build steps (Proposed)
-1. **The island v1:** the map, walking (tap-to-walk and keys), all six buildings opening their quiz
+1. **The island v1:** the map, walking (tap-to-walk and keys), all seven buildings opening their quiz
    signs, the arcade stops with locks and previews, "◂ Island" back from quizzes, and the home banner.
 2. **Progress on the island:** flags, opening fences, fireworks, the arcade hall, funny signs.
 3. **Your art:** swappable building and tile pictures, and an Island Workshop page.
@@ -100,9 +101,17 @@ The owner's original vision: a route you walk, not a park to wander. This replac
 ## Built: the island as a route (3 Nov 2026)
 - **The map:** a 60 × 44 loop in `src/arcade/island-map.ts`, as letters. Edit it, then run `node scripts/check-island.mjs`.
 - **Gates:** each gate belongs to the building before it. They block the path, but walking back is always allowed.
-- **The finish line** at Start lets you through only after all six gates. Stepping on it with every gate open starts free roam: fireworks, the fences vanish, and the arcade hall appears.
+- **The finish line** at Start lets you through only after all seven gates. Stepping on it with every gate open starts free roam: fireworks, the fences vanish, and the arcade hall appears.
 - **The first lap is always Easy** (1 challenge per stop), even for a player with lots of quizzes done already.
 - **Arcade stops** are 1-tile spurs, so they're skippable. Play earns a stamp, saved in `learning-arcade:stamps`.
 - **Saved progress:** `learning-arcade:island` holds `{freeRoam, track}`. The hero's spot is kept in sessionStorage.
 - **Routes:** `#` and `#island` show the island, and `#list` shows the cards.
 - **Testing:** `scripts/sweep-games.mjs` now reads the cards from `#list` and also opens the island, the list and the Hero Workshop.
+
+## Built: the stadium (7 Nov 2026)
+Sport is the seventh building, so the route is now: Start → … → **Music** → **Sport** → back to Start.
+- **Where:** on the south lane, just after the corner. It is a 7 × 5 block (`O`, door `o`) with its door on the path. Its gate sits 7 tiles further west, the last one before the finish line. The map size did not change.
+- **Gates and finish:** the gate list comes from `BUILDINGS`, so the finish line now needs all seven gates. A saved `freeRoam` is kept. The first lap is still Easy.
+- **Sign:** a tenth signpost, written `0` on the map (the digits 1 to 9 were all used). It is the stadium joke by the corner. The checker accepts up to ten signs.
+- **Quizzes:** the sign lists every deck with `subject: "Sport"`, in `DECKS` order. With none yet it says "Coming soon", and the gate is open (no challenges to do).
+- **Art:** `stadium()` in `island-art.ts`.
