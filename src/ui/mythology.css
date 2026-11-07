@@ -1,0 +1,71 @@
+/* Mythology hub: culture tabs, a ladder of steps, special challenges and study cards. */
+.mh { min-width: 0; }
+.mh-intro { margin: 0; }
+.mh-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.mh-tab {
+  flex: 1 1 0; min-width: 4.5rem; padding: 10px 14px; cursor: pointer; font-weight: 700;
+  border: 2px solid var(--line); background: var(--panel); color: var(--ink); border-radius: var(--r);
+}
+.mh-tab:hover { border-color: var(--muted); }
+.mh-tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); box-shadow: 3px 3px 0 var(--accent); }
+.mh-tab:focus-visible, .mh-go:focus-visible, .mh-special:focus-visible, .mh-chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.mh-panel { display: grid; gap: 14px; min-width: 0; }
+.mh-blurb { margin: 0; }
+.mh-sub { margin: 6px 0 0; font: 0.8rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+
+.mh-ladder, .mh-specials { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.mh-step {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--panel); border: 2px solid var(--line); border-radius: var(--r);
+}
+.mh-step.done { border-color: color-mix(in srgb, var(--found) 60%, var(--line)); }
+.mh-num {
+  width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 50%;
+  font: 1rem var(--font-pixel); border: 2px solid var(--ink); background: var(--bg);
+}
+.mh-num.done { background: var(--found); border-color: var(--found); color: #fff; }
+.mh-step-body { display: grid; gap: 2px; min-width: 0; }
+.mh-text { color: var(--muted); font-size: 0.92rem; }
+.mh-done { color: var(--found); font-size: 0.8rem; font-weight: 700; }
+.mh-go { text-decoration: none; margin-left: 0; white-space: nowrap; text-align: center; }
+.mh-specials { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.mh-special {
+  display: grid; gap: 4px; height: 100%; padding: 12px 14px; text-decoration: none; color: var(--ink);
+  background: var(--panel); border: 2px solid var(--line); border-radius: var(--r); box-sizing: border-box;
+}
+.mh-special:hover { border-color: var(--accent); transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--accent); }
+.mh-special.done { border-color: color-mix(in srgb, var(--found) 60%, var(--line)); }
+
+.mh-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.mh-card {
+  display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start;
+  padding: 12px; background: var(--panel); border: 2px solid var(--line); border-radius: var(--r);
+}
+.mh-card.no-pic { grid-template-columns: minmax(0, 1fr); }
+.mh-pic-wrap { display: grid; gap: 4px; min-width: 0; }
+.mh-pic { display: block; width: 96px; height: 96px; border-radius: var(--r); overflow: hidden; background: var(--line); }
+.mh-pic.pending { opacity: 0.5; }
+.mh-pic img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.mh-pic-credit { text-align: left; font-size: 0.62rem; max-width: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mh-card-text { display: grid; gap: 4px; min-width: 0; }
+.mh-card h3 { margin: 0; font-size: 1.15rem; }
+.mh-rules { margin: 0; }
+.mh-facts { margin: 4px 0 0; display: grid; gap: 2px; font-size: 0.88rem; }
+.mh-fact { display: flex; flex-wrap: wrap; gap: 0 6px; }
+.mh-fact dt { color: var(--muted); }
+.mh-fact dt::after { content: ":"; }
+.mh-fact dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+
+.mh-more { display: grid; gap: 8px; padding-top: 6px; border-top: 2px solid var(--line); }
+.mh-more-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mh-chip { text-decoration: none; color: var(--ink); }
+.mh-chip.done { border-color: color-mix(in srgb, var(--found) 60%, var(--line)); }
+.mh-tip, .mh-credit { margin: 0; font-size: 0.85rem; }
+
+@media (max-width: 560px) {
+  .mh-step { grid-template-columns: auto minmax(0, 1fr); }
+  .mh-step .mh-go { grid-column: 1 / -1; }
+  .mh-card { grid-template-columns: 80px minmax(0, 1fr); }
+  .mh-pic { width: 80px; height: 80px; }
+  .mh-tab { padding: 10px 6px; }
+}

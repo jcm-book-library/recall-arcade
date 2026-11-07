@@ -18,9 +18,12 @@ import { historyDeck } from "./decks/history";
 import { peopleDeck } from "./decks/people";
 import { empiresDeck } from "./decks/history-maps";
 import { erasDeck } from "./decks/eras";
+import { afterlifeDeck, realmsDeck } from "./decks/myth-specials";
 import { airportsDeck } from "./decks/airports";
 import { currenciesDeck } from "./decks/travel-maps";
-import { natoDeck, pmDeck, unitsDeck, airlinesDeck, babyDeck, mythDeck } from "./decks/text-decks";
+import { natoDeck, pmDeck, unitsDeck, airlinesDeck, babyDeck } from "./decks/text-decks";
+import { mythWhoDeck, mythSymbolsDeck } from "./decks/mythology";
+import { mythHubDeck } from "./ui/mythology";
 import { lifeDeck } from "./decks/choice-decks";
 import { famousForDeck, mythPairsDeck } from "./decks/pairs-decks";
 import { animalsDeck, petsDeck, landmarksDeck, dinosaursDeck } from "./decks/picture-decks";
@@ -41,7 +44,7 @@ const DECKS: Deck[] = [
   // Science
   zoomOutDeck, innerSpaceDeck, elementsDeck, bodyDeck, scaleDeck, earthSkyDeck,
   // History
-  historyDeck, peopleDeck, pmDeck, erasDeck, mythDeck, famousForDeck,
+  historyDeck, peopleDeck, pmDeck, erasDeck, mythHubDeck, famousForDeck,
   // Travel & Transport
   airportsDeck, airlinesDeck, tailFinsDeck, natoDeck, currenciesDeck, landmarksDeck,
   // Nature & Animals
@@ -50,7 +53,9 @@ const DECKS: Deck[] = [
   keyboardDeck, trebleDeck, bassDeck, rhythmDeck, symbolsDeck, earDeck,
   // Not on the home page: reached from Mythology (#mythpairs), Inner Space (#cells), Countries (#neighbours),
   // The Scale of Things (#units, the old quiz, kept so its saved scores still work) or Eras & Dynasties (#empires, the map quiz)
-  mythPairsDeck, cellsDeck, neighboursDeck, unitsDeck, empiresDeck,
+  mythPairsDeck, mythWhoDeck, mythSymbolsDeck, cellsDeck, neighboursDeck, unitsDeck, empiresDeck,
+  // Hidden Mythology specials, reached from the Mythology page (#afterlife, #realms)
+  afterlifeDeck, realmsDeck,
 ];
 
 // While developing, catch two items in one game sharing an id (they'd count as one).
@@ -72,7 +77,8 @@ function route() {
   cleanup = undefined;
   // The island is the front page ("" or "#"), so every quiz's "◂ Arcade" link lands there. The
   // card list lives at "#list", and "#island" still works as an old way of saying the same thing.
-  const id = location.hash.replace(/^#/, "");
+  // "#myths/type/greek" is the address "myths" plus extra detail that the game itself reads.
+  const id = location.hash.replace(/^#/, "").split("/")[0];
   const deck = DECKS.find((d) => d.id === id);
   if (id === "pong") cleanup = renderPong(root);
   else if (id === "labyrinth") cleanup = renderLabyrinth(root);

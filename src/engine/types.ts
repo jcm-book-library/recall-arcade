@@ -104,6 +104,8 @@ export interface Deck {
   judgeClick?: (clickedId: string, current: Item) => boolean;
   /** An option id that, when ticked, switches a "prompt" game to "click" (Bones, Cells). */
   clickOption?: string;
+  /** Where the "◂ Arcade" link goes, when the game is opened from another screen (Mythology). */
+  back?: { href: string; label: string };
   /** A game with its own screen instead of the standard one (Big Moments). */
   screen?: (root: HTMLElement, deck: Deck) => () => void;
   /** Which of the five subjects the game belongs to, for the home page. */

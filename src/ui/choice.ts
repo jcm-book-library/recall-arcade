@@ -27,6 +27,8 @@ export interface ChoiceSpec {
   shuffleOptions?: boolean;
   /** Sound for the question (Ear Training). Plays when it appears, with a button to hear it again. */
   play?: (item: Item) => void;
+  /** Where the back link goes (default: the arcade). */
+  back?: { href: string; label: string };
 }
 
 function shuffle<T>(list: T[]): T[] {
@@ -40,7 +42,9 @@ function shuffle<T>(list: T[]): T[] {
 
 /** A multiple-choice game: one question at a time, click (or press 1–9) to answer. */
 export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
-  let round = spec.rounds[0];
+  // A link like #mythwho/greek opens straight at that round.
+  const wanted = location.hash.replace(/^#/, "").split("/")[1];
+  let round = spec.rounds.find((r) => r.id === wanted) ?? spec.rounds[0];
   let questions: Item[] = [];
   let index = 0;
   let right = 0;
@@ -56,7 +60,7 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
     h(
       "main",
       { class: "play" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)),
+      h("div", { class: "play-top" }, h("a", { class: "back", href: spec.back?.href ?? "#" }, spec.back?.label ?? "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)),
       setup,
       game,
       results,

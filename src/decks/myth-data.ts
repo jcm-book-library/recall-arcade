@@ -76,7 +76,7 @@ no-thor|Thor||thunder and protecting people|the hammer Mjölnir|goats||
 no-loki|Loki||tricks and mischief, a shape-shifter||||
 no-freya|Freya|Freyja|love, beauty and war|the necklace Brísingamen|cats||Freyja
 no-frigg|Frigg|Frigga|marriage and the home, queen of Asgard|spinning distaff|||
-no-tyr|Tyr|Týr;Tiw|law and bravery in war, who lost a hand to the wolf Fenrir|sword|||Týr
+no-tyr|Tyr|Týr;Tiw|law and bravery in war, who lost a hand to the wolf Fenrir||||Týr
 no-baldr|Baldr|Balder;Baldur|light and goodness, killed by a mistletoe dart|mistletoe|||
 no-heimdall|Heimdall|Heimdallr|watching over the rainbow bridge Bifröst|the horn Gjallarhorn|ram||
 no-freyr|Freyr|Frey|sunshine, rain and good harvests|the ship Skíðblaðnir|boar||
