@@ -127,3 +127,19 @@ Entertainment is the eighth building, so the route is now: Start → … → Mus
 - **Already there from the route work:** gates, the finish fireworks, free roam, the arcade hall and stamps. Flags and the stamp book were the missing parts of step 2.
 - **Checker:** `scripts/check-island.mjs` now reads `SIGN_KEYS` and accepts the theatre. The tiny pixel font's `V` was redrawn so "MOVIES" reads properly.
 - **Dev helper:** `__island.book()` opens the stamp book in the dev copy.
+
+## Later: the island opens up in stages (owner, 8 Nov 2026)
+Logged to revisit. Free roam as it is now (every fence gone, only the coast as a border) feels too loose,
+so the plan is three stages instead of "fenced, then wide open":
+1. **First lap (Easy):** as now. Fences close to the path, one route all the way round.
+2. **After the first lap:** the fences drop away, but a **softer border** stays along the road
+   (bushes, hedges, low walls, rocks). The edges open up just enough to reach some **easter eggs**
+   (to be worked out later), but it still feels like a path, not an empty field.
+3. **A later step:** the player earns a **tool**, such as a key, or an axe to chop certain bushes or a
+   tree. It opens a **wharf or bridge** to extra areas, or a future **expansion area**.
+
+Questions for when we come back to this:
+- What earns each tool (a lap on a harder track, a set of stamps, a hidden item)?
+- Which bushes or trees can be chopped, and how does the player tell them apart?
+- What is across the bridge: easter eggs, the new flying games, or a whole new region?
+- Should the arcade hall stay where it is, or move to the new area?
