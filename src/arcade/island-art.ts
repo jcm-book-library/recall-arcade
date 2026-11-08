@@ -82,7 +82,7 @@ const FONT: Record<string, string> = {
   F: "111100110100100", G: "011100101101011", H: "101101111101101", I: "111010010010111", J: "001001001101010",
   K: "101101110101101", L: "100100100100111", M: "101111111101101", N: "110101101101101", O: "010101101101010",
   P: "110101110100100", Q: "010101101111011", R: "110101110101101", S: "011100010001110", T: "111010010010010",
-  U: "101101101101111", V: "101101101101010", W: "101101111111101", X: "101101010101101", Y: "101101010010010",
+  U: "101101101101111", V: "101101101010010", W: "101101111111101", X: "101101010101101", Y: "101101010010010",
   Z: "111001010100111", "&": "010101010101011", " ": "000000000000000",
 };
 function textWidth(s: string) {
@@ -685,6 +685,98 @@ function stadium(w: number, h: number, door: number) {
   return c;
 }
 
+/** Text twice as big (each pixel is a 2 x 2 square), for the marquee. */
+function bigText(g: G, s: string, x: number, y: number, colour: string) {
+  g.fillStyle = colour;
+  let cx = x;
+  for (const ch of s) {
+    if (ch === " ") { cx += 4; continue; }
+    const rows = FONT[ch] ?? FONT[" "];
+    for (let i = 0; i < 15; i++) if (rows[i] === "1") g.fillRect(cx + (i % 3) * 2, y + Math.floor(i / 3) * 2, 2, 2);
+    cx += 8;
+  }
+}
+
+function theatre(w: number, h: number, door: number) {
+  const c = makeCanvas(w * TILE, h * TILE);
+  const g = ctxOf(c);
+  const W = w * TILE, H = h * TILE;
+  const cx = Math.round(W / 2);
+  const BRICK = { light: "#b5493f", base: "#963a35", dark: "#6f2a2a" };
+  // the roof edge, then the red brick front
+  R(g, 2, 14, W - 4, 4, OUT);
+  R(g, 3, 15, W - 6, 2, "#4a3a52");
+  R(g, 2, 18, W - 4, H - 18, OUT);
+  R(g, 3, 19, W - 6, H - 20, BRICK.base);
+  for (let y = 22; y < H - 2; y += 4) for (let x = 4 + ((y >> 2) % 2) * 4; x < W - 5; x += 8) R(g, x, y, 1, 4, BRICK.dark);
+  for (let y = 22; y < H - 2; y += 4) R(g, 4, y, W - 8, 1, BRICK.light);
+  R(g, 3, 19, W - 6, 2, "#f1e6cc"); // cream trim under the roof
+  // the marquee: a tall lit sign with a ring of bulbs and big letters
+  R(g, cx - 31, 1, 62, 24, OUT);
+  R(g, cx - 30, 2, 60, 22, "#7a1f2b");
+  R(g, cx - 28, 4, 56, 18, OUT);
+  R(g, cx - 27, 5, 54, 16, "#1d1a2e");
+  for (let x = cx - 29; x <= cx + 27; x += 4) {
+    const on = ((x - cx) / 4) % 2 === 0;
+    R(g, x, 2, 2, 2, on ? "#ffe066" : "#fff6c0");
+    R(g, x, 22, 2, 2, on ? "#fff6c0" : "#ffe066");
+  }
+  for (const y of [8, 14, 20]) { R(g, cx - 31, y - 1, 2, 2, "#ffe066"); R(g, cx + 29, y - 1, 2, 2, "#ffe066"); }
+  bigText(g, "MOVIES", cx - 23, 9, "#ffe066");
+  R(g, cx - 23, 20, 46, 1, "#c0503a");
+  // searchlight beams from the roof corners
+  for (const [bx, dir] of [[8, 1], [W - 9, -1]]) {
+    R(g, bx - 2, 8, 5, 6, OUT); R(g, bx - 1, 9, 3, 4, "#8d95a3"); R(g, bx, 9, 1, 1, "#fff6c0");
+    for (let i = 0; i < 6; i++) R(g, bx + dir * (i * 2 + 2), 7 - i, 2, 1, "rgba(255,246,192,0.7)");
+  }
+  // four posters in lit frames, two each side of the door
+  const poster = (px: number, kind: number) => {
+    const py = 29;
+    R(g, px - 1, py - 1, 18, 25, OUT);
+    R(g, px, py, 16, 23, "#ffe066");
+    const bg = ["#2f6fb5", "#6b3fa0", "#2a7a4f", "#c0503a"][kind];
+    R(g, px + 1, py + 1, 14, 21, bg);
+    if (kind === 0) { disc(g, px + 8, py + 9, 4, "#f4efe6"); disc(g, px + 10, py + 8, 3, bg); R(g, px + 3, py + 4, 1, 1, "#fff"); R(g, px + 12, py + 14, 1, 1, "#fff"); } // moon
+    else if (kind === 1) { R(g, px + 7, py + 3, 2, 12, "#f4efe6"); R(g, px + 5, py + 12, 6, 3, "#d8402f"); R(g, px + 6, py + 6, 4, 1, "#9fd0ff"); R(g, px + 7, py + 1, 2, 2, "#f4efe6"); } // rocket
+    else if (kind === 2) { disc(g, px + 8, py + 9, 5, "#ffd24a"); R(g, px + 6, py + 8, 1, 1, OUT); R(g, px + 10, py + 8, 1, 1, OUT); R(g, px + 6, py + 11, 5, 1, OUT); } // smiling face
+    else { for (let i = 0; i < 5; i++) { R(g, px + 7 - i, py + 3 + i * 2, 1 + i * 2, 2, i % 2 ? "#ffd24a" : "#ffb52b"); } } // a big star-ish triangle
+    R(g, px + 2, py + 17, 12, 2, "#f4efe6"); // title scrawl
+    R(g, px + 4, py + 20, 8, 1, "#f4efe6");
+  };
+  poster(6, 0); poster(26, 1); poster(W - 22, 2); poster(W - 42, 3);
+  // the red carpet, with gold rope posts, and the doorway
+  const dx = door * TILE;
+  R(g, dx - 4, H - 24, 24, 5, OUT); // awning over the door
+  for (let i = 0; i < 6; i++) R(g, dx - 3 + i * 4, H - 23, 4, 3, i % 2 ? "#f4efe6" : "#d8402f");
+  doorway(g, dx + 2, H - 18, 12, 18, "#2a1d2e");
+  R(g, dx + 3, H - 17, 10, 14, "#ffd98a"); // the warm light inside
+  R(g, dx + 3, H - 17, 10, 3, "#ffefc0");
+  R(g, dx + 7, H - 17, 2, 18, OUT); // the two doors meet
+  R(g, dx + 1, H - 5, 14, 5, "#b3202c");
+  R(g, dx + 1, H - 5, 14, 1, "#d8404c");
+  R(g, dx, H - 1, 1, 1, OUT); R(g, dx + 15, H - 1, 1, 1, OUT);
+  for (const px of [dx - 3, dx + 18]) { R(g, px, H - 10, 2, 10, "#ffd24a"); R(g, px - 1, H - 11, 4, 2, "#ffe066"); R(g, px - 1, H - 11, 4, 1, OUT); }
+  R(g, dx - 2, H - 7, 3, 1, "#b3202c"); R(g, dx + 15, H - 7, 3, 1, "#b3202c");
+  // the ticket booth on the left: striped awning and a lit window
+  R(g, 6, H - 28, 30, 28, OUT);
+  R(g, 7, H - 22, 28, 22, "#f1e6cc");
+  for (let i = 0; i < 7; i++) R(g, 7 + i * 4, H - 27, 4, 6, i % 2 ? "#f4efe6" : "#2f6fb5");
+  R(g, 12, H - 17, 18, 11, OUT); R(g, 13, H - 16, 16, 9, "#ffd98a"); R(g, 13, H - 16, 16, 2, "#ffefc0");
+  R(g, 16, H - 11, 10, 2, WOOD.base); R(g, 16, H - 11, 10, 1, WOOD.light);
+  R(g, 19, H - 15, 4, 3, "#e8b890"); // a very patient face
+  R(g, 14, H - 5, 14, 1, OUT);
+  // the popcorn stand on the right: red and white stripes with a heap of popcorn
+  const px = W - 36;
+  R(g, px, H - 24, 30, 24, OUT);
+  R(g, px + 1, H - 18, 28, 18, "#f1e6cc");
+  for (let i = 0; i < 7; i++) R(g, px + 1 + i * 4, H - 23, 4, 6, i % 2 ? "#f4efe6" : "#d8402f");
+  for (let i = 0; i < 7; i++) R(g, px + 1 + i * 4, H - 17, 4, 12, i % 2 ? "#f4efe6" : "#d8402f");
+  R(g, px + 7, H - 14, 16, 8, OUT); R(g, px + 8, H - 13, 14, 6, "#ffe066");
+  for (const [qx, qy] of [[9, -17], [13, -19], [17, -17], [21, -19], [11, -21], [19, -21]]) disc(g, px + qx, H + qy, 2, "#fff6dc");
+  R(g, px + 6, H - 1, 18, 1, OUT);
+  return c;
+}
+
 // ---------- the arcade stops ----------
 function cabinet(w: number, h: number): HTMLCanvasElement {
   const c = makeCanvas(w * TILE, h * TILE);
@@ -831,8 +923,28 @@ function hall(w: number, h: number, door: number): HTMLCanvasElement {
   return c;
 }
 
+/**
+ * A flag on a pole, flown from a roof once that subject has a challenge done. 16 wide and 22 tall;
+ * the pole's foot is the bottom left. Two frames, so the flag ripples.
+ */
+export function makeFlag(colour: string, frame: number) {
+  const c = makeCanvas(16, 22);
+  const g = ctxOf(c);
+  R(g, 0, 2, 3, 20, OUT);
+  R(g, 1, 3, 1, 19, "#e9e4d6");
+  R(g, 0, 0, 3, 3, OUT);
+  R(g, 1, 1, 1, 1, "#ffd24a");
+  const wave = frame ? 1 : 0;
+  R(g, 3, 1, 13, 12, OUT);
+  R(g, 4, 2 + wave, 11, 9, colour);
+  R(g, 4, 2 + wave, 11, 2, "rgba(255,255,255,0.35)");
+  R(g, 7, 5 + wave, 5, 4, "#f4efe6"); // a white patch on every flag
+  R(g, 8, 6 + wave, 3, 2, colour);
+  return c;
+}
+
 // ---------- put it all together ----------
-export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "stadium" | "cabinet" | "gate" | "airstrip" | "mirror" | "hall";
+export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "stadium" | "theatre" | "cabinet" | "gate" | "airstrip" | "mirror" | "hall";
 
 /**
  * Paint one building or stop. `w` and `h` are its size in tiles, found from the map. `door` is the
@@ -848,6 +960,7 @@ export function drawSprite(kind: SpriteKind, w: number, h: number, door: number,
     case "zoo": return zoo(w, h, door);
     case "bandstand": return bandstand(w, h, door);
     case "stadium": return stadium(w, h, door);
+    case "theatre": return theatre(w, h, door);
     case "cabinet": return cabinet(w, h);
     case "gate": return gate(w, h);
     case "airstrip": return airstrip(w, h, [0, 0], extra?.plane ?? [1, 1]);
@@ -875,7 +988,11 @@ export interface TileArt {
   stampedPad: HTMLCanvasElement;
   gate: Record<string, HTMLCanvasElement>; // "open-x", "shut-y" and so on
   finish: Record<string, HTMLCanvasElement>;
+  flags: HTMLCanvasElement[][]; // [colour][frame]
 }
+
+/** The flag colours, one per building in route order (they repeat if there are more buildings). */
+export const FLAG_COLOURS = ["#d8402f", "#2f6fb5", "#7b4fb5", "#e08a1e", "#2f9e5a", "#d4559e", "#1f9aa8", "#c9a21c"];
 
 export function makeTileArt(): TileArt {
   const range = (n: number) => Array.from({ length: n }, (_, i) => i);
@@ -897,6 +1014,7 @@ export function makeTileArt(): TileArt {
     pad: [makeStopPad(0), makeStopPad(1)],
     stampedPad: makeStampedPad(),
     gate: { "open-x": makeGate(true, "x"), "shut-x": makeGate(false, "x"), "open-y": makeGate(true, "y"), "shut-y": makeGate(false, "y") },
+    flags: FLAG_COLOURS.map((col) => [makeFlag(col, 0), makeFlag(col, 1)]),
     finish: { "open-x": makeFinish(true, "x"), "shut-x": makeFinish(false, "x"), "open-y": makeFinish(true, "y"), "shut-y": makeFinish(false, "y") },
   };
 }

@@ -6,9 +6,9 @@ import { CHALLENGES, challengeDone, clearedSubjects, currentTrack, rememberTrack
 import type { Track } from "../engine/progress";
 import { loadSavedHero, makeHeroSheet } from "./hero-art";
 import { clamp, noise, startLoop } from "./kit";
-import { BUILDINGS, HALL, MAP_H, MAP_W, SIGNS, STOPS, blocked, findTiles, gateOrder, tileAt } from "./island-map";
+import { BUILDINGS, HALL, MAP_H, MAP_W, SIGNS, STOPS, blocked, findTiles, gateOrder, isSignKey, signNumber, tileAt } from "./island-map";
 import type { WalkState } from "./island-map";
-import { TILE, drawSprite, makeFence, makeTileArt } from "./island-art";
+import { FLAG_COLOURS, TILE, drawSprite, makeFence, makeTileArt } from "./island-art";
 import type { Sprite, SpriteKind } from "./island-art";
 
 // THE ISLAND: the Overworld. A little top-down world that ties the whole arcade together, and
@@ -106,7 +106,7 @@ function writeSpot(s: Spot) {
 }
 
 // ---------- reading the map ----------
-const isDigit = (c: string) => c >= "0" && c <= "9"; // 1 to 9, and 0 for the tenth sign
+const isDigit = isSignKey; // a signpost: the digits 1 to 9, 0, then the letters in SIGN_KEYS
 
 const START = findTiles("P")[0] ?? [MAP_W >> 1, MAP_H >> 1];
 const GATES = gateOrder(); // the gate tiles, in the order you meet them: gate 0 belongs to BUILDINGS[0], and so on
@@ -132,6 +132,18 @@ function bounds(letters: string) {
 
 // Letters the path is made of, so a gate can tell which way the path runs through it.
 const PATHY = new Set("=PbZE%&^p@");
+
+/** Where a flag's pole stands on each building: [pixels from the left edge, pixels from the top] of the pole's foot. */
+const FLAG_AT: Record<string, [number, number]> = {
+  lighthouse: [66, 94],
+  observatory: [16, 28],
+  museum: [56, 3],
+  terminal: [14, 36],
+  zoo: [76, 18],
+  bandstand: [58, 14],
+  stadium: [56, 2],
+  theatre: [94, 15],
+};
 
 // ---------- the island screen ----------
 export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
@@ -205,6 +217,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     ws.finishOpen = passed >= GATES.length && ws.openGates.size === GATES.length;
     updateHud();
   }
+  const bookBtn = h("button", { class: "btn ghost isl-book", type: "button", onclick: () => openBook() }, "Stamp book");
   function updateHud() {
     const have = STAMP_GAMES.filter((g) => stamps.has(g)).length;
     const open = gateInfos.filter((g) => g.open).length;
@@ -213,6 +226,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
       h("span", { class: "isl-hud-item" }, h("span", { class: "isl-hud-icon", "aria-hidden": "true" }, "▮"), `Gates open ${open}/${GATES.length}`),
     );
     if (freeRoam) hud.append(h("span", { class: "isl-hud-item free" }, "Free roam"));
+    hud.append(bookBtn);
   }
 
   // ---------- pictures ----------
@@ -246,6 +260,13 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     const plane = findTiles("Y")[0];
     sprites.push({ canvas: drawSprite(s.sprite as SpriteKind, box.w, box.h, 0, { plane: [plane[0] - box.x, plane[1] - box.y] }), ...box });
   }
+  // Where each building flies its flag: the roof's top right, as a pixel spot on the map. (A flag
+  // shows once a challenge is done in that subject.)
+  const flagSpots = BUILDINGS.map((b) => {
+    const box = bounds(b.body + b.door);
+    const at = FLAG_AT[b.id] ?? [box.w * TILE - 14, 14];
+    return { x: box.x * TILE + at[0], y: box.y * TILE + at[1] };
+  });
   // The arcade hall is only built once free roam is on.
   let hallSprite: Sprite | null = null;
   function ensureHall() {
@@ -430,6 +451,37 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     openPanel("hall", HALL.title, [h("p", { class: "isl-kicker" }, "Everything is open. Pick one."), h("ul", { class: "isl-quizzes" }, ...items)]);
   }
 
+  /** The stamp book: every arcade stamp and every building's flag, collected or not, in one place. */
+  function openBook() {
+    const stampRows = STOPS.filter((s) => s.stamp).map((s) => {
+      const game = ARCADE_GAMES.find((g) => g.id === s.game);
+      const got = stamps.has(s.game);
+      return h("li", { class: `isl-book-row${got ? " got" : ""}` },
+        h("span", { class: "isl-book-mark", "aria-hidden": "true" }, got ? "★" : "☆"),
+        h("span", { class: "isl-book-name" }, game?.title ?? s.game),
+        h("span", { class: "isl-book-state" }, got ? "Stamp collected" : "Not played yet"));
+    });
+    const flagRows = BUILDINGS.map((b, i) => {
+      const g = gateInfos[i];
+      const empty = !g || g.total === 0;
+      const flying = !!g && g.done >= 1;
+      return h("li", { class: `isl-book-row${flying ? " got" : ""}` },
+        h("span", { class: "isl-book-mark isl-book-flag", "aria-hidden": "true", style: `color:${FLAG_COLOURS[i % FLAG_COLOURS.length]}` }, flying ? "⚑" : "⚐"),
+        h("span", { class: "isl-book-name" }, b.title),
+        h("span", { class: "isl-book-state" }, flying ? "Flag flying" : empty ? "Coming soon" : "No flag yet"));
+    });
+    const stampsHave = STAMP_GAMES.filter((g) => stamps.has(g)).length;
+    const flagsHave = gateInfos.filter((g) => g.done >= 1).length;
+    openPanel("book", "Stamp book", [
+      h("p", { class: "isl-kicker" }, `Stamps ${stampsHave} of ${STAMP_GAMES.length} · Flags ${flagsHave} of ${BUILDINGS.length}`),
+      h("h3", { class: "isl-book-head" }, "Arcade stamps"),
+      h("ul", { class: "isl-book-list" }, ...stampRows),
+      h("h3", { class: "isl-book-head" }, "Building flags"),
+      h("p", { class: "isl-text isl-book-note" }, "A building flies a flag once you have done a challenge in its subject."),
+      h("ul", { class: "isl-book-list" }, ...flagRows),
+    ]);
+  }
+
   function openSign(n: number) {
     openPanel(`sign:${n}`, "Sign", [h("p", { class: "isl-text isl-sign" }, SIGNS[n - 1] ?? "")], false);
   }
@@ -491,7 +543,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
     const key = `${tx},${ty}`;
     if (doorAt.has(key)) { openSubject(doorAt.get(key)!); return; }
     if (c === HALL.door) { if (freeRoam) openHall(); return; }
-    if (isDigit(c)) { openSign(c === "0" ? 10 : Number(c)); return; }
+    if (isDigit(c)) { openSign(signNumber(c)); return; }
     if (c === "Z" && blocked(tx, ty, ws)) { openGate(gateIndexAt.get(key) ?? 0); return; }
     if (c === "E" && blocked(tx, ty, ws)) { openFinish(); return; }
     if (STOP_SCENERY.has(c) && c !== "_" && !stopAt.has(`${player.x},${player.y}`) && blocked(tx, ty, ws)) {
@@ -642,6 +694,14 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
       if (sx > vw || sy > vh || sx + s.w * TILE < 0 || sy + s.h * TILE < 0) continue;
       ctx.drawImage(s.canvas, sx, sy);
     }
+    // a flag on the roof of every building whose subject has a challenge done
+    const wave = Math.floor(t * 3) % 2;
+    flagSpots.forEach((f, i) => {
+      if (!gateInfos[i] || gateInfos[i].done < 1) return;
+      const sx = f.x - camX - 1, sy = f.y - camY - 21;
+      if (sx > vw || sy > vh || sx < -TILE || sy < -22) return;
+      ctx.drawImage(tiles.flags[i % FLAG_COLOURS.length][wave], Math.round(sx), Math.round(sy));
+    });
     // the glowing pads that mark an arcade stop (green with a tick once the game has been played)
     const pulse = Math.floor(t * 2.5) % 2;
     for (const [key, s] of stopAt) {
@@ -766,6 +826,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
         rememberSpot();
       },
       close: () => closePanel(),
+      book: () => openBook(),
       doors: () => [...doorAt.entries()].map(([k, b]) => ({ at: k, id: b.id })),
       stops: () => [...stopAt.entries()].map(([k, s]) => ({ at: k, game: s.game })),
       gates: () => GATES,

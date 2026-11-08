@@ -1,6 +1,8 @@
 // SPORT: what each list is called, which ways of playing suit it, and how its years are split into ranges.
 // The results themselves are in sport-data.ts (generated from the owner's sheet).
 
+import { ENT_DECK_LISTS, ENT_LIST_CONFIG } from "./entertainment-config";
+
 export type ModeId = "year" | "fill" | "decade" | "more" | "order";
 
 export interface SportRange {
@@ -37,6 +39,10 @@ export interface ListConfig {
   block: number;
   /** A line shown on the setup screen about the list. */
   about: string;
+  /** Optional: the question for a Decade block, given "1990–1999". Otherwise "Who won in 1990–1999?". */
+  blockAsk?: (span: string) => string;
+  /** Optional: the line under a way of playing on the setup screen, when the standard one doesn't fit. */
+  notes?: Partial<Record<ModeId, string>>;
 }
 
 const r = (id: string, label: string, from: number, to: number, phrase: string): SportRange => ({ id, label, from, to, phrase });
@@ -46,7 +52,7 @@ const since = (y: number) => r(`s${y}`, `Since ${y}`, y, 2100, `since ${y}`);
 const between = (a: number, b: number) => r(`${a}-${b}`, `${a}–${b}`, a, b, `from ${a} to ${b}`);
 const before = (y: number) => r(`b${y}`, `Before ${y}`, 0, y - 1, `before ${y}`);
 
-export const LIST_CONFIG: Record<string, ListConfig> = {
+const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
   nrl: {
     id: "nrl", chip: "NRL premiers", modes: ["year", "fill", "decade", "more", "order"],
     ranges: [since(2000), between(1970, 1999), before(1970), ALL(0)],
@@ -121,8 +127,12 @@ export const LIST_CONFIG: Record<string, ListConfig> = {
   },
 };
 
+/** Sport and Entertainment lists together (the Oscars and Aussie Awards run on this screen too). */
+export const LIST_CONFIG: Record<string, ListConfig> = { ...SPORT_LIST_CONFIG, ...ENT_LIST_CONFIG };
+
 /** Which lists each Sport game uses, in the order of its list chips. */
 export const DECK_LISTS: Record<string, string[]> = {
+  ...ENT_DECK_LISTS,
   nrl: ["nrl"],
   afl: ["afl"],
   football: ["epl", "cl", "wc"],

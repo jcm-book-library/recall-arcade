@@ -72,3 +72,6 @@
   .sp-drow { grid-template-columns: 3rem minmax(0, 1fr); gap: 4px; }
   .sp-dlabel { font-size: 0.65rem; }
 }
+
+/* Entertainment lists: the line under the year ("2025 ceremony (films of 2024)") */
+.sp-sub { margin: 0; font-size: 0.95rem; }

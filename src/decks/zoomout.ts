@@ -1,6 +1,6 @@
 import type { Deck, Item } from "../engine/types";
 import { createZoomBoard } from "../boards/zoomBoard";
-import { SPACE_SET } from "../boards/zoom-space";
+import { SPACE_SET, SPACE_SET_SOUTH } from "../boards/zoom-space";
 import { STAGES, STAGE_ORDER, ZOOM_ITEMS, rankOf } from "./zoomout-data";
 
 const items: Item[] = ZOOM_ITEMS.map((z) => ({
@@ -30,8 +30,16 @@ export const zoomOutDeck: Deck = {
     { id: "stars", label: `Out to the Nearest Stars (${count(4)})`, minutes: 11, filter: (i) => rank(i) <= 4 },
     { id: "all", label: `All the Way Out (${count(6)})`, minutes: 15, filter: () => true },
   ],
-  options: [],
+  options: [
+    {
+      id: "southsky",
+      label: "View from Australia",
+      hint: "Turns the star patterns round, the way they look from the Southern Hemisphere.",
+      default: false,
+      display: true,
+    },
+  ],
   progressGroups: STAGE_ORDER.map((n) => ({ tag: `z${n}`, label: STAGES.find((s) => s.n === n)!.title })),
-  createBoard: ({ container, items: playing, variant }) =>
-    createZoomBoard(container, items, playing, DEPTH[variant.id] ?? 1, SPACE_SET),
+  createBoard: ({ container, items: playing, variant, options }) =>
+    createZoomBoard(container, items, playing, DEPTH[variant.id] ?? 1, options.southsky ? SPACE_SET_SOUTH : SPACE_SET),
 };

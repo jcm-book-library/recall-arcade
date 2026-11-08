@@ -30,8 +30,8 @@ const tolerance = (year: number) => (year >= 1900 ? 30 : year >= 1500 ? 60 : yea
 /** Distance from a guess to a year, or to a span of years (a lifetime). */
 const distance = (guess: number, from: number, to: number) => (guess < from ? from - guess : guess > to ? guess - to : 0);
 
-export function score(guess: number, from: number, to = from) {
-  const tol = tolerance((from + to) / 2);
+export function score(guess: number, from: number, to = from, tolOverride?: number) {
+  const tol = tolOverride ?? tolerance((from + to) / 2);
   const off = distance(guess, from, to);
   if (off <= Math.max(1, tol / 30)) return 100;
   return Math.round(100 * Math.max(0, 1 - off / tol));
@@ -45,7 +45,7 @@ export function score(guess: number, from: number, to = from) {
 export function scoreFor(guess: number, item: Item): number {
   const from = (item.data!.from ?? item.data!.year) as number;
   const to = (item.data!.to ?? item.data!.year) as number;
-  const base = score(guess, from, to);
+  const base = score(guess, from, to, item.data!.tol as number | undefined);
   const period = item.data!.period as Period | undefined;
   if (period && guess >= period.start && guess <= period.end) return Math.max(base, 70);
   return base;
@@ -85,6 +85,10 @@ export interface TimelineText {
   /** Small heading above each card, e.g. "When did this happen?" */
   ask: string;
   how: string;
+  /** Optional: the top verdict on the results screen (default "A proper historian."). */
+  top?: string;
+  /** Optional: the label of the "Change era" button on the results screen. */
+  again?: string;
 }
 
 export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text: TimelineText) {
@@ -166,6 +170,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
         h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
         h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
       ),
+      ...(deck.related ? [h("a", { class: "btn ghost related", href: deck.related.href }, deck.related.label)] : []),
     );
   }
 
@@ -221,6 +226,9 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
     const readout = h("p", { class: "tl-readout" }, "Tap or drag on the line to place your guess.");
     const lockBtn = h("button", { type: "button", class: "btn primary", disabled: true }, "Lock in");
     const feedback = h("p", { class: "tl-feedback", "aria-live": "polite" });
+    // An item can carry one more line to show once it is locked in (the easy clue, for films).
+    const revealLine = h("p", { class: "muted tl-reveal" });
+    revealLine.hidden = true;
     const bandLabel = h("p", { class: "tl-period-label" });
     bandLabel.hidden = true;
 
@@ -299,6 +307,10 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
         : off === 0
           ? `Spot on: ${yearText(from)}. +${points}`
           : `It was ${about}${yearText(from)}. You were ${off} ${off === 1 ? "year" : "years"} off${period && score(guess, from, to) < 70 && points >= 70 ? `, but inside ${period.name}` : ""}. +${points}`;
+      if (item.data!.reveal) {
+        revealLine.textContent = item.data!.reveal as string;
+        revealLine.hidden = false;
+      }
       lockBtn.textContent = index + 1 < round.length ? "Next ▸" : "See results ▸";
       lockBtn.onclick = next;
       scoreLine.textContent = `Score: ${total}`;
@@ -319,6 +331,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
       h("div", { class: "tl-wrap" }, track, bandLabel),
       h("div", { class: "tl-actions" }, readout, scoreLine, lockBtn),
       feedback,
+      revealLine,
     );
     track.focus();
   }
@@ -347,7 +360,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
         h(
           "div",
           {},
-          h("p", { class: "verdict" }, total >= max * 0.8 ? "A proper historian." : total >= max * 0.5 ? "Not bad at all." : "History is long. Go again."),
+          h("p", { class: "verdict" }, total >= max * 0.8 ? (text.top ?? "A proper historian.") : total >= max * 0.5 ? "Not bad at all." : "History is long. Go again."),
           h("p", { class: "muted" }, !prev || total > prev.score ? "That's your best for this era." : `Your best is ${prev.score}/${prev.total}.`),
         ),
         h(
@@ -365,7 +378,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
                 renderSetup();
               },
             },
-            "Change era",
+            text.again ?? "Change era",
           ),
         ),
       ),
