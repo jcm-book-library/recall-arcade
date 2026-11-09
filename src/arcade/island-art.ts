@@ -1,4 +1,5 @@
 import { makeCanvas, noise } from "./kit";
+import { GAME_NAME } from "./brawl/names.ts";
 
 // THE ISLAND'S PICTURES: every tile and building is drawn here, in code, with no image files.
 // Like the Labyrinth garden, each picture is made of little coloured squares (pixels). A tile
@@ -858,6 +859,27 @@ function airstrip(w: number, h: number, spot: [number, number], plane: [number, 
   return c;
 }
 
+/** The Brawl's stop: a finish banner on two poles over the track, and starting blocks. The spot tile is in the middle at the bottom. */
+function track(w: number, h: number): HTMLCanvasElement {
+  const c = makeCanvas(w * TILE, h * TILE);
+  const g = ctxOf(c);
+  const W = w * TILE, H = h * TILE;
+  // a strip of red running track along the bottom row, with white lane lines
+  R(g, 0, H - TILE, W, TILE, "#b8452f");
+  for (let x = 0; x < W; x++) for (let y = H - TILE; y < H; y++) if (noise(x, y, 77) % 7 === 0) R(g, x, y, 1, 1, noise(x, y, 78) % 2 ? "#cc5b3a" : "#9e3a27");
+  R(g, 0, H - TILE, W, 1, "#f4efe6"); R(g, 0, H - 2, W, 1, "#f4efe6");
+  // two poles and the banner between them (chequered edge, name in the middle)
+  R(g, 1, 6, 3, H - TILE - 5, OUT); R(g, 2, 6, 1, H - TILE - 5, "#c9cbd0");
+  R(g, W - 4, 6, 3, H - TILE - 5, OUT); R(g, W - 3, 6, 1, H - TILE - 5, "#c9cbd0");
+  R(g, 0, 0, W, 14, OUT); R(g, 1, 1, W - 2, 12, "#f4efe6");
+  for (let i = 0; i < (W - 2) / 3; i++) { R(g, 1 + i * 3, 1, 3, 2, i % 2 ? OUT : "#f4efe6"); R(g, 1 + i * 3, 11, 3, 2, i % 2 ? "#f4efe6" : OUT); }
+  const name = GAME_NAME.toUpperCase();
+  text(g, name, Math.round((W - textWidth(name)) / 2), 4, "#d8402f");
+  // starting blocks on the left, either side of the empty spot
+  for (const bx of [5, W - 14]) { R(g, bx, H - 14, 9, 6, OUT); R(g, bx + 1, H - 13, 7, 4, "#c9cbd0"); R(g, bx + 5, H - 16, 3, 3, OUT); R(g, bx + 6, H - 15, 1, 1, "#ffd24a"); }
+  return c;
+}
+
 function mirror(w: number, h: number): HTMLCanvasElement {
   const c = makeCanvas(w * TILE, h * TILE);
   const g = ctxOf(c);
@@ -944,7 +966,7 @@ export function makeFlag(colour: string, frame: number) {
 }
 
 // ---------- put it all together ----------
-export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "stadium" | "theatre" | "cabinet" | "gate" | "airstrip" | "mirror" | "hall";
+export type SpriteKind = "lighthouse" | "observatory" | "museum" | "terminal" | "zoo" | "bandstand" | "stadium" | "theatre" | "cabinet" | "gate" | "airstrip" | "track" | "mirror" | "hall";
 
 /**
  * Paint one building or stop. `w` and `h` are its size in tiles, found from the map. `door` is the
@@ -964,6 +986,7 @@ export function drawSprite(kind: SpriteKind, w: number, h: number, door: number,
     case "cabinet": return cabinet(w, h);
     case "gate": return gate(w, h);
     case "airstrip": return airstrip(w, h, [0, 0], extra?.plane ?? [1, 1]);
+    case "track": return track(w, h);
     case "mirror": return mirror(w, h);
     case "hall": return hall(w, h, door);
   }

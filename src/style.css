@@ -1073,3 +1073,55 @@ a.btn { text-decoration: none; }
 .hw-pick { position: relative; }
 .hws .hw-steps { margin-top: 8px; }
 .hws .btn.primary { margin-left: 0; }
+
+/* ---------- arcade: The Brawl (side-on platformer) ---------- */
+.brawl { width: 100%; max-width: 1180px; margin-inline: auto; min-width: 0; }
+.brawl-hud {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px;
+  font: 0.8rem/1.4 var(--font-pixel); text-transform: uppercase;
+}
+.brawl-hearts { color: #d8402f; letter-spacing: 2px; font-size: 1rem; }
+.brawl-part { color: var(--muted); }
+.brawl-screen {
+  position: relative; width: fit-content; max-width: 100%; margin-inline: auto;
+  border: 2px solid var(--line); border-radius: var(--r); overflow: hidden;
+  background: #4aa3df; box-shadow: 4px 4px 0 var(--line); line-height: 0;
+}
+.brawl-canvas {
+  display: block; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: pixelated;
+  touch-action: none;
+}
+/* The start, pause, results and out-of-tries cards sit over the picture. */
+.brawl-card-wrap { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 15, 31, 0.62); line-height: 1.4; }
+.brawl-card-wrap.open { display: flex; }
+.brawl-card {
+  display: grid; gap: 10px; justify-items: center; text-align: center; max-width: min(92%, 420px);
+  padding: 16px 20px; border: 2px solid var(--ink); border-radius: var(--r); background: var(--panel); color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink); max-height: 96%; overflow: auto;
+}
+.brawl-card h2 { margin: 0; font: 1.1rem var(--font-pixel); text-transform: uppercase; }
+.brawl-card p { margin: 0; }
+.brawl-kicker { font: 0.7rem var(--font-pixel); text-transform: uppercase; color: var(--muted); }
+.brawl-results { display: grid; grid-template-columns: auto auto; gap: 2px 14px; margin: 0; text-align: left; }
+.brawl-results dt { color: var(--muted); }
+.brawl-results dd { margin: 0; font-weight: 700; }
+.brawl-medal.gold { color: #d9a41e; }
+.brawl-medal.silver { color: #8793a3; }
+.brawl-medal.bronze { color: #b8713a; }
+.brawl-stamp { color: var(--found); font-weight: 700; }
+/* On-screen buttons for phones and other touch screens (or narrow windows): run left and right on one side, jump on the other. */
+.brawl-pad {
+  display: none; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+@media (pointer: coarse), (max-width: 700px) { .brawl-pad { display: grid; } }
+.brawl-pad-move { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.brawl-key {
+  min-width: 0; height: 84px; padding: 0; font: 1.6rem var(--font-pixel); line-height: 1; cursor: pointer;
+  border: 2px solid var(--ink); border-radius: var(--r); background: var(--panel); color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); touch-action: none; -webkit-tap-highlight-color: transparent;
+}
+.brawl-jump { font-size: 1.3rem; background: var(--accent); color: var(--on-accent); }
+.brawl-key.pressed { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); background: var(--found); color: #fff; }
+.brawl-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.brawl-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }

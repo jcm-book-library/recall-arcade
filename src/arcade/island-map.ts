@@ -6,7 +6,7 @@
 //
 // THE ISLAND IS A ROUTE. A gravel path makes one big loop, and you walk it in order:
 //   Start > Geography > (Planet Pong) > Science > scenic walk > History > (The Labyrinth) > Travel
-//   > scenic walk > Nature > (Flyover) > Music > Sport > Entertainment > back to Start.
+//   > scenic walk > Nature > (Flyover) > Music > Sport > (The Brawl) > Entertainment > back to Start.
 // Hedges and fences line the path so you can not wander off it. A GATE across the path just past
 // each subject building stays shut until you have done enough challenges in that subject. When the
 // loop is finished you get FREE ROAM: the side fences open and the arcade hall appears.
@@ -47,6 +47,7 @@
 //   C  and  @  Planet Pong: the arcade cabinet (C, solid, 2 wide and 2 tall) and the spot beside it (@)
 //   L  and  %  The Labyrinth: the hedge gate (L, solid) and the spot in the archway (%)
 //   _ Y &      Flyover: the airstrip. _ is tarmac (solid), Y is the plane (solid), & is the spot
+//   V  and  $  The Brawl: the starting blocks and finish banner (V, solid) and the spot in front of them ($)
 //   X  and  ^  Hero Workshop: the mirror stand (X, solid) and the spot in front of it (^)
 //
 // RULES FOR EDITING
@@ -55,6 +56,8 @@
 //   - A door needs a walkable tile directly below it (that is where you stand to go in).
 //   - Every path tile that has grass beside it needs a fence (f) or scenery there, or you could
 //     step off the route. Run  node scripts/check-island.mjs  after editing: it checks the route.
+
+import { GAME_ROUTE } from "./brawl/names.ts";
 
 export const ROWS: string[] = [
   "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
@@ -92,8 +95,8 @@ export const ROWS: string[] = [
   "~~~f======f.T....,~~~~~~~~,,KKKKKKK,,~~~~~,.OOOOOOO.f=f,~~~~",
   "~~~,fffEff.T*..TT,~~~~~~~~,,KKKKKKK,,~~~~~,.OOOOOOO.f=f,~~~~",
   "~~~,,.f=f.....*..,,,,,,,,,,,KKKKKKK,,,,,,,,.OOOOOOO.r=f,~~~~",
-  "~~~,,.f=R....*....T.**......KKKKKKK.TT*..TTrOOOOOOOTf=f,~~~~",
-  "~~~~,,f=fTfffffffffffffffrTfKKKkKKKffQTfffTfOOOoOOOT0=f~~~~~",
+  "~~~,,.f=R....*....T.**......KKKKKKK.TTVVVTTrOOOOOOOTf=f,~~~~",
+  "~~~~,,f=fTfffffffffffffffrTfKKKkKKKffQV$VfTfOOOoOOOT0=f~~~~~",
   "~~~~~,f=================Z===============Z=============~~~~~~",
   "~~~~~~,ffffffffffffffffffffffffffffffffffffffffffffff~~~~~~~",
   "~~~~~~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~~~~~~~~",
@@ -149,11 +152,14 @@ export const HALL = { id: "hall", title: "The Arcade Hall", body: "U", door: "u"
 // the tile you walk onto, and `scenery` are the letters that make up the drawing around it.
 // `stamp` says whether playing it earns a stamp (the Hero Workshop is a tool, not a game).
 // `after` is the building whose gate you must pass to reach the stop (null = right from the start).
-export interface StopInfo { game: string; spot: string; scenery: string; sprite: string; stamp: boolean; after: string | null }
+// `earnedBy: "finish"` means the stamp is not given for pressing Play: the game itself awards it when you
+// finish (see stamps.ts). Without it, pressing Play on the island earns the stamp.
+export interface StopInfo { game: string; spot: string; scenery: string; sprite: string; stamp: boolean; after: string | null; earnedBy?: "finish" }
 export const STOPS: StopInfo[] = [
   { game: "pong", spot: "@", scenery: "C", sprite: "cabinet", stamp: true, after: "lighthouse" },
   { game: "labyrinth", spot: "%", scenery: "L", sprite: "gate", stamp: true, after: "museum" },
   { game: "flyover", spot: "&", scenery: "_Y", sprite: "airstrip", stamp: true, after: "zoo" },
+  { game: GAME_ROUTE, spot: "$", scenery: "V", sprite: "track", stamp: true, after: "stadium", earnedBy: "finish" },
   { game: "hero", spot: "^", scenery: "X", sprite: "mirror", stamp: false, after: null },
 ];
 
@@ -165,7 +171,7 @@ export const MAP_H = ROWS.length;
 export const tileAt = (x: number, y: number) => ROWS[y]?.[x] ?? "~";
 
 /** Always solid: sea, river, trees, rocks, the buildings (and their doors), scenery, signposts. */
-const HARD_SOLID = new Set("~wTrFGgSsHhAaNnMmOoKkUuCLYX_" + SIGN_KEYS);
+const HARD_SOLID = new Set("~wTrFGgSsHhAaNnMmOoKkUuCLYXV_" + SIGN_KEYS);
 
 /** What can change while you play. */
 export interface WalkState {

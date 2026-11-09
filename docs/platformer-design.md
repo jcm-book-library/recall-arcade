@@ -88,3 +88,81 @@ Decisions for the character:
 1. Is the same 32 × 32 side-on hero fine, or do you want a different size?
 2. Which poses do you want to draw first (run and jump are the minimum)?
 3. Do you want the Workshop template before you start drawing? (Suggested: yes.)
+
+## Built: level 1, the stadium (9 Nov 2026)
+Working title "The Brawl", at `#brawl`. The name lives in one place, `GAME_NAME` in `src/arcade/brawl/names.ts`.
+Level 1 is playable end to end (about 2 minutes for a first go). Levels 2 and 3 are not built; they drop in as
+new files next to `level1.ts` and one line in `levels.ts`.
+
+### The files (all in `src/arcade/brawl/`)
+| File | What it does |
+|---|---|
+| `tuning.ts` | **Every number that decides how the hero feels**, with the physics ideas explained at the top (velocity, friction, gravity, variable jump, coyote time, jump buffer). Also the camera numbers, lives and hearts by track, and the screen size (384 × 216). |
+| `physics.ts` | The hero's body: running, jumping, falling, axis-separated AABB collision with 16 px tiles, one-way platforms, sand, the bounce mat, bonks. `jumpStats()` measures the real jump for the checker. |
+| `world.ts` | The level as a grid, and the `LevelData` shape every level fills in. |
+| `level1.ts` | **The level, as rows of letters** (legend at the top), the signs, the hazards with their timing, the stampede, the medal times. |
+| `hazards.ts` | The shot put, javelin, hammer and the stampede, all worked out from the game clock (no stored state). |
+| `levels.ts` | The list of levels. |
+| `game.ts` | The conductor: page, state, one update tick (60 per second), drawing, start / pause / results cards, lives and checkpoints, the dev hook `__brawl` (development copy only). |
+| `input.ts` | Keys and the on-screen buttons (multi-touch). |
+| `art-scenery.ts`, `art-chars.ts` | All the pictures, drawn in code: tiles, sky, city, stands and crowd, scenery for each part, athletes, officials, thrown things. |
+| `names.ts` | The game's name, route and blurb. |
+Also: `src/arcade/stamps.ts` (the stamp book, shared with the island), `scripts/check-brawl.mjs`, and a `step` option on the loop in `kit.ts`.
+
+### Controls
+Arrows or A and D run. Space, Up or W jump: hold for a high jump, tap for a hop. Down drops through a one-way ledge.
+P or Esc pauses (and the game pauses by itself when the tab is hidden). On touch screens there are big Left, Right
+and Jump buttons, and you can run and jump at once.
+
+### The feel (edit `tuning.ts`)
+Top speed 118 px/s, reached in about 0.2 s. A full jump is about 61 px (nearly 4 tiles) and about 88 px long at top
+speed. A tap hops about 25 px. Gravity is stronger on the way down, with a little float at the top. A jump still works for
+0.1 s after leaving a ledge, and a jump pressed 0.1 s early is remembered. The hitbox is 10 × 22 inside a 32 × 32
+picture. The hero is drawn from `loadSideHero()`, so a hero drawn in the Hero Workshop shows up in the game.
+
+### Lives by track
+Easy: unlimited tries, 5 hearts, a bigger head start on the stampede. Intermediate: 5 tries, 3 hearts. Hard: 3 tries,
+2 hearts, only the main flags (the small `c` flags are skipped), a smaller head start. A bonk or a fall into a pit costs a
+heart (a pit also puts you back at the last flag). Out of hearts costs a try. Being caught by the stampede costs a try.
+No tries left shows "Out of tries" with Try again. On Easy that never happens.
+
+### How each hazard is warned about
+Every throw starts with a **wind up of at least a second**, and the thrower's animation builds up.
+- **Shot put:** a flashing red ring on the track where it will land, a red beam of light and a bobbing arrow over it, and
+  arrows showing which way it will roll after it lands. The ring flashes faster as the throw gets close.
+- **Javelin:** the same ring, beam and arrow in orange. It flies in a long arc and **sticks in the track**. A stuck javelin
+  is a one-way platform (a ribbon plate at its tail; run and jump from about 3 tiles back). After 5 seconds it flashes and
+  an official walks over and pulls it out. Two javelins together make a stair up to a high ledge with a secret sign.
+- **Hammer:** the thrower spins with the hammer swinging round him, a warning triangle appears over him and a red lane of
+  marching arrows lights up along the track where the hammer will fly. Then it flies low and fast. Jump it.
+- **Stampede:** a sign ("Stampede ahead"), the starter standing by the line with a pistol, a flag just before it (so you come
+  back to the line if caught), then BANG, a "get ready" beat, and the pack starts. An arrow shows at the screen edge when
+  the pack is just behind you.
+Hurdles are plain solid one-tile obstacles. The sandpit is a safe, slow, soft one-tile dip. The high-jump mat throws you up
+if you land on it from the air (it reaches a high ledge with a secret sign).
+
+### Editing the level
+1. Open `src/arcade/brawl/level1.ts`. The rows of letters are the level; the legend is above them. Keep every row the same width.
+2. Hazards are in `HAZARDS` (columns, and an `offset` in seconds so neighbours do not throw together). Their standard timing is
+   in `TIMING`. The stampede is `STAMPEDE`, the medal times are `MEDALS`.
+3. Run `node scripts/check-brawl.mjs`.
+
+### The checker (`node scripts/check-brawl.mjs`)
+It runs the real physics to measure the jump, then checks: the letters and row widths, one start and one finish, flags, signs
+and hurdles stand on ground, every gap and step can be jumped (with a 15% safety margin), a pretend runner (a "bot") runs
+the level from start to finish using the real physics, the stampede stays behind a flat-out bot on every track (and does not
+catch an Easy runner who hesitates for 1.2 s), every hazard lands on open track with a wind up of at least 1 s and a cycle
+that fits, and the medal times are sensible.
+
+### Finishing
+Break the tape: confetti, then a results panel (time, best, hits, tumbles, Gold / Silver / Bronze by time, otherwise a
+participation ribbon). The best time is kept in the browser (`learning-arcade:brawl:stadium`). Finishing earns the island
+stamp (unlike the other stops, which give theirs when you press Play): the island stop has `earnedBy: "finish"`.
+
+### On the island
+A stop between the Sport stadium and the Entertainment theatre: starting blocks and a finish banner (`V`), with the glowing
+spot (`$`) in front. It opens after the stadium's gate.
+
+### Left for later
+Sound is a few simple blips. Levels 2 and 3. Enemies you can stomp. A proper boss. Art from the owner (the side-on hero sheet
+already works). Secrets and collectables.

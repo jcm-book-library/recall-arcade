@@ -20,7 +20,7 @@ Live site: https://jcm-book-library.github.io/recall-arcade/ · Repo: github.com
 
 ## How the code is organised
 - **A game = a Deck** (`src/engine/types.ts`): items (id, name, accepted aliases, tags), rounds called "variants" (a filter plus a time limit), options, a **board** that draws it, and optionally its own `screen`.
-- `src/main.ts` registers every deck in `DECKS` (grouped by subject, which drives the home page) and routes `#deck-id`. The arcade games have their own routes (`#pong`, `#labyrinth`, `#flyover`).
+- `src/main.ts` registers every deck in `DECKS` (grouped by subject, which drives the home page) and routes `#deck-id`. The arcade games have their own routes (`#pong`, `#labyrinth`, `#flyover`, `#brawl`).
 - `src/engine/matcher.ts`: turns typed text into answers. Handles accents, "&", "Saint/St", aliases, near-miss spelling hints, and "wait" when a typed answer is also the start of another (Niger / Nigeria, UK / Ukraine). `src/engine/storage.ts`: best scores, weak spots, preferences, all in `localStorage`.
 - Dev builds log an error if two items in one deck share an id (see the top of `main.ts`).
 
@@ -43,6 +43,7 @@ Live site: https://jcm-book-library.github.io/recall-arcade/ · Repo: github.com
 | Space | `boards/zoomBoard.ts`, `decks/zoomout.ts`, `decks/zoomout-data.ts` | Infinity & Beyond (has a two-level Hint) |
 | Music | `src/music/` (note names, a Web Audio piano, the stave), `boards/pianoBoard.ts`, `decks/music.ts` | Keyboard, Treble, Bass, Rhythm, Keys & Symbols, Ear Training |
 | Arcade (real time) | `src/arcade/kit.ts` (shared loop, pixel art, saving), `pong.ts`, `labyrinth.ts` + `labyrinth-maps.ts` (check with `node scripts/check-labyrinth.mjs`), `flyover.ts` + `flyover-data.ts`, `docs/action-game-ideas.md`, `docs/arcade-art.md`, `public/arcade/` | Planet Pong, The Labyrinth, Flyover |
+| Side-on platformer | `src/arcade/brawl/` (the level is `level1.ts`, the feel is `tuning.ts`; check with `node scripts/check-brawl.mjs`), notes in `docs/platformer-design.md` ("Built: level 1") | The Brawl (level 1, the stadium; levels 2 and 3 to come) |
 
 The arcade files are written to be read: their comments explain the game loop, fixed timestep, grid movement, collisions, scrolling and so on in plain English.
 

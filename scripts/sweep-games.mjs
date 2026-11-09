@@ -20,7 +20,7 @@ await page.route("https://raw.githubusercontent.com/**", (r) => r.fulfill({ json
 // The home page is the island now; the game cards live on the list page.
 await page.goto(`${base}#list`);
 await page.waitForTimeout(500);
-const ids = await page.$$eval(".card", (cards) => cards.map((c) => c.getAttribute("href").slice(1)).filter((id) => id && !["pong", "labyrinth", "flyover", "hero", "island", "list"].includes(id)));
+const ids = await page.$$eval(".card", (cards) => cards.map((c) => c.getAttribute("href").slice(1)).filter((id) => id && !["pong", "labyrinth", "flyover", "brawl", "hero", "island", "list"].includes(id)));
 for (const id of ids) {
   await page.goto(base);
   await page.goto(`${base}#${id}`);
@@ -34,9 +34,16 @@ for (const id of ids) {
   const giveUp = await page.$("text=Give up");
   if (giveUp && (await giveUp.isVisible())) await giveUp.click({ force: true, timeout: 3000 }).catch(() => {});
 }
-for (const id of ["pong", "labyrinth", "flyover", "hero", "island", "list"]) {
+for (const id of ["pong", "labyrinth", "flyover", "brawl", "hero", "island", "list"]) {
   await page.goto(`${base}#${id}`);
   await page.waitForTimeout(500);
+  // The Brawl waits on a start card: press Space and run for a moment, so a mistake in play would show up as an error.
+  if (id === "brawl") {
+    await page.keyboard.press("Space");
+    await page.keyboard.down("ArrowRight");
+    await page.waitForTimeout(1200);
+    await page.keyboard.up("ArrowRight");
+  }
   if ((await page.evaluate(() => document.documentElement.scrollWidth)) > 392) problems.push(`${id}: sideways scroll`);
 }
 console.log(`${ids.length} game cards + arcade pages checked.`, problems.length ? problems : "No problems.");
