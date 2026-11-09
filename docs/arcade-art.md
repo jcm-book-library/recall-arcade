@@ -52,3 +52,64 @@ them as the hero walks. Frame 1 is also how the hero looks standing still.
 - If anything is wrong, the game just carries on with the placeholder hero.
 
 If you'd rather use Aseprite, set the canvas to 32 x 64 and export with **File, Export As** to a PNG.
+
+# The side-on hero
+
+The next arcade game is a side-on platformer, so the hero needs drawing from the side. The
+**Hero Workshop** (`#hero`, the "Side-on hero (for the platformer)" section) has the starter hero,
+a blank template, a live preview and "Try your own". The built-in placeholder is drawn in code in
+`src/arcade/hero-side-art.ts`, in the same colours as the top-down hero. Your own picture replaces
+it with no code changes.
+
+## What the picture must look like
+
+One PNG called **`hero-side.png`**, in `public/arcade/`. It is **one row of 10 frames**, and the hero
+**faces right** in every frame (the game flips it for left).
+
+| Frame | Pose |
+|---|---|
+| 1, 2 | Stand (idle, breathing) |
+| 3, 4, 5, 6 | Run (the four frames loop) |
+| 7 | Jump (going up) |
+| 8 | Fall |
+| 9 | Land (squashed) |
+| 10 | Hurt |
+
+- **Default frame size is 32 x 32**, so the sheet is **320 x 32**.
+- **Taller heroes work too.** The game takes frame width = picture width / 10, and frame height =
+  picture height. So 320 x 48 (frames of 32 x 48) works, and so does 640 x 64 (frames of 64 x 64).
+  The width must divide evenly by 10.
+- **Feet sit on the bottom row** of every frame, with the hero roughly in the middle left to right.
+- **Empty pixels are see-through.**
+
+## The minimum to get going
+
+Draw the **run (frames 3 to 6) and the jump (frame 7)**. Frames you leave empty borrow the nearest
+pose that is drawn, so a half-finished sheet still plays:
+
+- no stand frames: uses run frame 3
+- no fall: uses the jump
+- no land: uses a stand frame
+- no hurt: uses the fall (or the jump)
+
+## Drawing it in Piskel
+
+1. Open **piskelapp.com** and click **Create Sprite**.
+2. **Resize** to 320 x 32 (or 320 x 48 for a taller hero). Draw on ONE Piskel frame only.
+3. **Import** the starter (download it from the workshop) as a single image.
+4. Recolour with the bucket tool "Paint all pixels of the same color", then change shapes.
+   Keep the feet on the bottom row.
+5. **Export**, PNG tab, download. Name it exactly `hero-side.png`.
+6. Either try it in the workshop ("Try your own", then "Use this hero on this device"), or put it in
+   `public/arcade/` on GitHub (**Add file**, **Upload files**, on a new branch with a pull request).
+
+The blank template (also in the workshop) has faint guide lines: a blue box edge, a pink ground line,
+a dotted middle and the frame number. Rub them out with the eraser before you export.
+
+## How the game finds the hero
+
+`loadSideHero()` in `src/arcade/hero-side-art.ts` returns `{ image, frameW, frameH, frameMap, source }`.
+It uses, in order: a hero saved on this device by the workshop (`localStorage`, key
+`learning-arcade:hero-side`), then `public/arcade/hero-side.png`, then the built-in placeholder.
+A picture whose width doesn't divide by 10 is skipped. `frameMap[pose]` says which frame to draw for
+each of the 10 poses (its own, or the nearest drawn one if it's empty).
