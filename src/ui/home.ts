@@ -1,6 +1,7 @@
 import type { Deck } from "../engine/types";
 import { gamesFor } from "../engine/storage";
 import { h } from "./dom";
+import { GAME_BLURB, GAME_NAME, GAME_ROUTE } from "../arcade/brawl/names";
 import { ARCADE_OPENS_AT, CHALLENGES, SUBJECT_NAMES, challengeDone, clearedSubjects, rememberTrack, trackFor } from "../engine/progress";
 
 // The subjects, about six quizzes each. Planned ones would show as "coming".
@@ -55,6 +56,7 @@ export const ARCADE_GAMES: { id: string; title: string; blurb: string; kicker?: 
   { id: "pong", title: "Planet Pong", blurb: "Where video games began. Knock the planets past the computer, mind the asteroids." },
   { id: "labyrinth", title: "The Labyrinth", blurb: "Keys, locked doors, bats, and something big that lives in the middle. Find the stairs." },
   { id: "flyover", title: "Flyover", blurb: "Fly a Cessna, then a jet, then a jumbo across the continents. Pick the right airport code at every stop, and dodge the storms." },
+  { id: GAME_ROUTE, title: GAME_NAME, blurb: GAME_BLURB },
   { id: "hero", title: "Hero Workshop", kicker: "Make your own", blurb: "Draw your own pixel hero for the arcade. Start from the built-in hero, recolour it, and watch it walk." },
 ];
 

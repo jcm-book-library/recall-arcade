@@ -6,6 +6,7 @@ import { CHALLENGES, challengeDone, clearedSubjects, currentTrack, rememberTrack
 import type { Track } from "../engine/progress";
 import { loadSavedHero, makeHeroSheet } from "./hero-art";
 import { clamp, noise, startLoop } from "./kit";
+import { readStamps, writeStamps } from "./stamps";
 import { BUILDINGS, HALL, MAP_H, MAP_W, SIGNS, STOPS, blocked, findTiles, gateOrder, isSignKey, signNumber, tileAt } from "./island-map";
 import type { WalkState } from "./island-map";
 import { FLAG_COLOURS, TILE, drawSprite, makeFence, makeTileArt } from "./island-art";
@@ -50,7 +51,6 @@ const KEY_DIRS: Record<string, Dir> = {
 // Only until the tab closes (sessionStorage): where the hero is standing and how many gates he has
 // walked through, so coming back from a quiz puts him exactly where he was.
 const ISLAND_KEY = "learning-arcade:island";
-const STAMPS_KEY = "learning-arcade:stamps";
 const SPOT_KEY = "learning-arcade:island-spot";
 
 interface IslandSave { freeRoam?: boolean; track?: Track }
@@ -70,23 +70,6 @@ function writeIsland(v: IslandSave) {
     // Nothing to do: free roam just won't be remembered.
   }
 }
-function readStamps(): Set<string> {
-  try {
-    const v = JSON.parse(localStorage.getItem(STAMPS_KEY) ?? "[]");
-    if (Array.isArray(v)) return new Set(v.filter((x) => typeof x === "string"));
-  } catch {
-    // see above
-  }
-  return new Set();
-}
-function writeStamps(s: Set<string>) {
-  try {
-    localStorage.setItem(STAMPS_KEY, JSON.stringify([...s]));
-  } catch {
-    // see above
-  }
-}
-
 interface Spot { x: number; y: number; facing: Dir; passed: number }
 function readSpot(): Spot | null {
   try {
@@ -119,6 +102,8 @@ for (const s of STOPS) for (const [x, y] of findTiles(s.spot)) stopAt.set(`${x},
 const stopByScenery = (c: string) => STOPS.find((s) => s.scenery.includes(c));
 const STOP_SCENERY = new Set(STOPS.flatMap((s) => [...s.scenery]));
 const STAMP_GAMES = STOPS.filter((s) => s.stamp).map((s) => s.game);
+// Most stamps come from pressing Play. A game with earnedBy "finish" gives its own stamp when you finish it.
+const STAMP_ON_PLAY = new Set(STOPS.filter((s) => s.stamp && s.earnedBy !== "finish").map((s) => s.game));
 
 /** The smallest rectangle (in tiles) that holds every tile with one of these letters. */
 function bounds(letters: string) {
@@ -131,7 +116,7 @@ function bounds(letters: string) {
 }
 
 // Letters the path is made of, so a gate can tell which way the path runs through it.
-const PATHY = new Set("=PbZE%&^p@");
+const PATHY = new Set("=PbZE%&^$p@");
 
 /** Where a flag's pole stands on each building: [pixels from the left edge, pixels from the top] of the pole's foot. */
 const FLAG_AT: Record<string, [number, number]> = {
@@ -354,7 +339,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
 
   /** Playing a game from the island earns its stamp (a proper badge system comes later). */
   function addStamp(game: string) {
-    if (!STAMP_GAMES.includes(game) || stamps.has(game)) return;
+    if (!STAMP_ON_PLAY.has(game) || stamps.has(game)) return;
     stamps.add(game);
     writeStamps(stamps);
     updateHud();
@@ -423,8 +408,8 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
       [
         h("p", { class: "isl-kicker" }, game.kicker ?? "Arcade game"),
         h("p", { class: "isl-text" }, game.blurb),
-        s.stamp ? h("p", { class: `isl-stamp${stamped ? " got" : ""}` }, stamped ? "★ Stamp collected" : "☆ Play it once to earn a stamp. Or skip it: nothing on the path needs it.") : null,
-        h("a", { class: "btn isl-play", href: `#${game.id}`, "data-game": s.stamp ? game.id : false }, s.stamp ? "Play ▸" : "Open ▸"),
+        s.stamp ? h("p", { class: `isl-stamp${stamped ? " got" : ""}` }, stamped ? "★ Stamp collected" : s.earnedBy === "finish" ? "☆ Finish the level to earn a stamp. Or skip it: nothing on the path needs it." : "☆ Play it once to earn a stamp. Or skip it: nothing on the path needs it.") : null,
+        h("a", { class: "btn isl-play", href: `#${game.id}`, "data-game": STAMP_ON_PLAY.has(game.id) ? game.id : false }, s.stamp ? "Play ▸" : "Open ▸"),
       ],
       true,
       "Skip",
@@ -434,7 +419,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
   /** The arcade hall's door: every arcade game, and the Hero Workshop. */
   function openHall() {
     const items = ARCADE_GAMES.map((g) => {
-      const stampable = STAMP_GAMES.includes(g.id);
+      const stampable = STAMP_ON_PLAY.has(g.id);
       const got = stamps.has(g.id);
       return h(
         "li",
@@ -459,7 +444,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
       return h("li", { class: `isl-book-row${got ? " got" : ""}` },
         h("span", { class: "isl-book-mark", "aria-hidden": "true" }, got ? "★" : "☆"),
         h("span", { class: "isl-book-name" }, game?.title ?? s.game),
-        h("span", { class: "isl-book-state" }, got ? "Stamp collected" : "Not played yet"));
+        h("span", { class: "isl-book-state" }, got ? "Stamp collected" : s.earnedBy === "finish" ? "Not finished yet" : "Not played yet"));
     });
     const flagRows = BUILDINGS.map((b, i) => {
       const g = gateInfos[i];

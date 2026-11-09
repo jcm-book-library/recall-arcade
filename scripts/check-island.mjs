@@ -14,7 +14,7 @@ import { ROWS, SIGNS, SIGN_KEYS, isSignKey, signNumber, BUILDINGS, STOPS, HALL, 
 const problems = [];
 const bad = (msg) => problems.push(msg);
 
-const KNOWN = new Set("~.,=*dpbPwTrFf" + SIGN_KEYS + "GgSsHhAaNnMmOoKkUuCLY_X@%&^ZE");
+const KNOWN = new Set("~.,=*dpbPwTrFf" + SIGN_KEYS + "GgSsHhAaNnMmOoKkUuCLYV_X@%&^$ZE");
 const W = MAP_W;
 const H = MAP_H;
 ROWS.forEach((r, y) => {

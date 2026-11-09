@@ -22,12 +22,15 @@ export interface LoopParts {
   idle?: (dt: number) => void;
   /** Paint the picture. `seconds` is a steadily rising clock, handy for animation. */
   draw: (seconds: number) => void;
+  /** How long each update slice is, in seconds. Leave it out for the usual 1/120. The Brawl asks for 1/60. */
+  step?: number;
 }
 
 /** Start the loop. It returns a function that stops it again (call that when leaving the screen). */
 export function startLoop(parts: LoopParts): () => void {
   let raf = 0;
   let last = performance.now();
+  const step = parts.step ?? STEP;
   let owed = 0; // time we owe the game, in seconds: it is "paid" in STEP-sized slices
   function frame(now: number) {
     raf = requestAnimationFrame(frame);
@@ -38,9 +41,9 @@ export function startLoop(parts: LoopParts): () => void {
     if (parts.playing()) {
       owed += dt;
       // Re-check `playing` each slice: the game may pause itself part way through (a level ends).
-      while (parts.playing() && owed >= STEP) {
-        parts.update(STEP);
-        owed -= STEP;
+      while (parts.playing() && owed >= step) {
+        parts.update(step);
+        owed -= step;
       }
     } else {
       owed = 0; // paused: forget any owed time so there is no lurch when play resumes
