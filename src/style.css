@@ -1054,3 +1054,22 @@ a.btn { text-decoration: none; }
 .zitem.found .cline { stroke: #ffe9a8; opacity: 0.6; }
 .zitem.missed .cline { stroke: #ff7a6e; opacity: 0.5; }
 .zitem .zhit { fill: transparent; stroke: none; pointer-events: all; }
+
+/* Hero Workshop: the side-on hero section */
+.hw-jump { justify-self: start; }
+.hws { display: grid; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 2px solid var(--line); }
+.hws > * { min-width: 0; }
+.hws p { margin: 0; }
+.hws-title, .hws-sub { margin: 0; }
+.hws-scroll { overflow-x: auto; max-width: 100%; border: 2px solid var(--line); border-radius: var(--r); background: #fbfcfc; }
+.hws-scroll:focus-visible { outline: 3px solid var(--accent); }
+.hws-sheet { display: block; image-rendering: pixelated; max-width: none; }
+.hws-note { font-size: 0.92rem; }
+.hws-preview { display: block; image-rendering: pixelated; height: auto; max-width: 100%; border: 2px solid var(--line); border-radius: var(--r); }
+.hws-showing { color: var(--muted); font-size: 0.92rem; }
+.hws-poses { display: flex; flex-wrap: wrap; gap: 6px; }
+.hws-pose { padding: 6px 10px; font-size: 0.9rem; }
+.hws-pose[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.hw-pick { position: relative; }
+.hws .hw-steps { margin-top: 8px; }
+.hws .btn.primary { margin-left: 0; }

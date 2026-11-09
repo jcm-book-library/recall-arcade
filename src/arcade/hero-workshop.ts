@@ -1,4 +1,5 @@
 import { h } from "../ui/dom";
+import { renderSideSection } from "./hero-side-workshop";
 import { HERO_PALETTE, HERO_PARTS, loadSavedHero, makeHeroSheet, saveHero } from "./hero-art";
 
 // THE HERO WORKSHOP (#hero): a page that helps you draw your own pixel hero without starting from
@@ -187,12 +188,17 @@ export function renderHeroWorkshop(root: HTMLElement): () => void {
   const step = (n: number, title: string, ...body: (Node | string | null)[]) =>
     h("li", { class: "hw-step" }, h("h3", {}, h("span", { class: "hw-num" }, String(n)), title), ...body);
 
+  const side = renderSideSection();
+  const toSide = h("button", { type: "button", class: "btn ghost hw-jump" }, "Side-on hero (for the platformer) ▾");
+  toSide.addEventListener("click", () => side.el.scrollIntoView({ behavior: "smooth", block: "start" }));
+
   root.replaceChildren(
     h(
       "main",
       { class: "play hero-workshop" },
       h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, "Hero Workshop")),
       h("p", { class: "lede" }, "Make your own hero for the arcade. You don't start from a blank page: download the starter hero, change its colours, then make it yours. Then try it out right here."),
+      toSide,
 
       h("section", { class: "hw-top" },
         h("div", {}, labelledSheet(starter)),
@@ -236,8 +242,12 @@ export function renderHeroWorkshop(root: HTMLElement): () => void {
           h("p", {}, "On GitHub, open the project's ", h("strong", {}, "public/arcade"), " folder, click ", h("strong", {}, "Add file"), " then ", h("strong", {}, "Upload files"), ", and drop in hero.png. At the bottom, choose ", h("strong", {}, "Create a new branch and start a pull request"), " (never straight into main), then merge it like the others. A few minutes later your hero is in the live game."),
         ),
       ),
+      side.el,
     ),
   );
 
-  return () => yours.stop();
+  return () => {
+    yours.stop();
+    side.stop();
+  };
 }
