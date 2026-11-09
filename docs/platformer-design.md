@@ -1,5 +1,29 @@
 # The side-on platformer: decisions to make (8 Nov 2026)
 
+## Decided (owner, 8 Nov 2026)
+- **Where:** an arcade stop between the Sport stadium and the Entertainment theatre on the island.
+- **Three levels, built one at a time** (level 1 first, then the next), going from sport to the movies:
+  1. **The stadium:** an athletics meet in full swing. Dodge shot puts, javelins and hammer throws,
+     and at the end a stampede of runners coming past.
+  2. **The road:** out on the open road, with animals as the enemies. Jump over them, or land on top to stun them.
+  3. **The movie studio:** explosions going off on sets, falling ladders, climbing on the sets, and rolling
+     bins to jump (a nod to Donkey Kong).
+- **The hero:** the same character as on the island, but with better graphics and possibly taller.
+  The feel to aim for is the early-90s Aladdin and The Lion King games: smooth movement and flowing
+  animation, a step up from early Mario. We get there gradually, not all at once.
+- **Abilities grow with the levels.** Level 1: run and jump. More moves (stomp in level 2, climbing in
+  level 3...) arrive as each level needs them.
+- **Danger:** cartoon only, no gore. Lives as suggested: Easy unlimited, Intermediate 5, Hard 3 with fewer checkpoints.
+- **Quiz link:** none to start. It's a break from the quizzes. Ideas can be tried once it's built.
+- **Controls:** keys (arrows or WASD, Space or Up to jump), and on-screen left, right and jump buttons on phones.
+  The camera scrolls both ways, with a little up and down.
+- **Art and levels:** 16 px tiles drawn in code first, your art later. Levels are written as letters, with a checker script.
+- **Extras** (sound, best times, secrets): later.
+- **Side-on hero sheet:** 32 × 32 frames, facing right. Run and jump first, more poses as levels need them.
+  The Hero Workshop gets a side-on template first.
+
+The questions below are kept for the record.
+
 The next arcade game, "The Brawl" in `docs/action-game-ideas.md`: a side-on platformer, Mario-style.
 This page lists what needs deciding before building. Each question has a **suggested answer**
 to react to. Change anything. Write your answers under each one (or tell Claude) and we build from that.
