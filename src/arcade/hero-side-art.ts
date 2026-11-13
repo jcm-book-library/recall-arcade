@@ -1,4 +1,4 @@
-// THE SIDE-ON HERO: the same island hero as hero-art.ts, drawn from the side for the platformer.
+// THE SIDE-ON HERO: Bluebottle, the cobalt one-eyed alien from hero-art.ts, drawn from the side for the platformer.
 //
 // The picture is ONE row of 10 frames, all facing RIGHT (the game flips it for left):
 //   1-2 stand (breathing)   3-6 run   7 jump (going up)   8 fall   9 land   10 hurt
@@ -7,10 +7,10 @@
 // row of every frame. Empty pixels are see-through. See "The side-on hero" in docs/arcade-art.md.
 //
 // This file does three jobs:
-//   1. draws a placeholder hero in code (makeSideHeroSheet), so the game works before anyone draws
+//   1. draws the built-in hero (Bluebottle) in code (makeSideHeroSheet), so the game works before anyone draws
 //   2. makes a blank labelled template to draw on (makeSideTemplate)
 //   3. loads the hero the game should use (loadSideHero): this device's upload, else
-//      public/arcade/hero-side.png, else the placeholder
+//      public/arcade/hero-side.png, else the built-in Bluebottle
 import { HERO_PALETTE } from "./hero-art";
 import { makeCanvas } from "./kit";
 
@@ -32,30 +32,21 @@ export const SIDE_POSES: { name: string; note: string }[] = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// Drawing the placeholder
+// Drawing Bluebottle
 // ---------------------------------------------------------------------------------------------
+// Bluebottle is built from rounded parts (a big head, a small body, stumpy limbs, two long ears),
+// stacked back to front. Every part is a "mask" (a set of pixels). paint() gives a mask a 1 px dark
+// outline, a flat fill, one shade on its lower right and a light rim on its upper left, the same
+// crisp look as the rest of the arcade art. Colours come from the palette letters in hero-art.ts,
+// so recolouring in the Workshop still works.
 
 const N = SIDE_FRAME;
 type Pt = [number, number];
-/** One body part drawn on its own, so parts can be stacked front to back. */
-type Layer = Map<number, string>;
+type Mask = Map<number, [number, number, number]>; // key -> [x, y, how far along a limb or ear (0 to 1)]
 type Grid = (string | null)[];
 
-function put(l: Layer, x: number, y: number, c: string) {
-  x = Math.round(x);
-  y = Math.round(y);
-  if (x < 0 || y < 0 || x >= N || y >= N) return;
-  l.set(y * N + x, c);
-}
-function box(l: Layer, x: number, y: number, w: number, h: number, c: string) {
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(l, x + i, y + j, c);
-}
-/** A thick line made of little squares: used for arms and legs. */
-function seg(l: Layer, a: Pt, b: Pt, w: number, c: string) {
-  const n = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]), 1);
-  const o = -Math.floor((w - 1) / 2);
-  for (let i = 0; i <= n; i++) box(l, a[0] + ((b[0] - a[0]) * i) / n + o, a[1] + ((b[1] - a[1]) * i) / n + o, w, w, c);
-}
+const keyOf = (x: number, y: number) => (y + 300) * 1000 + (x + 300);
+const inMask = (m: Mask, x: number, y: number) => m.has(keyOf(x, y));
 
 function mix(a: string, b: string, t: number) {
   const p = (s: string, i: number) => parseInt(s.slice(1 + i * 2, 3 + i * 2), 16);
@@ -63,205 +54,173 @@ function mix(a: string, b: string, t: number) {
   return `#${ch(0)}${ch(1)}${ch(2)}`;
 }
 
-/** Put a part on the picture. A "carve" part also draws a thin outline where it sits over another part. */
-function stamp(g: Grid, l: Layer, carve: boolean, outline: string) {
-  const ring: number[] = [];
-  if (carve) {
-    for (const k of l.keys()) {
-      const x = k % N;
-      const y = (k - x) / N;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
-        const nk = ny * N + nx;
-        if (!l.has(nk) && g[nk]) ring.push(nk);
-      }
-    }
+/** An ellipse with its centre at (cx, cy) and radii rx and ry. */
+function ell(cx: number, cy: number, rx: number, ry: number): Mask {
+  const m: Mask = new Map();
+  for (let y = Math.floor(cy - ry) - 1; y <= cy + ry + 1; y++)
+    for (let x = Math.floor(cx - rx) - 1; x <= cx + rx + 1; x++)
+      if (((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) m.set(keyOf(x, y), [x, y, 0]);
+  return m;
+}
+
+/** A thick line with round ends, running through the points and growing from radius r0 to r1. */
+function cap(pts: Pt[], r0: number, r1: number): Mask {
+  const m: Mask = new Map();
+  const lens: number[] = [];
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    lens.push(d);
+    total += d;
   }
-  for (const [k, c] of l) g[k] = c;
-  for (const k of ring) g[k] = outline;
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const n = Math.max(2, Math.ceil(lens[i - 1] * 3));
+    for (let s = 0; s <= n; s++) {
+      const f = s / n;
+      const t = (acc + lens[i - 1] * f) / total;
+      const cx = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f;
+      const cy = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f;
+      const r = r0 + (r1 - r0) * t;
+      for (let y = Math.floor(cy - r) - 1; y <= cy + r + 1; y++)
+        for (let x = Math.floor(cx - r) - 1; x <= cx + r + 1; x++)
+          if ((x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= r * r) {
+            const o = m.get(keyOf(x, y));
+            if (!o || o[2] < t) m.set(keyOf(x, y), [x, y, t]);
+          }
+    }
+    acc += lens[i - 1];
+  }
+  return m;
 }
 
-// The head, facing right: 12 wide, 10 tall. h hair, H hair highlight, s skin, e eye, m mouth.
-const HEAD = [
-  "...hHHhhhh..",
-  "..hHHhhhhhh.",
-  ".hhhhhhhhhhh",
-  ".hhhhhhhhsss",
-  ".hhhhhhhsess",
-  ".hhhhhhhsess",
-  "..hhhhhhssss",
-  "...hhhhsssms",
-  "....hhssss..",
-  ".....sss....",
-];
-
-type Face = "calm" | "wow" | "ouch";
-
-interface Pose {
-  hip: Pt; // where the legs start
-  sh: Pt; // top of the body, under the head
-  legB: [Pt, Pt]; // the far leg: knee, then where the sole of the shoe sits
-  legF: [Pt, Pt]; // the near leg
-  armB: [Pt, Pt]; // the far arm: elbow, hand
-  armF: [Pt, Pt]; // the near arm
-  face?: Face;
-  headDx?: number;
+interface PaintOpts {
+  f?: string; s?: string; h?: string; // fill, shade and rim colours (names, see colours below)
+  st?: number; // how thick the shade is
+  hi?: boolean; // light rim on the upper left
+  ring?: string | null; // outline colour
+  tip?: { from: number; c: string; s: string }; // a different colour at the far end of an ear
 }
+
+type Pose = {
+  b: number; lx?: number; e: "stand" | "up" | "down" | "jump" | "fall" | "land" | "hurt"; earDy?: number;
+  nl: [number, number, number]; fl: [number, number, number]; // near and far leg: hip x, foot x, foot y
+  na: Pt; fa: Pt; // near and far arm: where the hand ends, from the shoulder
+  face?: "calm" | "ouch"; headDx?: number; squash?: boolean;
+};
+
+// The two long ears, as a line of points from the head. Swept back like long hair.
+const EARS: Record<Pose["e"], Pt[]> = {
+  stand: [[12, 7], [8.5, 7.5], [5, 9], [3, 12.5]],
+  up: [[12, 7], [8.5, 6], [5.5, 5.5], [3, 6.5]],
+  down: [[12, 7], [8.5, 9], [5.5, 12], [3.2, 16.5]],
+  jump: [[12, 7], [9, 10], [6.2, 14], [4.2, 19.5]],
+  fall: [[12, 7], [9.5, 4], [7, 2.6], [4, 3.2]],
+  land: [[12, 7], [8.5, 9.5], [5.5, 13], [3.2, 17.5]],
+  hurt: [[12, 7], [9.5, 4.6], [7.2, 3.6], [4.5, 4.2]],
+};
 
 function drawFrame(pose: Pose, pal: Record<string, string>): Grid {
-  const out = pal.o;
-  const c = {
-    hair: pal.h, hairHi: mix(pal.h, "#ffffff", 0.22), skin: pal.s, skinDk: mix(pal.s, out, 0.22), eye: pal.e,
-    mouth: mix(pal.s, "#b5503c", 0.6), shirt: pal.t, shirtDk: mix(pal.t, out, 0.3), belt: pal.b,
-    buckle: mix(pal.b, "#ffffff", 0.45), trou: pal.l, trouDk: mix(pal.l, out, 0.35), shoe: pal.k, shoeDk: mix(pal.k, out, 0.35),
+  const o = pal.o;
+  // every colour Bluebottle uses; the shades that have no palette letter are made from the ones that do
+  const C: Record<string, string> = {
+    O: o, B: pal.b, D: pal.d, D2: mix(pal.d, o, 0.4), L: pal.l, P: pal.p, P2: mix(pal.p, pal.b, 0.35),
+    T: pal.t, T2: pal.u, W: pal.w, V: mix(pal.w, pal.b, 0.2), E: pal.e, I: mix(pal.e, pal.b, 0.5), K: pal.k,
   };
   const g: Grid = new Array(N * N).fill(null);
-  const [hx, hy] = pose.hip;
-  const [sx, sy] = pose.sh;
-
-  const arm = (l: Layer, [el, ha]: [Pt, Pt], dark: boolean) => {
-    const s: Pt = [sx, sy + 1];
-    seg(l, s, el, 2, dark ? c.shirtDk : c.shirt);
-    seg(l, el, ha, 2, dark ? c.skinDk : c.skin);
+  let ox = 0;
+  const set = (x: number, y: number, c: string) => {
+    x += ox;
+    if (x >= 0 && y >= 0 && x < N && y < N) g[y * N + x] = C[c];
   };
-  const leg = (l: Layer, [knee, foot]: [Pt, Pt], dark: boolean) => {
-    seg(l, [hx, hy], knee, 3, dark ? c.trouDk : c.trou);
-    seg(l, knee, [foot[0], foot[1] - 2], 3, dark ? c.trouDk : c.trou);
-    box(l, foot[0] - 2, foot[1] - 1, 5, 1, dark ? c.shoeDk : c.shoe);
-    box(l, foot[0] - 2, foot[1], 6, 1, dark ? c.shoeDk : c.shoe);
+  const paint = (m: Mask, a: PaintOpts = {}) => {
+    const f = a.f ?? "B", s = a.s ?? "D", h = a.h ?? "L", st = a.st ?? 1, ring = a.ring === undefined ? "O" : a.ring;
+    if (ring) for (const [x, y] of m.values()) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!inMask(m, x + dx, y + dy)) set(x + dx, y + dy, ring);
+    for (const [x, y, t] of m.values()) {
+      let c = f;
+      let shaded = false;
+      for (let k = 1; k <= st; k++) if (!inMask(m, x + k, y + k)) shaded = true;
+      if (shaded) c = s;
+      else if (a.hi && !inMask(m, x - 1, y - 1)) c = h;
+      if (a.tip && t >= a.tip.from) c = shaded ? a.tip.s : a.tip.c;
+      set(x, y, c);
+    }
   };
+  const b = pose.b;
+  const lx = pose.lx ?? 0;
+  const ear = pose.earDy ?? 0;
+  const E = EARS[pose.e].map(([x, y], i): Pt => [x, y + (i ? ear : 0)]);
+  const far = E.map(([x, y], i): Pt => (i ? [x + 2.5, y - 1.5] : [x, y]));
+  const earO: PaintOpts = { hi: true, st: 1, tip: { from: 0.62, c: "T", s: "T2" } };
+  const leg = (hip: number, fx: number, fy: number, near: boolean) =>
+    paint(cap([[hip, 24.5 + b], [fx, fy]], 2.1, 2.1), near ? { hi: true } : { f: "D", s: "D2", h: "D" });
+  const dx = pose.headDx ?? 0;
 
-  // back to front: far arm, far leg, near leg, body (hides the tops of the legs), head, near arm
-  let l: Layer = new Map();
-  arm(l, pose.armB, true);
-  stamp(g, l, false, out);
+  // back to front: far ear, far leg, far arm, body, near leg, near arm, head, near ear, face
+  ox = lx + dx;
+  paint(cap(far.map(([x, y]): Pt => [x, y + b]), 1.6, 2.2), { ...earO, f: "D", s: "D2", h: "D", tip: { from: 0.62, c: "T2", s: "D2" } });
+  ox = 0;
+  leg(pose.fl[0], pose.fl[1], pose.fl[2], false);
+  paint(cap([[16, 21 + b], [16 + pose.fa[0], 21 + b + pose.fa[1]]], 1.7, 1.7), { f: "D", s: "D2", h: "D" });
+  paint(ell(15.5, 22.6 + b, 6.2, pose.squash ? 4.0 : 4.6), { hi: true, st: 1 });
+  paint(ell(18.8, 22.8 + b, 3, 3.4), { f: "P", s: "P2", ring: null });
+  leg(pose.nl[0], pose.nl[1], pose.nl[2], true);
+  paint(cap([[17.5, 21.5 + b], [17.5 + pose.na[0], 21.5 + b + pose.na[1]]], 1.8, 1.8), { hi: true });
 
-  l = new Map();
-  leg(l, pose.legB, true);
-  stamp(g, l, false, out);
+  ox = lx + dx;
+  const head = ell(16, 12.6 + b, 10.5, 8.5);
+  paint(head, { hi: true, st: 1 });
+  paint(cap(E.map(([x, y]): Pt => [x, y + b]), 1.7, 2.3), earO);
 
-  l = new Map();
-  leg(l, pose.legF, false);
-  stamp(g, l, true, out);
-
-  l = new Map();
-  const rows = hy - sy;
-  for (let r = 0; r < rows; r++) {
-    const cx = Math.round(sx + ((hx - sx) * r) / Math.max(1, rows - 1));
-    const last = r === rows - 1;
-    for (let x = cx - 3; x <= cx + 3; x++) put(l, x, sy + r, last ? (x === cx + 2 ? c.buckle : c.belt) : x === cx - 3 ? c.shirtDk : c.shirt);
+  // the eye: round and open at the top, big pupil sitting a little low, shine top left
+  paint(ell(20.6, 12.6 + b, 5.4, 5.3), { f: "W", s: "V", st: 1, ring: "D" });
+  const px = (x: number, y: number, c: string) => set(x, y + b, c);
+  if (pose.face === "ouch") {
+    // eye squeezed shut: a fat ">" over the white, like a cartoon "ow"
+    for (const [x, y] of [[19, 10], [20, 11], [21, 12], [22, 13], [21, 14], [20, 15], [19, 16], [20, 10], [21, 11], [22, 12], [21, 13], [20, 14], [19, 15]]) px(x, y, "E");
+    for (const [x, y] of [[13, 17], [14, 17], [15, 17], [13, 18], [14, 18], [15, 18]]) px(x, y, "K");
+    for (const [x, y] of [[22, 19], [23, 19], [22, 20], [23, 20]]) px(x, y, "O"); // open mouth
+  } else {
+    const pu = ell(22, 14 + b, 3.5, 3.5);
+    paint(pu, { f: "E", ring: null, st: 0 });
+    for (const [x, y] of pu.values()) if (!inMask(pu, x, y - 2) && y >= 16 + b) set(x, y, "I");
+    for (const [x, y] of [[20, 12], [21, 12], [20, 13], [21, 13]]) px(x, y, "W"); // shine
+    px(23, 16, "W"); // sparkle
+    for (const [x, y] of [[13, 17], [14, 17], [15, 17], [13, 18], [14, 18], [15, 18]]) px(x, y, "K"); // blush
+    // the smile: a small "w"
+    const q = ell(23.5, 19.6 + b, 3.4, 1.9);
+    for (const k of [...q.keys()]) if (!head.has(k)) q.delete(k);
+    paint(q, { ring: null, st: 0 });
+    for (const [x, y] of [[22, 19], [23, 20], [24, 20], [25, 19]]) px(x, y, "O");
   }
-  box(l, hx - 2, hy, 5, 1, c.trou);
-  stamp(g, l, false, out);
-
-  l = new Map();
-  const x0 = sx - 6 + (pose.headDx ?? 0);
-  const y0 = sy - 9;
-  const key: Record<string, string> = { h: c.hair, H: c.hairHi, s: c.skin, e: c.eye, m: c.mouth };
-  HEAD.forEach((row, j) => [...row].forEach((ch, i) => key[ch] && put(l, x0 + i, y0 + j, key[ch])));
-  const face = pose.face ?? "calm";
-  if (face !== "calm") {
-    put(l, x0 + 9, y0 + 7, c.eye); // open mouth
-    put(l, x0 + 10, y0 + 7, c.eye);
-  }
-  if (face === "ouch") {
-    // eyes squeezed shut: a little ">" instead of two dots
-    put(l, x0 + 9, y0 + 4, c.skin);
-    put(l, x0 + 9, y0 + 5, c.skin);
-    for (const [i, j] of [[8, 4], [9, 5], [8, 6]]) put(l, x0 + i, y0 + j, c.eye);
-  }
-  stamp(g, l, false, out);
-
-  l = new Map();
-  arm(l, pose.armF, false);
-  stamp(g, l, true, out);
-
-  // the outline goes round the whole hero last
-  const edge: number[] = [];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    if (g[y * N + x]) continue;
-    if ((x > 0 && g[y * N + x - 1]) || (x < N - 1 && g[y * N + x + 1]) || (y > 0 && g[(y - 1) * N + x]) || (y < N - 1 && g[(y + 1) * N + x])) edge.push(y * N + x);
-  }
-  for (const k of edge) g[k] = out;
+  ox = 0;
   return g;
 }
 
-// Arm swings for running, measured from the shoulder (sx, sy + 1).
-const rel = (s: Pt, dx: number, dy: number): Pt => [s[0] + dx, s[1] + dy];
-function swing(sh: Pt, kind: "back" | "down" | "fwd" | "mid"): [Pt, Pt] {
-  const s: Pt = [sh[0], sh[1] + 1];
-  if (kind === "back") return [rel(s, -3, 3), rel(s, -5, 1)];
-  if (kind === "down") return [rel(s, -1, 4), rel(s, 1, 7)];
-  if (kind === "fwd") return [rel(s, 3, 3), rel(s, 6, 1)];
-  return [rel(s, 1, 4), rel(s, 4, 4)];
-}
-
-// The near leg's four poses. The far leg shows the pose two frames along, so the legs swap
-// every two frames and the four frames loop into a proper run: reach, push off, tuck, swing.
-const RUN_LEG: [Pt, Pt][] = [
-  [[20, 25], [23, 30]], // reach forward, heel down
-  [[19, 26], [17, 30]], // under the body, knee bent, weight on it
-  [[15, 26], [11, 29]], // pushing off behind, toe down
-  [[18, 26], [13, 28]], // foot tucked up behind, swinging through
+// The poses. b is how far the body bobs down; lx how far the head leads forward (the legs stay put).
+const POSES: Pose[] = [
+  { b: 0, nl: [12, 12, 28.3], fl: [19, 19, 28.3], na: [1, 4], fa: [0, 4], e: "stand" }, // stand: breathing in
+  { b: 0, nl: [12, 12, 28.3], fl: [19, 19, 28.3], na: [1, 4], fa: [0, 4], e: "stand", earDy: 1 }, // breathing out: the ears drift down 1 px
+  { b: 0, lx: 1, nl: [13.5, 19.5, 28.3], fl: [17.5, 8.5, 26.4], na: [-4, 2], fa: [4, 2], e: "up" }, // run: stride, ears up
+  { b: 1, nl: [13, 13, 28.3], fl: [18.5, 20.5, 25.6], na: [-1, 4], fa: [1, 4], e: "down" }, // dip, ears down
+  { b: 0, lx: 1, nl: [13.5, 8.5, 26.4], fl: [17.5, 20.5, 28.3], na: [4, 2], fa: [-4, 2], e: "up" }, // stride, legs swapped
+  { b: 1, nl: [13, 19.5, 25.6], fl: [18.5, 18.5, 28.3], na: [1, 4], fa: [-1, 4], e: "down" }, // dip, legs swapped
+  { b: -1, nl: [13.5, 10.5, 25.8], fl: [17.5, 21.5, 23.6], na: [4, -1], fa: [4, -2], e: "jump" }, // jump: ears stream down and back
+  { b: 1, nl: [13.5, 10, 28.3], fl: [18, 22.5, 28.3], na: [4, -3], fa: [3, -4], e: "fall" }, // fall: ears float up
+  { b: 2, nl: [11.5, 8.5, 28.3], fl: [19.5, 22.5, 28.3], na: [4, 3], fa: [-3, 3], e: "land", squash: true }, // land: squashed, ears bounce down
+  { b: 0, nl: [14, 17, 28.3], fl: [17.5, 12, 28.3], na: [5, -2], fa: [-3, -3], e: "hurt", face: "ouch", headDx: -1 }, // hurt: ears flung up
 ];
-const RUN_HIP_Y = [21, 23, 21, 23];
-const RUN_ARM: ("back" | "down" | "fwd" | "mid")[] = ["back", "down", "fwd", "mid"];
-
-function poses(): Pose[] {
-  const list: Pose[] = [];
-  // 1-2 stand: the second frame drops the shoulders and head by a pixel
-  for (const dy of [0, 1]) {
-    const sh: Pt = [16, 14 + dy];
-    list.push({
-      hip: [16, 22], sh, legB: [[15, 25], [13, 30]], legF: [[17, 25], [18, 30]],
-      armB: [rel([16, sh[1] + 1], 0, 3), rel([16, sh[1] + 1], -1, 6)], armF: [rel([16, sh[1] + 1], 1, 3), rel([16, sh[1] + 1], 2, 6)],
-    });
-  }
-  // 3-6 run
-  for (let i = 0; i < 4; i++) {
-    const hip: Pt = [16, RUN_HIP_Y[i]];
-    const sh: Pt = [18, hip[1] - 8];
-    list.push({
-      hip, sh, legF: RUN_LEG[i], legB: RUN_LEG[(i + 2) % 4],
-      armF: swing(sh, RUN_ARM[i]), armB: swing(sh, RUN_ARM[(i + 2) % 4]),
-    });
-  }
-  // 7 jump: knees up, arms flung forward and back
-  list.push({
-    hip: [16, 19], sh: [17, 11], legF: [[22, 21], [21, 27]], legB: [[14, 23], [10, 26]],
-    armF: [[21, 14], [25, 10]], armB: [[12, 15], [8, 13]],
-  });
-  // 8 fall: arms up, legs dangling
-  list.push({
-    hip: [16, 21], sh: [16, 13], legF: [[18, 25], [20, 29]], legB: [[14, 25], [12, 28]],
-    armF: [[23, 13], [26, 7]], armB: [[9, 13], [6, 7]], face: "wow",
-  });
-  // 9 land: squashed, knees out, arms out for balance
-  list.push({
-    hip: [16, 26], sh: [18, 20], legF: [[21, 26], [22, 30]], legB: [[11, 26], [10, 30]],
-    armF: [[22, 23], [25, 24]], armB: [[13, 24], [10, 23]],
-  });
-  // 10 hurt: thrown back, eyes squeezed shut, arms flung out
-  list.push({
-    hip: [17, 22], sh: [14, 14], legF: [[19, 25], [21, 28]], legB: [[16, 26], [13, 30]],
-    armF: [[20, 15], [24, 12]], armB: [[10, 17], [6, 15]], face: "ouch", headDx: -1,
-  });
-  return list;
-}
 
 /**
- * The placeholder hero's picture sheet: 10 frames in one row, 320 x 32, facing right.
- * The colours come from the top-down hero, so they read as the same person. Pass a different
- * palette to recolour it.
+ * The built-in side-on hero's picture sheet: Bluebottle, 10 frames in one row, 320 x 32, facing
+ * right. The colours come from the top-down hero (hero-art.ts), so they read as the same
+ * character. Pass a different palette to recolour it.
  */
 export function makeSideHeroSheet(palette: Record<string, string> = HERO_PALETTE) {
   const sheet = makeCanvas(SIDE_FRAME * SIDE_FRAMES, SIDE_FRAME);
   const g = sheet.getContext("2d")!;
-  poses().forEach((pose, f) => {
-    const grid = drawFrame(pose, palette);
-    grid.forEach((col, k) => {
+  POSES.forEach((pose, f) => {
+    drawFrame(pose, palette).forEach((col, k) => {
       if (!col) return;
       g.fillStyle = col;
       g.fillRect(f * SIDE_FRAME + (k % N), Math.floor(k / N), 1, 1);

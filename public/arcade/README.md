@@ -9,4 +9,4 @@ Put your own hero here as **`hero.png`** and The Labyrinth will use it instead o
 
 Step-by-step drawing instructions: [docs/arcade-art.md](../../docs/arcade-art.md).
 
-If there is no `hero.png` here, the game quietly uses the placeholder hero.
+If there is no `hero.png` here, the game quietly uses the built-in hero, Bluebottle.

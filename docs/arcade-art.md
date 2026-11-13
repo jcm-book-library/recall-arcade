@@ -5,8 +5,11 @@
 recolour in Piskel, shows your hero walking, and can put it straight into The Labyrinth on your
 device. The steps below are the same, written out.
 
-The game has a built-in placeholder hero. When you put a picture called `hero.png` in the right
+The game has a built-in starter hero: **Bluebottle**, a cobalt-blue one-eyed alien (drawn in
+`src/arcade/hero-art.ts`). When you put a picture called `hero.png` in the right
 folder, the game uses yours instead. No code changes needed.
+
+The original human starter hero is kept in `src/arcade/human-art.ts` (`makeHumanSheet()`, `makeHumanSideSheet()`) as the first human Bluebottle meets; nothing uses him yet.
 
 ## What the picture must look like
 
@@ -49,7 +52,7 @@ them as the hero walks. Frame 1 is also how the hero looks standing still.
 - Check the name is exactly `hero.png`.
 - Check the size is 32 x 64 (Piskel shows it at the top of the Resize tool).
 - A bigger sheet in the same shape works too (for example 64 x 128). The game shrinks it to fit.
-- If anything is wrong, the game just carries on with the placeholder hero.
+- If anything is wrong, the game just carries on with Bluebottle.
 
 If you'd rather use Aseprite, set the canvas to 32 x 64 and export with **File, Export As** to a PNG.
 
@@ -57,7 +60,7 @@ If you'd rather use Aseprite, set the canvas to 32 x 64 and export with **File, 
 
 The next arcade game is a side-on platformer, so the hero needs drawing from the side. The
 **Hero Workshop** (`#hero`, the "Side-on hero (for the platformer)" section) has the starter hero,
-a blank template, a live preview and "Try your own". The built-in placeholder is drawn in code in
+a blank template, a live preview and "Try your own". The built-in hero, Bluebottle, is drawn in code in
 `src/arcade/hero-side-art.ts`, in the same colours as the top-down hero. Your own picture replaces
 it with no code changes.
 
