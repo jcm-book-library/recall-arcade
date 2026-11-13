@@ -88,3 +88,26 @@ Written down so it doesn't get lost. Nothing here is decided beyond the core ide
   - **Into-the-screen racing** with fake 3D (like OutRun). It shares its tricks with the planned Chase
     finale, so the two could be built together.
   - Story fit: the alien borrows a car (or their ship's buggy) and things go wrong.
+
+## Owner's answers (13 Nov 2026)
+
+### The racing game: a chase view, not a race
+- **Inspiration:** the owner's first ever F1 game on MS-DOS. The track comes from the horizon and moves
+  under you, with trackside signs and a start gantry (a reference screenshot was shared in chat).
+- **View:** a **follow angle** behind the vehicle. Not top-down, not side-on, and it doesn't have to be the
+  in-the-cockpit view.
+- **No opponents needed.** It's about getting round **obstacles** on the road.
+- **How:** fake 3D in the classic style. The road is drawn as horizontal strips that get narrower towards
+  the horizon, curves and hills bend the strips, and objects scale up as they come closer. It's the same
+  trick as the planned Chase finale, so the two can share an engine. Plain 2D canvas, no 3D library needed.
+
+### The zen sand garden is the first easter egg
+- A **sundial-like object on the beach** is **visible from the route** while doing the quizzes, but behind the fence.
+- Once the first lap is done and the player can **get through the fence** (see the island stages plan in
+  island-design.md), they can walk over and **play with the sand as the alien**, and just be zen for a bit.
+- Its first appearance is part of the softer border idea: the hedge gap that leads to it.
+
+### The black hole match game: to explore further
+- The owner's first thought: tokens carry a **marking for each of the 8 quiz houses**, and those are what you match.
+- Also worth exploring: a **random piece with a power** (the subject's token power idea above).
+- The owner will think more before we come back to this.
