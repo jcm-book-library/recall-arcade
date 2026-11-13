@@ -182,3 +182,12 @@ Ideas this opens up:
 - The island route order could follow these questions, so the gates open in story order.
 - Each house could start with a one-line question from Bluebottle on its sign ("Where am I?").
 - The human can turn up again at different houses as a guide, a friend, or the one who gets him into trouble.
+
+## Bluebottle is green (owner, 13 Nov 2026)
+- **Colour:** changed from cobalt blue to **deep sea green**. Side-on, the blue version looked too much like
+  a certain blue alien from a famous animated film, and green breaks that link. Deep sea green also stands
+  out on the island's grass better than brighter greens. His first cobalt look is kept as a recolour idea
+  in the Hero Workshop.
+- **The name stays Bluebottle.** He still takes it off the damaged beach sign, without knowing what it means.
+- **The gag:** when he meets his human friend, the human says something like *"But you ain't blue?"*
+- **The human (the original starter hero) is his friend, not the thief.** The thief is someone else, still to be decided.

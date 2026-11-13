@@ -5,7 +5,7 @@
 recolour in Piskel, shows your hero walking, and can put it straight into The Labyrinth on your
 device. The steps below are the same, written out.
 
-The game has a built-in starter hero: **Bluebottle**, a cobalt-blue one-eyed alien (drawn in
+The game has a built-in starter hero: **Bluebottle**, a deep-sea-green one-eyed alien (named after a beach sign, so "Bluebottle" even though he isn't blue) (drawn in
 `src/arcade/hero-art.ts`). When you put a picture called `hero.png` in the right
 folder, the game uses yours instead. No code changes needed.
 
