@@ -152,7 +152,7 @@ back" ears. The big round eye is open at the top (no dark lid) with the pupil si
 at the top left, plus pink blush cheeks and a small "w" smile. A pale belly and light ear tips lift the
 cobalt body. The ears sway as he walks, bounce on the run, stream down and back on a jump, float up on a
 fall and fly up when he is hurt. The Hero Workshop's recolour ideas and colour list describe Bluebottle.
-Still to do: the companion (Marine), and the damaged beach sign.
+Still to do: a companion (name and colour to come; the owner is looking for other punny names), and the damaged beach sign.
 
 ## The Brawl in the story (owner, 13 Nov 2026)
 - **The tokens get stolen, taken or misplaced, and that's what starts The Brawl.** The platformer is the
