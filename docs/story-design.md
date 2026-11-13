@@ -111,3 +111,36 @@ Written down so it doesn't get lost. Nothing here is decided beyond the core ide
 - The owner's first thought: tokens carry a **marking for each of the 8 quiz houses**, and those are what you match.
 - Also worth exploring: a **random piece with a power** (the subject's token power idea above).
 - The owner will think more before we come back to this.
+
+## The characters (owner, 13 Nov 2026)
+**The goal:** kid-friendly, and cute in the way a kitten or a puppy is cute for adults. All original,
+with no copying from existing characters. The "cute" recipe is a big head, big eyes, round shapes,
+short stumpy limbs and long floppy ears.
+
+**The alien (the hero):**
+- **Cobalt blue** (the owner's favourite colour).
+- **One big eye.**
+- **Short stumpy arms and legs with rounded ends**, no fingers or toes.
+- **Long ears or antennae** that sit out to the side or flop backwards, like long hair.
+
+**A companion:** pink or purple. Still deciding whether this is a clear girl and boy choice, or just
+two companions with no label.
+
+**The names come from a damaged beach sign.** They crash-land, or wake up, on the beach next to an old
+Australian-style warning sign. It's been damaged, only a couple of words can be read, and they adopt them
+as names. Inspired by the real signs warning about **bluebottles** and **marine stingers**:
+- the blue one is **Bluebottle** (bluebottles really are blue)
+- the pink or purple one could be **Marine** (or Stinger)
+
+The damaged sign can stand at the island's Start as the landing site: drawn by us, in the classic yellow
+diamond style, not copied from a photo.
+
+**Design notes for pixel art:**
+- One big eye reads very well at tiny sizes (16 × 16 on the island, 32 × 32 side-on). A single eye
+  stays cute rather than creepy when it's huge and round, sits low on the face, has a big shine dot,
+  and comes with a small mouth and blush cheeks.
+- The floppy ears give free "secondary motion": they bounce when running and stream back when jumping
+  or falling. That's the kind of detail that made the Aladdin and Lion King animation feel alive.
+- Rounded limb ends with no fingers make every pose quicker to draw.
+- The companion can share the same body plan with a different colour and ear shape, so one sprite sheet
+  layout serves both.
