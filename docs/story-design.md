@@ -144,3 +144,11 @@ diamond style, not copied from a photo.
 - Rounded limb ends with no fingers make every pose quicker to draw.
 - The companion can share the same body plan with a different colour and ear shape, so one sprite sheet
   layout serves both.
+
+## The Brawl in the story (owner, 13 Nov 2026)
+- **The tokens get stolen, taken or misplaced, and that's what starts The Brawl.** The platformer is the
+  alien chasing after them, from the stadium to the road to the movie studio.
+- **The quiz houses may be rearranged** around this, for example to change which houses come before The
+  Brawl, or where its stop sits on the island route.
+- To settle later: is this the same theft as the finale (the black hole puzzle), with The Brawl as the
+  chase that leads to it? Or an earlier mishap, with the black hole as the final, bigger theft?
