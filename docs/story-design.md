@@ -145,6 +145,15 @@ diamond style, not copied from a photo.
 - The companion can share the same body plan with a different colour and ear shape, so one sprite sheet
   layout serves both.
 
+**Built (13 Nov 2026):** the starter hero is now **Bluebottle**, a cobalt one-eyed alien, in both the
+island/Labyrinth sheet (`src/arcade/hero-art.ts`, 16 × 16, two walking frames per direction) and the
+side-on Brawl sheet (`src/arcade/hero-side-art.ts`, 32 × 32, ten frames). The owner chose the "swept
+back" ears. The big round eye is open at the top (no dark lid) with the pupil sitting low and a big shine
+at the top left, plus pink blush cheeks and a small "w" smile. A pale belly and light ear tips lift the
+cobalt body. The ears sway as he walks, bounce on the run, stream down and back on a jump, float up on a
+fall and fly up when he is hurt. The Hero Workshop's recolour ideas and colour list describe Bluebottle.
+Still to do: the companion (Marine), and the damaged beach sign.
+
 ## The Brawl in the story (owner, 13 Nov 2026)
 - **The tokens get stolen, taken or misplaced, and that's what starts The Brawl.** The platformer is the
   alien chasing after them, from the stadium to the road to the movie studio.
@@ -152,3 +161,24 @@ diamond style, not copied from a photo.
   Brawl, or where its stop sits on the island route.
 - To settle later: is this the same theft as the finale (the black hole puzzle), with The Brawl as the
   chase that leads to it? Or an earlier mishap, with the black hole as the final, bigger theft?
+
+## Bluebottle's questions: a purpose for each part (owner, 13 Nov 2026)
+Bluebottle is asking who, what, when, where and how. Each quiz house answers one of his questions,
+which anchors a purpose for every part of the game. A rough order, with storylines to grow out of it:
+1. **Where am I?** He works out where he has landed through the **space** quiz (Infinity & Beyond:
+   the night sky, then zooming out) and the **geography** quizzes.
+2. **Who are you?** He runs into a **human**: the original starter hero, kept as **the first human
+   Bluebottle meets**. Wanting to know more leads to the **science of the human body**.
+3. **What else lives here?** He wants to know about **animals**.
+4. **What's that sound?** He's made curious by **music**.
+5. **What do humans do for fun?** He's fascinated by **sport** and **movies** and the like (Sport and
+   Entertainment). This is also where things go wrong: losing the tokens starts **The Brawl**, through the
+   stadium and on to the movie studio.
+
+Still to place: **History** ("when?", how humans got here) and **Travel & Transport** ("how do they get
+around?"), maybe what he needs to know to get home.
+
+Ideas this opens up:
+- The island route order could follow these questions, so the gates open in story order.
+- Each house could start with a one-line question from Bluebottle on its sign ("Where am I?").
+- The human can turn up again at different houses as a guide, a friend, or the one who gets him into trouble.
