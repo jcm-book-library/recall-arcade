@@ -51,3 +51,63 @@ Written down so it doesn't get lost. Nothing here is decided beyond the core ide
 - **Animals, the platformer levels and the island stages** are unchanged; they just get story framing.
 - **Nothing needs rebuilding.** Tokens can be shown wherever challenges show today (cards, island,
   stamp book) once the token look is decided.
+
+## More ideas (owner, 13 Nov 2026)
+
+### The final game: the black hole (refines "the puzzle game")
+- **One token per quiz house** (subject building). Once all are collected they're **stolen** and threatened
+  to be taken for good.
+- The rescue is a **match-and-move puzzle**, in the family of Bejeweled and Candy Crush, with a twist:
+  a **black hole** pulls the tiles **towards the centre** of the board instead of downwards, and it may
+  **move around** as the game goes on.
+- **Token tiles** sit on the board. Link or match tiles to free them, and keep the board in **balance**
+  so the black hole doesn't swallow everything.
+- Ideas to explore when we get there:
+  - Gravity that points at the black hole: tiles slide inward along rings or spokes, so "falling" works
+    differently in every corner of the board.
+  - When the black hole moves, everything slides a new way.
+  - Each subject's token could have its own power (Geography shifts a row, Science freezes the black hole
+    for a turn...).
+  - The "balance" could be a meter: matches on one side push the black hole the other way.
+  - It works in the browser as a 2D canvas game, no different from what we have.
+
+### A zen sand garden on the beach (not a game)
+- Inspired by a sand clock (a small ball moved by a magnet under the sand, drawing ripples through
+  half the day and smoothing them away through the other half):
+  https://www.yankodesign.com/2019/07/30/this-clock-creates-ripples-in-sand-for-the-first-half-of-the-day-and-then-erases-them/
+- On the island's beach: a calm spot where a ball, or the alien's finger, draws patterns in the sand.
+  Ripples, spirals, flowers, maybe the time of day. Then the sand slowly smooths over.
+- How it could work in the browser: the sand is a height map. A rolling ball pushes sand aside and leaves
+  a groove with raised edges, and soft lighting makes the grooves look real. It's very doable in a 2D canvas.
+- Possible extras: draw your own pattern with a finger or the mouse, a "clock" mode, gentle sound,
+  and the alien's tokens shown as stones in the sand.
+
+### A driving or racing game
+- An arcade game for the list. Options to choose between later:
+  - **Top-down racing** (like Micro Machines) on the island's own roads: simplest, and it reuses the island.
+  - **Into-the-screen racing** with fake 3D (like OutRun). It shares its tricks with the planned Chase
+    finale, so the two could be built together.
+  - Story fit: the alien borrows a car (or their ship's buggy) and things go wrong.
+
+## Owner's answers (13 Nov 2026)
+
+### The racing game: a chase view, not a race
+- **Inspiration:** the owner's first ever F1 game on MS-DOS. The track comes from the horizon and moves
+  under you, with trackside signs and a start gantry (a reference screenshot was shared in chat).
+- **View:** a **follow angle** behind the vehicle. Not top-down, not side-on, and it doesn't have to be the
+  in-the-cockpit view.
+- **No opponents needed.** It's about getting round **obstacles** on the road.
+- **How:** fake 3D in the classic style. The road is drawn as horizontal strips that get narrower towards
+  the horizon, curves and hills bend the strips, and objects scale up as they come closer. It's the same
+  trick as the planned Chase finale, so the two can share an engine. Plain 2D canvas, no 3D library needed.
+
+### The zen sand garden is the first easter egg
+- A **sundial-like object on the beach** is **visible from the route** while doing the quizzes, but behind the fence.
+- Once the first lap is done and the player can **get through the fence** (see the island stages plan in
+  island-design.md), they can walk over and **play with the sand as the alien**, and just be zen for a bit.
+- Its first appearance is part of the softer border idea: the hedge gap that leads to it.
+
+### The black hole match game: to explore further
+- The owner's first thought: tokens carry a **marking for each of the 8 quiz houses**, and those are what you match.
+- Also worth exploring: a **random piece with a power** (the subject's token power idea above).
+- The owner will think more before we come back to this.
