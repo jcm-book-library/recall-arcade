@@ -51,3 +51,40 @@ Written down so it doesn't get lost. Nothing here is decided beyond the core ide
 - **Animals, the platformer levels and the island stages** are unchanged; they just get story framing.
 - **Nothing needs rebuilding.** Tokens can be shown wherever challenges show today (cards, island,
   stamp book) once the token look is decided.
+
+## More ideas (owner, 13 Nov 2026)
+
+### The final game: the black hole (refines "the puzzle game")
+- **One token per quiz house** (subject building). Once all are collected they're **stolen** and threatened
+  to be taken for good.
+- The rescue is a **match-and-move puzzle**, in the family of Bejeweled and Candy Crush, with a twist:
+  a **black hole** pulls the tiles **towards the centre** of the board instead of downwards, and it may
+  **move around** as the game goes on.
+- **Token tiles** sit on the board. Link or match tiles to free them, and keep the board in **balance**
+  so the black hole doesn't swallow everything.
+- Ideas to explore when we get there:
+  - Gravity that points at the black hole: tiles slide inward along rings or spokes, so "falling" works
+    differently in every corner of the board.
+  - When the black hole moves, everything slides a new way.
+  - Each subject's token could have its own power (Geography shifts a row, Science freezes the black hole
+    for a turn...).
+  - The "balance" could be a meter: matches on one side push the black hole the other way.
+  - It works in the browser as a 2D canvas game, no different from what we have.
+
+### A zen sand garden on the beach (not a game)
+- Inspired by a sand clock (a small ball moved by a magnet under the sand, drawing ripples through
+  half the day and smoothing them away through the other half):
+  https://www.yankodesign.com/2019/07/30/this-clock-creates-ripples-in-sand-for-the-first-half-of-the-day-and-then-erases-them/
+- On the island's beach: a calm spot where a ball, or the alien's finger, draws patterns in the sand.
+  Ripples, spirals, flowers, maybe the time of day. Then the sand slowly smooths over.
+- How it could work in the browser: the sand is a height map. A rolling ball pushes sand aside and leaves
+  a groove with raised edges, and soft lighting makes the grooves look real. It's very doable in a 2D canvas.
+- Possible extras: draw your own pattern with a finger or the mouse, a "clock" mode, gentle sound,
+  and the alien's tokens shown as stones in the sand.
+
+### A driving or racing game
+- An arcade game for the list. Options to choose between later:
+  - **Top-down racing** (like Micro Machines) on the island's own roads: simplest, and it reuses the island.
+  - **Into-the-screen racing** with fake 3D (like OutRun). It shares its tricks with the planned Chase
+    finale, so the two could be built together.
+  - Story fit: the alien borrows a car (or their ship's buggy) and things go wrong.
