@@ -380,7 +380,7 @@ export function renderSideSection(): { el: HTMLElement; stop: () => void } {
         h("p", {}, "Click ", b("Import"), " and pick ", h("em", {}, "hero-side-starter.png"), ". If it asks, bring it in as a ", b("single image"), ", not as frames. Zoom in with the mouse wheel."),
       ),
       step(4, "Recolour it, then make it yours",
-        h("p", {}, "Pick a new colour and use the paint bucket tool called ", b("Paint all pixels of the same color"), ". One click on the shirt changes it in all ten boxes. Then change shapes with the pen (a hat, a cape, a ponytail), and do the same change in every box that shows it. Keep the feet on the bottom row."),
+        h("p", {}, "Pick a new colour and use the paint bucket tool called ", b("Paint all pixels of the same color"), ". One click on Bluebottle's blue body changes it in all ten boxes. Then change shapes with the pen (a hat, a cape, longer ears), and do the same change in every box that shows it. Keep the feet on the bottom row."),
         h("p", { class: "muted" }, "In a hurry? Draw only the run (boxes 3 to 6) and the jump (box 7). Boxes you leave empty borrow the nearest pose, so a half-finished sheet still plays."),
       ),
       step(5, "Save it as a picture",

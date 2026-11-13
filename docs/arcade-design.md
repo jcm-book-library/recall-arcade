@@ -101,7 +101,7 @@ the progression exists, because the island shows what the progression has unlock
 
 ## 6. The pixel hero
 The owner found the Piskel steps overwhelming. **Proposed:** a ready-made starter `hero.png` (the
-placeholder hero with faint guide lines) to open in Piskel and recolour, plus a picture-by-picture
+Bluebottle hero with faint guide lines) to open in Piskel and recolour, plus a picture-by-picture
 guide page. Recolouring an existing hero is far easier than drawing on a blank 32×64 sheet.
 
 ## Build order (agreed)

@@ -89,10 +89,10 @@ function portrait(sheet: HTMLCanvasElement, scale = 5) {
 
 // Some colour ideas, made by swapping the starter's colours. Only the letters listed change.
 const IDEAS: { name: string; swap: Record<string, string> }[] = [
-  { name: "Red shirt, blond hair", swap: { t: "#d94a3a", h: "#e8c25a", l: "#2b3a5a" } },
-  { name: "Explorer", swap: { t: "#c9a46a", b: "#5a3417", l: "#7a6040", h: "#3a2414" } },
-  { name: "Space cadet", swap: { t: "#e8ecf2", b: "#3f7fe0", l: "#c4cbd6", k: "#3f7fe0", h: "#20242c" } },
-  { name: "Night ninja", swap: { t: "#2a2d36", b: "#d94a3a", l: "#2a2d36", k: "#15171c", h: "#15171c" } },
+  { name: "Bluebottle (the starter)", swap: {} },
+  { name: "Bubblegum pink", swap: { b: "#e0559a", d: "#a8336f", l: "#f58cc0", p: "#ffd3e6", t: "#f7a6cf", u: "#d9779f", o: "#5c1a3d", k: "#ffd36b" } },
+  { name: "Lime green", swap: { b: "#4caf50", d: "#2f7a36", l: "#8ae07a", p: "#e2f7c8", t: "#a5e08a", u: "#6bbf5c", o: "#143d1a" } },
+  { name: "Sunset orange", swap: { b: "#f08a24", d: "#b65a12", l: "#ffb865", p: "#ffe7c2", t: "#ffc98a", u: "#e0903f", o: "#5c2a08", k: "#ff6f8e" } },
 ];
 
 export function renderHeroWorkshop(root: HTMLElement): () => void {
@@ -173,7 +173,7 @@ export function renderHeroWorkshop(root: HTMLElement): () => void {
 
   const swatches = h(
     "ul",
-    { class: "hw-swatches", "aria-label": "The starter hero's colours" },
+    { class: "hw-swatches", "aria-label": "Bluebottle's colours" },
     ...HERO_PARTS.map(({ letter, part }) =>
       h("li", {}, h("span", { class: "hw-swatch", style: `background:${HERO_PALETTE[letter]}` }), part),
     ),
@@ -197,13 +197,13 @@ export function renderHeroWorkshop(root: HTMLElement): () => void {
       "main",
       { class: "play hero-workshop" },
       h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, "Hero Workshop")),
-      h("p", { class: "lede" }, "Make your own hero for the arcade. You don't start from a blank page: download the starter hero, change its colours, then make it yours. Then try it out right here."),
+      h("p", { class: "lede" }, "Make your own hero for the arcade. You don't start from a blank page: download the starter hero, Bluebottle (a little cobalt-blue alien with one big eye), change its colours, then make it yours. Then try it out right here."),
       toSide,
 
       h("section", { class: "hw-top" },
         h("div", {}, labelledSheet(starter)),
         h("div", { class: "hw-top-side" },
-          h("h2", {}, "The starter hero"),
+          h("h2", {}, "The starter hero: Bluebottle"),
           h("p", {}, "One picture, 32 pixels wide and 64 tall, cut into eight boxes. Each row is a direction. Step 1 and step 2 only differ in the feet: swapping between them is what makes the hero walk."),
           download,
           h("h3", {}, "Its colours"),
@@ -220,12 +220,12 @@ export function renderHeroWorkshop(root: HTMLElement): () => void {
           h("p", { class: "muted" }, "Check: the canvas should now be 32 x 64. Zoom in with the mouse wheel until it fills the screen."),
         ),
         step(3, "Recolour it",
-          h("p", {}, "Pick a new colour, then use the paint bucket tool that says ", h("strong", {}, "Paint all pixels of the same color"), ". One click on the shirt changes the shirt in all eight boxes at once. Do the same for the hair, trousers and shoes."),
+          h("p", {}, "Pick a new colour, then use the paint bucket tool that says ", h("strong", {}, "Paint all pixels of the same color"), ". One click on Bluebottle's blue body changes the body in all eight boxes at once. Do the same for the belly, the ear tips and the eye (the colours are listed above)."),
           h("p", {}, "Some ideas, made just by swapping colours:"),
           ideas,
         ),
         step(4, "Make it yours",
-          h("p", {}, "Now change the shapes with the pen: a hat, a ponytail, a cape, a backpack. Do the same change in every box that shows it (a hat appears in all eight). Keep the feet as they are, and leave the background empty: empty means see-through."),
+          h("p", {}, "Now change the shapes with the pen: a hat, a cape, a backpack, a different pair of ears. Do the same change in every box that shows it (a hat appears in all eight). Keep the feet as they are, and leave the background empty: empty means see-through."),
         ),
         step(5, "Save it as a picture",
           h("p", {}, "Click ", h("strong", {}, "Export"), " (the arrow on the right), choose the ", h("strong", {}, "PNG"), " tab, then ", h("strong", {}, "Download"), ". Rename the file to ", h("strong", {}, "hero.png"), "."),

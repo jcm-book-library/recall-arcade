@@ -889,8 +889,9 @@ function mirror(w: number, h: number): HTMLCanvasElement {
   oval(g, cx, 7.5, 9, 7, WOOD.light);
   oval(g, cx, 7.5, 7.5, 6, "#b9e3f5");
   oval(g, cx - 2, 6, 4, 3.5, "#dff4fc");
-  // a hero's reflection: a head and a green shirt
-  disc(g, cx + 1, 5.5, 2.4, "#f2c9a0"); R(g, cx - 1, 3, 5, 2, "#6b3f1d"); R(g, cx - 1, 8, 5, 4, "#3fae6a");
+  // Bluebottle's reflection: a cobalt head with one big eye, and a little body
+  disc(g, cx + 1, 6, 3.4, "#0a1f5c"); disc(g, cx + 1, 6, 2.6, "#0047ab"); R(g, cx - 1, 9, 5, 3, "#0047ab"); R(g, cx, 10, 3, 2, "#a9d0ff");
+  R(g, cx, 5, 3, 3, "#ffffff"); R(g, cx + 1, 6, 2, 2, "#0e1238");
   R(g, cx - 6, 4, 2, 1, "#ffffff"); R(g, cx - 7, 5, 1, 2, "#ffffff");
   // flower pots at the sides
   for (const x of [3, w * TILE - 11]) { R(g, x, 4, 8, 8, OUT); R(g, x + 1, 5, 6, 6, "#c4452f"); R(g, x + 2, 0, 4, 4, "#2f7a30"); R(g, x + 3, 0, 2, 2, "#ffd24a"); }
