@@ -1,5 +1,5 @@
 // THE HERO: BLUEBOTTLE, the built-in starter hero, shared by the island, The Labyrinth and the Hero Workshop (#hero).
-// A small cobalt-blue alien with one huge eye, stumpy arms and legs, and two long ears swept back like hair.
+// A small deep-sea-green alien (named Bluebottle anyway: he took the name off a damaged beach sign) with one huge eye, stumpy arms and legs, and two long ears swept back like hair.
 // Like all the pixel art, each picture is rows of letters, and each letter is a colour.
 import { makeCanvas, paint } from "./kit";
 
@@ -41,7 +41,8 @@ export function saveHero(dataUrl: string | null): boolean {
 
 // Bluebottle's colours. The side-on hero (hero-side-art.ts) uses the same letters.
 export const HERO_PALETTE: Record<string, string> = {
-  o: "#0a1f5c", b: "#0047ab", d: "#00337f", l: "#4a8be6", p: "#a9d0ff", t: "#5f9bec", u: "#3d7bd3",
+  // Deep sea green (13 Nov 2026; he started out cobalt blue, kept below as a recolour idea in the Workshop).
+  o: "#084845", b: "#00856b", d: "#006351", l: "#2fe2bf", p: "#7fffe1", t: "#41e8c6", u: "#27ad93",
   w: "#ffffff", e: "#0e1238", s: "#ffffff", k: "#ff8fb0",
 };
 

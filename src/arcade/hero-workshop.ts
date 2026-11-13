@@ -90,8 +90,8 @@ function portrait(sheet: HTMLCanvasElement, scale = 5) {
 // Some colour ideas, made by swapping the starter's colours. Only the letters listed change.
 const IDEAS: { name: string; swap: Record<string, string> }[] = [
   { name: "Bluebottle (the starter)", swap: {} },
+  { name: "Cobalt blue (his first look)", swap: { o: "#0a1f5c", b: "#0047ab", d: "#00337f", l: "#4a8be6", p: "#a9d0ff", t: "#5f9bec", u: "#3d7bd3" } },
   { name: "Bubblegum pink", swap: { b: "#e0559a", d: "#a8336f", l: "#f58cc0", p: "#ffd3e6", t: "#f7a6cf", u: "#d9779f", o: "#5c1a3d", k: "#ffd36b" } },
-  { name: "Lime green", swap: { b: "#4caf50", d: "#2f7a36", l: "#8ae07a", p: "#e2f7c8", t: "#a5e08a", u: "#6bbf5c", o: "#143d1a" } },
   { name: "Sunset orange", swap: { b: "#f08a24", d: "#b65a12", l: "#ffb865", p: "#ffe7c2", t: "#ffc98a", u: "#e0903f", o: "#5c2a08", k: "#ff6f8e" } },
 ];
 
@@ -197,7 +197,7 @@ export function renderHeroWorkshop(root: HTMLElement): () => void {
       "main",
       { class: "play hero-workshop" },
       h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, "Hero Workshop")),
-      h("p", { class: "lede" }, "Make your own hero for the arcade. You don't start from a blank page: download the starter hero, Bluebottle (a little cobalt-blue alien with one big eye), change its colours, then make it yours. Then try it out right here."),
+      h("p", { class: "lede" }, "Make your own hero for the arcade. You don't start from a blank page: download the starter hero, Bluebottle (a little sea-green alien with one big eye), change its colours, then make it yours. Then try it out right here."),
       toSide,
 
       h("section", { class: "hw-top" },

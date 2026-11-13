@@ -1,4 +1,4 @@
-// THE SIDE-ON HERO: Bluebottle, the cobalt one-eyed alien from hero-art.ts, drawn from the side for the platformer.
+// THE SIDE-ON HERO: Bluebottle, the deep-sea-green one-eyed alien from hero-art.ts, drawn from the side for the platformer.
 //
 // The picture is ONE row of 10 frames, all facing RIGHT (the game flips it for left):
 //   1-2 stand (breathing)   3-6 run   7 jump (going up)   8 fall   9 land   10 hurt

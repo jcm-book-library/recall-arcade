@@ -1,6 +1,6 @@
 // THE FIRST HUMAN BLUEBOTTLE MEETS: the original starter hero (a kid with brown hair, a green shirt and
 // blue trousers), kept as a future character. Nothing in the game uses him yet; he is here so his drawing
-// is not lost. Bluebottle, the cobalt one-eyed alien, is the starter hero now (hero-art.ts and hero-side-art.ts).
+// is not lost. Bluebottle, the deep-sea-green one-eyed alien, is the starter hero now (hero-art.ts and hero-side-art.ts).
 //
 //   makeHumanSheet()      top-down, 32 x 64: 2 walking frames x 4 directions of 16 x 16 (same layout as hero-art.ts)
 //   makeHumanSideSheet()  side-on, 320 x 32: 10 frames facing right (same layout as hero-side-art.ts)
