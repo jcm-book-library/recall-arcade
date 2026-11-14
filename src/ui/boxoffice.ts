@@ -10,7 +10,8 @@ import { normalize } from "../engine/matcher";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
 import { BOX_AS_OF, BOX_FILMS, BOX_FRANCHISES } from "../decks/entertainment-data";
-import { billions, chipRow, matchesAny, orderPuzzle, resultsPanel, shuffle, type OrderCard, type RoundResult } from "./ent-common";
+import { billions, entFrame, wayRows, matchesAny, orderPuzzle, resultsPanel, shuffle, type OrderCard, type RoundResult } from "./ent-common";
+import { topicTabs } from "./quiz-shell";
 import "./sport.css";
 import "./entertainment.css";
 
@@ -47,45 +48,41 @@ export function renderBoxOffice(root: HTMLElement, deck: Deck) {
   let list: ListId = "films";
   let startedAt = 0;
 
-  const setup = h("div", { class: "setup sp-setup" });
-  const game = h("div", { class: "sp-game" });
-  game.hidden = true;
-  const results = h("div", { class: "results" });
-  results.hidden = true;
-  root.replaceChildren(
-    h("main", { class: "play" }, h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)), setup, game, results),
-  );
+  const { setup, game, results } = entFrame(root, deck, "Pick the film or franchise that made more money, or put them in order.");
 
-  const variant = () => `${mode}-${list}`;
+  // The Top 10 is only about films, whichever list tab is showing.
+  const listFor = (m: Mode) => (m === "top10" ? "films" : list);
+  const variant = () => `${mode}-${listFor(mode)}`;
   const pool = () => POOLS[list];
 
   function renderSetup() {
-    if (mode === "top10") list = "films";
-    const best = bestFor(deck.id, variant());
     setup.replaceChildren(
-      h("p", { class: "ent-asof" }, NOTE_ALL),
-      chipRow("Way to play", MODES.map((m) => ({ id: m.id, text: m.label })), mode, (id) => {
-        mode = id as Mode;
-        renderSetup();
-        setup.querySelector<HTMLElement>(".sp-group .chip.on")?.focus();
+      topicTabs({
+        tabs: [
+          { id: "films", label: "Films" },
+          { id: "franchises", label: "Franchises" },
+        ],
+        active: list,
+        note: list === "franchises" ? `${NOTE_ALL} ${NOTE_FRANCHISES}` : NOTE_ALL,
+        onPick: (id) => {
+          list = id as ListId;
+          renderSetup();
+          setup.querySelector<HTMLElement>(".qtab.on")?.focus();
+        },
       }),
-      ...(mode === "top10"
-        ? []
-        : [
-            chipRow("List", [{ id: "films", text: "Films" }, { id: "franchises", text: "Franchises" }], list, (id) => {
-              list = id as ListId;
-              renderSetup();
-              setup.querySelectorAll<HTMLElement>(".sp-group")[1]?.querySelector<HTMLElement>(".chip.on")?.focus();
-            }),
-          ]),
-      h(
-        "div",
-        { class: "setup-row" },
-        h("p", { class: "muted tl-how", "aria-live": "polite" }, MODES.find((m) => m.id === mode)!.note),
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-        h("button", { type: "button", class: "btn primary", id: "bo-start", onclick: start }, "Start ▸"),
-      ),
-      ...(mode !== "top10" && list === "franchises" ? [h("p", { class: "muted sp-small" }, NOTE_FRANCHISES)] : []),
+      wayRows({
+        deckId: deck.id,
+        current: mode,
+        ways: MODES.map((m) => ({ id: m.id, name: m.label, desc: m.id === "top10" ? `${m.note} (Always films.)` : m.note, key: `${m.id}-${listFor(m.id)}` })),
+        onPick: (id) => {
+          mode = id as Mode;
+          renderSetup();
+        },
+        onStart: (id) => {
+          mode = id as Mode;
+          start();
+        },
+      }),
     );
   }
 
@@ -114,7 +111,7 @@ export function renderBoxOffice(root: HTMLElement, deck: Deck) {
           results.hidden = true;
           setup.hidden = false;
           renderSetup();
-          document.getElementById("bo-start")?.focus();
+          setup.querySelector<HTMLElement>(".qrow.current .qgo")?.focus();
         },
       }),
     );

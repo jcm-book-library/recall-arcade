@@ -10,7 +10,8 @@ import { bestFor, recordGame } from "../engine/storage";
 import { loadPicturesFor, type Picture } from "../data/pictures";
 import { h } from "./dom";
 import { WHO_PLAYED, type WhoPlayed } from "../decks/entertainment-data";
-import { chipRow, matchesAny, resultsPanel, shuffle } from "./ent-common";
+import { entFrame, wayRows, matchesAny, resultsPanel, shuffle } from "./ent-common";
+import { topicTabs } from "./quiz-shell";
 import "./sport.css";
 import "./entertainment.css";
 
@@ -34,40 +35,37 @@ export function renderWhoPlayed(root: HTMLElement, deck: Deck) {
   let startedAt = 0;
   let alive = true;
 
-  const setup = h("div", { class: "setup sp-setup" });
-  const game = h("div", { class: "sp-game" });
-  game.hidden = true;
-  const results = h("div", { class: "results" });
-  results.hidden = true;
-  root.replaceChildren(
-    h("main", { class: "play" }, h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)), setup, game, results),
-  );
+  const { setup, game, results } = entFrame(root, deck, "An actor and a film or show appear: name the character. Or the other way round.");
 
   const variant = () => `${way}-${round}`;
   const poolOf = () => WHO_PLAYED.filter((w) => round === "all" || w.aus);
 
   function renderSetup() {
-    const pool = poolOf();
-    const best = bestFor(deck.id, variant());
+    const size = poolOf().length;
     setup.replaceChildren(
-      h("p", { class: "muted sp-about" }, "Famous roles in films and TV. The portraits come from Wikipedia and may take a moment."),
-      chipRow("Way to play", WAYS.map((w) => ({ id: w.id, text: w.label })), way, (id) => {
-        way = id as Way;
-        renderSetup();
-        setup.querySelectorAll<HTMLElement>(".sp-group")[0]?.querySelector<HTMLElement>(".chip.on")?.focus();
+      topicTabs({
+        tabs: ROUNDS.map((r) => ({ id: r.id, label: r.label.replace("★ ", "") })),
+        active: round,
+        note: "Famous roles in films and TV. The portraits come from Wikipedia and may take a moment.",
+        onPick: (id) => {
+          round = id as Round;
+          renderSetup();
+          setup.querySelector<HTMLElement>(".qtab.on")?.focus();
+        },
       }),
-      chipRow("Round", ROUNDS.map((r) => ({ id: r.id, text: r.label })), round, (id) => {
-        round = id as Round;
-        renderSetup();
-        setup.querySelectorAll<HTMLElement>(".sp-group")[1]?.querySelector<HTMLElement>(".chip.on")?.focus();
+      wayRows({
+        deckId: deck.id,
+        current: way,
+        ways: WAYS.map((w) => ({ id: w.id, name: w.label, key: `${w.id}-${round}`, desc: `${w.note} ${Math.min(QUESTIONS, size)} questions from ${size} roles.` })),
+        onPick: (id) => {
+          way = id as Way;
+          renderSetup();
+        },
+        onStart: (id) => {
+          way = id as Way;
+          start();
+        },
       }),
-      h(
-        "div",
-        { class: "setup-row" },
-        h("p", { class: "muted tl-how", "aria-live": "polite" }, `${WAYS.find((w) => w.id === way)!.note} ${Math.min(QUESTIONS, pool.length)} questions from ${pool.length} roles.`),
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-        h("button", { type: "button", class: "btn primary", id: "wp-start", onclick: start }, "Start ▸"),
-      ),
     );
   }
 
@@ -214,7 +212,7 @@ export function renderWhoPlayed(root: HTMLElement, deck: Deck) {
           results.hidden = true;
           setup.hidden = false;
           renderSetup();
-          document.getElementById("wp-start")?.focus();
+          setup.querySelector<HTMLElement>(".qrow.current .qgo")?.focus();
         },
       }),
     );

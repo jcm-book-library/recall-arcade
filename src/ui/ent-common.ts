@@ -2,6 +2,10 @@
 import { normalize } from "../engine/matcher";
 import { withinOne } from "./sport";
 import { h } from "./dom";
+import type { Deck } from "../engine/types";
+import { bestFor } from "../engine/storage";
+import { levelNotesFor } from "../engine/levels";
+import { quizHeader, quizRow, quizRows, levelStatesFor, subjectClass } from "./quiz-shell";
 
 export function shuffle<T>(list: T[]): T[] {
   const a = [...list];
@@ -33,23 +37,68 @@ export interface Chip {
   text: string;
 }
 
-/** A labelled row of toggle chips (the same look as the Sport setup). */
-export function chipRow(label: string, items: Chip[], current: string, pick: (id: string) => void) {
-  return h(
-    "div",
-    { class: "sp-group" },
-    h("p", { class: "chip-heading sp-heading" }, label),
+/**
+ * The page for an Entertainment screen: the shared quiz header (rule 1) over the three panels
+ * (setup, the game, the results). Returns the panels.
+ */
+export function entFrame(root: HTMLElement, deck: Deck, howItWorks: string, back?: { href: string; label?: string }) {
+  const setup = h("div", { class: "setup sp-setup" });
+  const game = h("div", { class: "sp-game" });
+  game.hidden = true;
+  const results = h("div", { class: "results" });
+  results.hidden = true;
+  root.replaceChildren(
     h(
-      "div",
-      { class: "chips", role: "group", "aria-label": label },
-      ...items.map((it) =>
-        h(
-          "button",
-          { type: "button", class: it.id === current ? "chip on" : "chip", "aria-pressed": String(it.id === current), onclick: () => pick(it.id) },
-          it.text,
-        ),
-      ),
+      "main",
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks,
+        rules: [h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t)))],
+        back,
+      }),
+      setup,
+      game,
+      results,
     ),
+  );
+  return { setup, game, results };
+}
+
+export interface WayRow {
+  id: string;
+  name: string;
+  /** What the way is, then how many questions. */
+  desc: string;
+  /** The saved-score key for this row right now (the round it would play). */
+  key: string;
+  /** Can't start (nothing in this round). */
+  disabled?: boolean;
+}
+
+/**
+ * The ways to play as shared rows (★ on the first). Only Medium exists: the games have no hints to
+ * add or take away, so Easy and Hard stay dashed. Medium saves under `key`, exactly as before.
+ */
+export function wayRows(o: { deckId: string; ways: WayRow[]; current: string; onPick: (id: string) => void; onStart: (id: string) => void }) {
+  return quizRows(
+    ...o.ways.map((w, i) => {
+      const states = levelStatesFor(o.deckId, w.key);
+      const best = bestFor(o.deckId, w.key);
+      const row = quizRow({
+        badge: states.medium === "done" ? "done" : i === 0 ? "star" : i + 1,
+        name: w.name,
+        desc: best ? `${w.desc} Best: ${best.score}/${best.total}.` : w.desc,
+        levels: states,
+        selected: "medium",
+        current: w.id === o.current,
+        onPick: () => o.onPick(w.id),
+        onLevel: () => o.onPick(w.id),
+        onStart: () => o.onStart(w.id),
+      });
+      if (w.disabled) row.querySelector<HTMLButtonElement>(".qgo")!.disabled = true;
+      return row;
+    }),
   );
 }
 

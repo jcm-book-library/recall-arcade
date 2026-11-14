@@ -13,6 +13,8 @@ import type { Deck } from "../engine/types";
 import { normalize } from "../engine/matcher";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
+import { quizHeader, topicTabs, segmented, quizRow, quizRows, levelStatesFor, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
 import { SPORT_LISTS, type SportChamp, type SportList, type SportWin } from "../decks/sport-data";
 import { ENT_LISTS } from "../decks/entertainment-data";
 import {
@@ -106,6 +108,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
   const listIds = DECK_LISTS[deck.id];
   let listId = listIds[0];
   let mode: ModeId = "year";
+  const liveMode = () => mode;
   let rangeId = LIST_CONFIG[listId].ranges[0].id;
   let startedAt = 0;
   let cleanups: (() => void)[] = [];
@@ -115,20 +118,23 @@ export function renderSport(root: HTMLElement, deck: Deck) {
   game.hidden = true;
   const results = h("div", { class: "results" });
   results.hidden = true;
+  const headerHost = h("div", { class: "quiz-head-host" });
   root.replaceChildren(
     h(
       "main",
-      { class: "play" },
-      h(
-        "div",
-        { class: "play-top" },
-        h("a", { class: "back", href: "#" }, "◂ Arcade"),
-        h("h1", { class: "play-title" }, deck.title),
-      ),
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      headerHost,
       setup,
       game,
       results,
     ),
+  );
+  headerHost.replaceChildren(
+    quizHeader({
+      deck,
+      howItWorks: listIds.length > 1 ? "Pick a list, a range of years and a way to play." : "Pick a range of years and a way to play.",
+      rules: [h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t)))],
+    }),
   );
 
   const cfgOf = () => LIST_CONFIG[listId];
@@ -173,7 +179,8 @@ export function renderSport(root: HTMLElement, deck: Deck) {
   }
 
   /** Why this way of playing cannot run on this range, or null if it can. */
-  function problem(): string | null {
+  function problem(which?: ModeId): string | null {
+    const mode = which ?? liveMode();
     const c = context();
     const bigger = "There are not enough results in this range for this way of playing. Pick a bigger range.";
     if (mode === "year") return c.wins.length >= 3 ? null : bigger;
@@ -189,95 +196,76 @@ export function renderSport(root: HTMLElement, deck: Deck) {
     return years.size >= ORDER_SIZE ? null : bigger;
   }
 
-  // ---------- setup ----------
-  function chipRow(label: string, items: { id: string; text: string }[], current: string, pick: (id: string) => void) {
-    return h(
-      "div",
-      { class: "sp-group" },
-      h("p", { class: "chip-heading sp-heading" }, label),
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": label },
-        ...items.map((it) =>
-          h(
-            "button",
-            {
-              type: "button",
-              class: it.id === current ? "chip on" : "chip",
-              "aria-pressed": String(it.id === current),
-              onclick: () => pick(it.id),
-            },
-            it.text,
-          ),
-        ),
-      ),
-    );
-  }
-
+  // ---------- setup: the shared quiz page ----------
+  // Topic tabs = the lists. A range of years is a small switch under them. Each way to play is a row.
+  // Only Medium exists (there are no hints to add or take away), so Easy and Hard stay dashed.
   function renderSetup(focusAfter?: string) {
     const cfg = cfgOf();
     if (!cfg.modes.includes(mode)) mode = cfg.modes[0];
     if (!cfg.ranges.some((r) => r.id === rangeId)) rangeId = cfg.ranges[0].id;
-    const why = problem();
-    const best = bestFor(deck.id, `${listId}-${mode}-${rangeId}`);
+    const rows = cfg.modes.map((m, i) => {
+      const why = problem(m);
+      const key = `${listId}-${m}-${rangeId}`;
+      const best = bestFor(deck.id, key);
+      const text = why ?? modeNote(m);
+      const states = levelStatesFor(deck.id, key);
+      const row = quizRow({
+        badge: states.medium === "done" ? "done" : m === "year" ? "star" : i + 1,
+        name: modeLabel(m),
+        desc: best ? `${text} Best: ${best.score}/${best.total}.` : text,
+        levels: states,
+        selected: "medium",
+        current: m === mode,
+        onPick: () => {
+          mode = m;
+          renderSetup();
+        },
+        onLevel: () => {
+          mode = m;
+          renderSetup();
+        },
+        onStart: () => {
+          mode = m;
+          start();
+        },
+      });
+      if (why !== null) row.querySelector<HTMLButtonElement>(".qgo")!.disabled = true;
+      return row;
+    });
     setup.replaceChildren(
-      h("p", { class: "muted sp-about" }, cfg.about),
       ...(listIds.length > 1
         ? [
-            chipRow(
-              "List",
-              listIds.map((id) => ({ id, text: LIST_CONFIG[id].chip })),
-              listId,
-              (id) => {
+            topicTabs({
+              tabs: listIds.map((id) => ({ id, label: LIST_CONFIG[id].chip })),
+              active: listId,
+              note: cfg.about,
+              onPick: (id) => {
                 listId = id;
                 renderSetup("list");
               },
-            ),
+            }),
           ]
-        : []),
-      chipRow(
-        "Way to play",
-        cfg.modes.map((m) => ({
-          id: m,
-          text: m === "year" ? `★ ${modeLabel(m)}` : modeLabel(m),
-        })),
-        mode,
-        (id) => {
-          mode = id as ModeId;
-          renderSetup("mode");
-        },
-      ),
-      chipRow(
-        "Years",
-        cfg.ranges.map((r) => ({ id: r.id, text: r.label })),
-        rangeId,
-        (id) => {
+        : [h("p", { class: "qtabnote" }, cfg.about)]),
+      segmented({
+        label: "Years",
+        items: cfg.ranges.map((r) => ({ id: r.id, text: r.label })),
+        value: rangeId,
+        onPick: (id) => {
           rangeId = id;
           renderSetup("range");
         },
-      ),
-      h(
-        "div",
-        { class: "setup-row" },
-        h("p", { class: "muted tl-how", "aria-live": "polite" }, why ?? modeNote()),
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-        h(
-          "button",
-          { type: "button", class: "btn primary", id: "sp-start", disabled: why !== null, onclick: start },
-          "Start ▸",
-        ),
-      ),
+      }),
+      quizRows(...rows),
     );
     if (focusAfter) {
-      const group = { list: 0, mode: 1, range: 2 }[focusAfter as "list" | "mode" | "range"];
-      const idx = listIds.length > 1 ? group : group - 1;
-      const on = setup.querySelectorAll<HTMLElement>(".sp-group")[idx]?.querySelector<HTMLElement>(".chip.on");
-      on?.focus();
+      const sel = focusAfter === "list" ? ".qtab.on" : ".qseg button.on";
+      setup.querySelector<HTMLElement>(sel)?.focus();
     }
   }
 
   const modeLabel = (m: ModeId) => (listId === "sprint" && m === "more" ? "Who was faster?" : MODE_INFO[m].label);
-  function modeNote() {
+  function modeNote(which?: ModeId) {
+    const mode = which ?? liveMode();
     const own = cfgOf().notes?.[mode];
     if (own) return own;
     if (listId === "sprint" && mode === "more")
@@ -350,7 +338,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
                 results.hidden = true;
                 setup.hidden = false;
                 renderSetup();
-                document.getElementById("sp-start")?.focus();
+                setup.querySelector<HTMLElement>(".qrow.current .qgo")?.focus();
               },
             },
             "Change setup",

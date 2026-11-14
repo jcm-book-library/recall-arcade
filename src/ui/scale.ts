@@ -11,7 +11,9 @@
 // spread units, never in raw values.
 import type { Deck } from "../engine/types";
 import { QUANTITIES, type Quantity, type ScaleThing } from "../decks/scale-data";
-import { bestFor, gamesFor, loadPrefs, recordGame, savePrefs } from "../engine/storage";
+import { allGames, bestFor, gamesFor, loadPrefs, recordGame, savePrefs } from "../engine/storage";
+import { DONE_SHARE } from "../engine/levels";
+import { quizHeader, quizRow, quizRows, segmented, chips, subjectClass, type LevelStates } from "./quiz-shell";
 import { currentTrack } from "../engine/progress";
 import { h } from "./dom";
 
@@ -281,8 +283,15 @@ export function renderScale(root: HTMLElement, deck: Deck) {
   root.replaceChildren(
     h(
       "main",
-      { class: "play" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)),
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks: "Put things in order from the smallest to the biggest, or place each one on a number line.",
+        rules: [
+          "Each round is five puzzles of one quantity. The closer you are, the more points.",
+          h("div", { class: "qpop-levels" }, ...LEVELS.map((l) => h("p", {}, `${l.label}: ${l.note}.`))),
+        ],
+      }),
       setup,
       learnBar,
       game,
@@ -295,68 +304,86 @@ export function renderScale(root: HTMLElement, deck: Deck) {
   const onResize = () => relayout?.();
   window.addEventListener("resize", onResize);
 
-  const chip = (label: string, on: boolean, click: () => void, extra = "") =>
-    h("button", { type: "button", class: on ? "chip on" : "chip", "aria-pressed": String(on), onclick: click }, label, extra ? h("span", { class: "sc-chip-note" }, extra) : null);
+  // ---------- setup: the shared quiz page ----------
+  // Each quantity is a row. Easy, Medium and Hard are the game's own levels (5, 6 or 7 things). The way to play
+  // (put in order, or place on the scale) is a switch above the rows. Saved scores keep their old keys,
+  // "speed-order-medium" and so on, so nothing earned before is lost.
+  const rowLevel: Record<string, Level> = {};
+  const levelOfRow = (id: string): Level => rowLevel[id] ?? level;
 
-  // ---------- setup ----------
   function remember() {
     const options: Record<string, boolean> = { [`level-${level}`]: true };
     if (wayChosen) options[`way-${way}`] = true;
     savePrefs(deck.id, { variant: q.id, options });
   }
 
+  /** Ticks: the levels of this quantity (in the way chosen) with a finished round that scored at least half. */
+  function statesFor(qid: string): LevelStates {
+    const done = new Set<string>();
+    for (const g of allGames()) if (g.deck === deck.id && g.total > 0 && g.score / g.total >= DONE_SHARE) done.add(g.variant);
+    const state = (l: Level) => (done.has(`${qid}-${way}-${l}`) ? "done" : "available");
+    return { easy: state("easy"), medium: state("medium"), hard: state("hard") };
+  }
+
+  function pickRow(x: Quantity, l: Level) {
+    q = x;
+    level = l;
+    rowLevel[x.id] = l;
+    if (!wayChosen) way = defaultWay(level);
+    remember();
+  }
+
   function renderSetup() {
-    const key = `${q.id}-${way}-${level}`;
-    const best = bestFor(deck.id, key);
+    const learn = quizRow({
+      badge: "learn",
+      name: "Learn It First",
+      desc: "How the scale works, the units, and mass or weight.",
+      levels: { easy: "available", medium: "none", hard: "none" },
+      selected: "easy",
+      onStart: () => showLearn(false),
+      startLabel: "Look ▸",
+    });
+    const rows = QUANTITIES.map((x, i) => {
+      const states = statesFor(x.id);
+      const lv = levelOfRow(x.id);
+      const best = bestFor(deck.id, `${x.id}-${way}-${lv}`);
+      const text = `${x.low} to ${x.high.toLowerCase()}. ${PUZZLES} puzzles a round.`;
+      return quizRow({
+        badge: LEVELS.every((l) => states[l.id] === "done") ? "done" : x.id === "speed" ? "star" : i + 1,
+        name: x.label,
+        desc: best ? `${text} Best: ${best.score}/${best.total}.` : text,
+        levels: states,
+        selected: lv,
+        current: x.id === q.id,
+        onPick: () => {
+          pickRow(x, lv);
+          renderSetup();
+        },
+        onLevel: (l) => {
+          pickRow(x, l);
+          renderSetup();
+        },
+        onStart: () => {
+          pickRow(x, lv);
+          startOrLearn();
+        },
+      });
+    });
     setup.replaceChildren(
-      h("p", { class: "sc-label" }, "What to put in order"),
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": "Choose a quantity" },
-        ...QUANTITIES.map((x) =>
-          chip(x.id === "speed" ? `★ ${x.label}` : x.label, x.id === q.id, () => {
-            q = x;
-            remember();
-            renderSetup();
-          }),
-        ),
-      ),
-      h("p", { class: "sc-label" }, "Level"),
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": "Choose a level" },
-        ...LEVELS.map((l) =>
-          chip(l.label, l.id === level, () => {
-            level = l.id;
-            if (!wayChosen) way = defaultWay(level);
-            remember();
-            renderSetup();
-          }),
-        ),
-      ),
-      h("p", { class: "muted sc-note" }, LEVELS.find((l) => l.id === level)!.note + "."),
-      h("p", { class: "sc-label" }, "Way to play"),
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": "Choose a way to play" },
-        ...WAYS.map((w) =>
-          chip(w.label, w.id === way, () => {
-            way = w.id;
-            wayChosen = true;
-            remember();
-            renderSetup();
-          }),
-        ),
-      ),
-      h("p", { class: "muted sc-note" }, `${WAYS.find((w) => w.id === way)!.note} ${PUZZLES} puzzles a round.`),
-      h(
-        "div",
-        { class: "setup-row" },
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : "No score yet"),
-        h("button", { type: "button", class: "btn ghost", onclick: () => showLearn(false) }, "Learn it first"),
-        h("button", { type: "button", class: "btn primary", onclick: startOrLearn }, "Start ▸"),
-      ),
-      ...(deck.related ? [h("a", { class: "btn ghost related", href: deck.related.href }, deck.related.label)] : []),
+      segmented({
+        label: "Way to play",
+        items: WAYS.map((w) => ({ id: w.id, text: w.label })),
+        value: way,
+        onPick: (id) => {
+          way = id as Way;
+          wayChosen = true;
+          remember();
+          renderSetup();
+        },
+      }),
+      h("p", { class: "qtabnote" }, WAYS.find((w) => w.id === way)!.note),
+      quizRows(learn, ...rows),
+      ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
   }
 

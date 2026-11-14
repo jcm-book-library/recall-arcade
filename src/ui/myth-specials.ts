@@ -9,6 +9,8 @@
 import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
+import { quizHeader, quizRow, quizRows, roundRows, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
 import "./myth-specials.css";
 
 const SVG = "http://www.w3.org/2000/svg";
@@ -30,8 +32,8 @@ function s(tag: string, attrs: Record<string, string> = {}, ...kids: (Node | str
   return el;
 }
 
-/** The page frame shared by both games: back link, title, and three panels. */
-function frame(root: HTMLElement, deck: Deck) {
+/** The page frame shared by both games: the shared quiz header (Back goes to the Mythology hub) and three panels. */
+function frame(root: HTMLElement, deck: Deck, howItWorks: string) {
   const setup = h("div", { class: "setup" });
   const game = h("div", { class: "ms-game" });
   game.hidden = true;
@@ -40,13 +42,13 @@ function frame(root: HTMLElement, deck: Deck) {
   root.replaceChildren(
     h(
       "main",
-      { class: "play ms-play" },
-      h(
-        "div",
-        { class: "play-top" },
-        h("a", { class: "back", href: "#myths" }, "◂ Mythology"),
-        h("h1", { class: "play-title" }, deck.title),
-      ),
+      { class: `play ms-play quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks,
+        rules: [h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t)))],
+        back: { href: "#myths", label: "Back to Mythology" },
+      }),
       setup,
       game,
       results,
@@ -61,7 +63,10 @@ interface Round {
   note: string;
 }
 
-/** The setup screen: intro, round buttons, best score, Start. */
+/**
+ * The setup screen: the shared rows (one per round, ★ on the first), a dashed "learn it first" row when there
+ * is something to study, and the intro above them. Medium only: these games have no hints to add or remove.
+ */
 function setupScreen(
   el: HTMLElement,
   deck: Deck,
@@ -70,35 +75,36 @@ function setupScreen(
   current: () => string,
   choose: (id: string) => void,
   start: () => void,
+  learn?: { desc: string; open: boolean; toggle: () => void; panel: Node },
 ) {
-  const round = rounds.find((r) => r.id === current())!;
-  const best = bestFor(deck.id, round.id);
-  el.replaceChildren(
-    ...intro,
-    h(
-      "div",
-      { class: "chips", role: "group", "aria-label": "Choose a round" },
-      ...rounds.map((r, i) =>
-        h(
-          "button",
-          {
-            type: "button",
-            class: r.id === current() ? "chip on" : "chip",
-            "aria-pressed": String(r.id === current()),
-            onclick: () => choose(r.id),
-          },
-          i === 0 ? `★ ${r.label}` : r.label,
-        ),
-      ),
-    ),
-    h(
-      "div",
-      { class: "setup-row" },
-      h("p", { class: "muted tl-how" }, round.note),
-      h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-      h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
-    ),
-  );
+  const rows = roundRows({
+    deckId: deck.id,
+    rounds: rounds.map((r, i) => {
+      const best = bestFor(deck.id, r.id);
+      return { id: r.id, label: r.label, starter: i === 0, desc: best ? `${r.note} Best: ${best.score}/${best.total}.` : r.note };
+    }),
+    current: current(),
+    levelOf: () => "medium",
+    onLevel: (id) => choose(id),
+    onPick: (id) => choose(id),
+    onStart: (id) => {
+      choose(id);
+      start();
+    },
+  });
+  if (learn)
+    rows.prepend(
+      quizRow({
+        badge: "learn",
+        name: "Learn It First",
+        desc: learn.desc,
+        levels: { easy: "available", medium: "none", hard: "none" },
+        selected: "easy",
+        onStart: learn.toggle,
+        startLabel: learn.open ? "Hide" : "Look ▸",
+      }),
+    );
+  el.replaceChildren(...intro, ...(learn?.open ? [learn.panel] : []), rows);
 }
 
 /** The results panel: score, a line from the verdict, and the two buttons. */
@@ -172,18 +178,18 @@ export function renderAfterlife(root: HTMLElement, deck: Deck) {
   const ROUNDS: Round[] = [
     {
       id: "easy",
-      label: "Easy: order the middle 5",
+      label: "Order the Middle 5",
       note: "The first and last steps are fixed. Put the five in the middle in order. 1 point for each step in the right place.",
     },
     {
       id: "full",
-      label: "Full: all 7 steps",
+      label: "All 7 Steps",
       note: "All seven steps are shuffled. Put them in order. 1 point for each step in the right place.",
     },
   ];
   let roundId = "easy";
   const truth = deck.items; // already in the true order
-  const { setup, game, results } = frame(root, deck);
+  const { setup, game, results } = frame(root, deck, "Put the seven steps of the journey in order, from the first to the last.");
 
   function renderSetup() {
     setupScreen(
@@ -202,7 +208,6 @@ export function renderAfterlife(root: HTMLElement, deck: Deck) {
               {},
               "The ancient Egyptians believed that life went on after death. But first the dead had to make a long journey.",
             ),
-            h("p", { class: "muted" }, "Put the steps in order, from the first to the last."),
           ),
         ),
       ],
@@ -533,32 +538,46 @@ export function renderRealms(root: HTMLElement, deck: Deck) {
   const ROUNDS: Round[] = [
     {
       id: "label",
-      label: "Label the tree",
+      label: "Label the Tree",
       note: "Click a spot on the tree, then click its name. Or drag a name onto a spot. 1 point for each realm right first time.",
     },
     {
       id: "who",
-      label: "Who lives here?",
+      label: "Who Lives Here?",
       note: "A spot lights up. Pick who lives there. 1 point for each realm right first time.",
     },
   ];
   let roundId = "label";
+  let showLearn = false;
   const realms = deck.items;
   const byId = new Map(realms.map((r) => [r.id, r]));
   const who = (r: Item) => r.data!.who as string;
   const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
-  const { setup, game, results } = frame(root, deck);
+  const { setup, game, results } = frame(root, deck, "Label Yggdrasil, the world tree, with its nine realms.");
   const NOTE = "The layout of the tree varies between old sources; this is the version most often drawn.";
 
   function renderSetup() {
     setupScreen(
       setup,
       deck,
-      [
-        h(
-          "details",
-          { class: "er-learn ms-learn", open: true },
-          h("summary", {}, "Learn it first"),
+      [],
+      ROUNDS,
+      () => roundId,
+      (id) => {
+        roundId = id;
+        renderSetup();
+      },
+      start,
+      {
+        desc: "Nine worlds on one tree: what each is, and who lives there.",
+        open: showLearn,
+        toggle: () => {
+          showLearn = !showLearn;
+          renderSetup();
+        },
+        panel: h(
+          "div",
+          { class: "er-learn ms-learn" },
           h(
             "p",
             {},
@@ -567,14 +586,7 @@ export function renderRealms(root: HTMLElement, deck: Deck) {
           h("ul", { class: "ms-learn-list" }, ...realms.map((r) => h("li", {}, h("strong", {}, r.name), `: ${who(r)}`))),
           h("p", { class: "muted" }, NOTE),
         ),
-      ],
-      ROUNDS,
-      () => roundId,
-      (id) => {
-        roundId = id;
-        renderSetup();
       },
-      start,
     );
   }
 

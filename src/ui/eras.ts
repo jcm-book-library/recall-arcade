@@ -8,6 +8,8 @@
 import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
+import { quizHeader, quizRow, quizRows, chips, levelStatesFor, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
 import { scale } from "./timeline";
 import { EVENT_ITEMS, yr, periodYears, type Period } from "../decks/periods";
 import "./eras.css";
@@ -56,7 +58,7 @@ const ROUNDS: {
     id: "order",
     label: "Eras in order",
     starter: true,
-    note: "Drag the cards into the order the eras started, earliest first. 1 point for each card in the right place.",
+    note: "Drag the cards into the order the eras started, earliest first. 5 cards on Medium, 7 on Hard. 1 point for each card in the right place.",
   },
   {
     id: "place-ancient",
@@ -142,13 +144,15 @@ export function renderEras(root: HTMLElement, deck: Deck) {
   root.replaceChildren(
     h(
       "main",
-      { class: "play" },
-      h(
-        "div",
-        { class: "play-top" },
-        h("a", { class: "back", href: "#" }, "◂ Arcade"),
-        h("h1", { class: "play-title" }, deck.title),
-      ),
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks: "Put eras in order, place them on a timeline, or say which era a moment belongs to.",
+        rules: [
+          "Rounds are short, and every round ends with the true dates, so the list sinks in.",
+          h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium", "hard"], "7 cards to put in order instead of 5 (Eras in Order only).").map((t) => h("p", {}, t))),
+        ],
+      }),
       setup,
       game,
       results,
@@ -164,96 +168,73 @@ export function renderEras(root: HTMLElement, deck: Deck) {
         ? periods.length
         : periods.filter((p) => AXES[roundId].fits(p)).length;
 
-  // ---------- setup ----------
+  // ---------- setup: the shared quiz page ----------
+  // "Eras in Order" has a real Hard (7 cards instead of 5). Medium (5 cards) keeps the old saved key "order";
+  // Hard saves as "order+hard". The other rounds only have Medium.
+  let showLearn = false;
+  const keyOf = (id: RoundId, isHard: boolean) => (id === "order" && isHard ? "order+hard" : id);
+  const bestKey = () => keyOf(roundId, hard);
+
   function renderSetup() {
-    const round = ROUNDS.find((r) => r.id === roundId)!;
-    const best = bestFor(deck.id, roundId);
+    const learn = quizRow({
+      badge: "learn",
+      name: "Learn It First",
+      desc: "What an era is, and how this game teaches them.",
+      levels: { easy: "available", medium: "none", hard: "none" },
+      selected: "easy",
+      onStart: () => {
+        showLearn = !showLearn;
+        renderSetup();
+      },
+      startLabel: showLearn ? "Hide" : "Look ▸",
+    });
+    const rows = ROUNDS.map((r, i) => {
+      const isOrder = r.id === "order";
+      const states = levelStatesFor(deck.id, r.id, isOrder ? ["medium", "hard"] : ["medium"]);
+      const best = bestFor(deck.id, keyOf(r.id, isOrder && hard));
+      const text = `${r.note} ${isOrder ? `${PUZZLES} puzzles` : `${QUESTIONS} questions`} from ${
+        r.id === "which" ? whichPool.length : r.id === "order" ? periods.length : periods.filter((p) => AXES[r.id].fits(p)).length
+      }.`;
+      return quizRow({
+        badge: states.medium === "done" ? "done" : r.starter ? "star" : i + 1,
+        name: r.label,
+        desc: best ? `${text} Best: ${best.score}/${best.total}.` : text,
+        levels: states,
+        selected: isOrder && hard ? "hard" : "medium",
+        current: r.id === roundId,
+        onPick: () => {
+          roundId = r.id;
+          renderSetup();
+        },
+        onLevel: (l) => {
+          roundId = r.id;
+          if (isOrder) hard = l === "hard";
+          renderSetup();
+        },
+        onStart: () => {
+          roundId = r.id;
+          start();
+        },
+      });
+    });
     setup.replaceChildren(
-      h(
-        "details",
-        { class: "er-learn", open: true },
-        h("summary", {}, "Learn it first"),
-        h(
-          "p",
-          {},
-          "An era is a stretch of time with its own character: a dynasty ruling China, the Victorian age, the Cold War. Learn the order first, then where each starts and ends.",
-        ),
-        h(
-          "p",
-          { class: "muted" },
-          `${periods.length} eras, wars and movements are in this game. Start with Eras in order, then try placing them on a timeline.`,
-        ),
-      ),
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": "Choose a round" },
-        ...ROUNDS.map((r) =>
-          h(
-            "button",
-            {
-              type: "button",
-              class: r.id === roundId ? "chip on" : "chip",
-              "aria-pressed": String(r.id === roundId),
-              onclick: () => {
-                roundId = r.id;
-                renderSetup();
-              },
-            },
-            r.starter ? `★ ${r.label}` : r.label,
-          ),
-        ),
-      ),
-      ...(roundId === "order"
+      quizRows(learn),
+      ...(showLearn
         ? [
             h(
               "div",
-              { class: "chips", role: "group", "aria-label": "How many cards" },
-              ...[false, true].map((isHard) =>
-                h(
-                  "button",
-                  {
-                    type: "button",
-                    class: isHard === hard ? "chip on" : "chip",
-                    "aria-pressed": String(isHard === hard),
-                    onclick: () => {
-                      hard = isHard;
-                      renderSetup();
-                    },
-                  },
-                  isHard ? "Hard: 7 cards" : "Easy: 5 cards",
-                ),
+              { class: "er-learn" },
+              h(
+                "p",
+                {},
+                "An era is a stretch of time with its own character: a dynasty ruling China, the Victorian age, the Cold War. Learn the order first, then where each starts and ends.",
               ),
+              h("p", { class: "muted" }, `${periods.length} eras, wars and movements are in this game. Start with Eras in Order, then try placing them on a timeline.`),
             ),
           ]
         : []),
-      h(
-        "div",
-        { class: "setup-row" },
-        h(
-          "p",
-          { class: "muted tl-how" },
-          `${round.note} ${roundId === "order" ? `${PUZZLES} puzzles` : `${QUESTIONS} questions`} from ${poolSize()}.`,
-        ),
-        h(
-          "span",
-          { class: "best" },
-          best ? `Best: ${best.score}/${best.total}` : "",
-        ),
-        h(
-          "button",
-          { type: "button", class: "btn primary", onclick: start },
-          "Start ▸",
-        ),
-      ),
-      ...(deck.related
-        ? [
-            h(
-              "a",
-              { class: "btn ghost related", href: deck.related.href },
-              deck.related.label,
-            ),
-          ]
-        : []),
+      quizRows(...rows),
+      ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
   }
 
@@ -916,7 +897,7 @@ export function renderEras(root: HTMLElement, deck: Deck) {
   function finish() {
     keyHandler = null;
     game.hidden = true;
-    const prev = bestFor(deck.id, roundId);
+    const prev = bestFor(deck.id, bestKey());
     const good = log
       .filter((l) => l.frac >= 0.6)
       .map((l) => (roundId === "which" ? periodOf(l.item).id : l.item.id));
@@ -926,7 +907,7 @@ export function renderEras(root: HTMLElement, deck: Deck) {
     recordGame(
       {
         deck: deck.id,
-        variant: roundId,
+        variant: bestKey(),
         score: total,
         total: max,
         seconds: 0,
