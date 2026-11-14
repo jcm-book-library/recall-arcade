@@ -13,7 +13,8 @@ import { normalize } from "../engine/matcher";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
 import { MOVIES, type EntMovie } from "../decks/entertainment-data";
-import { chipRow, matchesAny, resultsPanel, shuffle } from "./ent-common";
+import { entFrame, wayRows, matchesAny, resultsPanel, shuffle } from "./ent-common";
+import { topicTabs } from "./quiz-shell";
 import "./sport.css";
 import "./entertainment.css";
 
@@ -90,49 +91,52 @@ export function renderThreeClues(root: HTMLElement, deck: Deck) {
   let scenesChecked = false;
   let startedAt = 0;
 
-  const setup = h("div", { class: "setup sp-setup" });
-  const game = h("div", { class: "sp-game" });
-  game.hidden = true;
-  const results = h("div", { class: "results" });
-  results.hidden = true;
-  root.replaceChildren(
-    h("main", { class: "play" }, h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)), setup, game, results),
-  );
+  const { setup, game, results } = entFrame(root, deck, "Guess the film or show from the clues. The fewer clues you need, the more points.");
 
   const variant = () => (way === "scene" ? "scene-all" : `${way}-${round}`);
-  const poolOf = (): EntMovie[] =>
-    MOVIES.filter((m) => (way === "emoji" ? !!m.emoji : true) && (round === "all" ? true : round === "aus" ? m.aus : round === "tv" ? m.kind === "tv" : m.kind === "film"));
+  const inRound = (m: EntMovie) => (round === "all" ? true : round === "aus" ? !!m.aus : round === "tv" ? m.kind === "tv" : m.kind === "film");
+  const poolOf = (): EntMovie[] => MOVIES.filter((m) => (way === "emoji" ? !!m.emoji : true) && inRound(m));
   const poolSize = () => (way === "scene" ? scenes.length : poolOf().length);
   const kindWord = (m: EntMovie) => (m.kind === "tv" ? "TV show" : "Film");
 
   function renderSetup() {
     if (way === "scene" && scenes.length === 0) way = "clues";
-    const n = poolSize();
-    const best = bestFor(deck.id, variant());
     const ways = WAYS.filter((w) => w.id !== "scene" || scenes.length > 0);
+    const sizeOf = (w: Way) => (w === "scene" ? scenes.length : MOVIES.filter((m) => (w === "emoji" ? !!m.emoji : true) && inRound(m)).length);
     setup.replaceChildren(
-      chipRow("Way to play", ways.map((w) => ({ id: w.id, text: w.label })), way, (id) => {
-        way = id as Way;
-        renderSetup();
-        setup.querySelectorAll<HTMLElement>(".sp-group")[0]?.querySelector<HTMLElement>(".chip.on")?.focus();
+      topicTabs({
+        tabs: ROUNDS.map((r) => ({ id: r.id, label: r.label })),
+        active: round,
+        note: scenes.length ? "Pick a round. Picture reveal always uses all the drawings." : "Pick a round.",
+        onPick: (id) => {
+          round = id as Round;
+          renderSetup();
+          setup.querySelector<HTMLElement>(".qtab.on")?.focus();
+        },
       }),
-      ...(scenesChecked && scenes.length === 0 ? [h("p", { class: "muted tc-soon" }, "Picture reveal: coming once the first drawings are added.")] : []),
-      ...(way === "scene"
-        ? []
-        : [
-            chipRow("Round", ROUNDS.map((r) => ({ id: r.id, text: r.label })), round, (id) => {
-              round = id as Round;
-              renderSetup();
-              setup.querySelectorAll<HTMLElement>(".sp-group")[1]?.querySelector<HTMLElement>(".chip.on")?.focus();
-            }),
-          ]),
-      h(
-        "div",
-        { class: "setup-row" },
-        h("p", { class: "muted tl-how", "aria-live": "polite" }, `${WAYS.find((w) => w.id === way)!.note} ${n ? `${Math.min(QUESTIONS, n)} questions from ${n}.` : "Nothing in this round yet."}`),
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-        h("button", { type: "button", class: "btn primary", id: "tc-start", disabled: n === 0, onclick: start }, "Start ▸"),
-      ),
+      ...(scenesChecked && scenes.length === 0 ? [h("p", { class: "qtabnote tc-soon" }, "Picture reveal: coming once the first drawings are added.")] : []),
+      wayRows({
+        deckId: deck.id,
+        current: way,
+        ways: ways.map((w) => {
+          const n = sizeOf(w.id);
+          return {
+            id: w.id,
+            name: w.label,
+            key: w.id === "scene" ? "scene-all" : `${w.id}-${round}`,
+            desc: `${w.note} ${n ? `${Math.min(QUESTIONS, n)} questions from ${n}.` : "Nothing in this round yet."}`,
+            disabled: n === 0,
+          };
+        }),
+        onPick: (id) => {
+          way = id as Way;
+          renderSetup();
+        },
+        onStart: (id) => {
+          way = id as Way;
+          start();
+        },
+      }),
     );
   }
 
@@ -326,7 +330,7 @@ export function renderThreeClues(root: HTMLElement, deck: Deck) {
           results.hidden = true;
           setup.hidden = false;
           renderSetup();
-          document.getElementById("tc-start")?.focus();
+          setup.querySelector<HTMLElement>(".qrow.current .qgo")?.focus();
         },
       }),
     );

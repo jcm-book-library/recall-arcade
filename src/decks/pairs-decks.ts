@@ -41,6 +41,7 @@ export const mythPairsDeck = pairsDeck(
     title: "Greek & Roman Pairs",
     subject: "History",
     hidden: true,
+    back: { href: "#myths", label: "Back to Mythology" },
     blurb: "Flip cards to match each Greek god with the Roman god who took over their story.",
     noun: "gods",
     items: mythItems,

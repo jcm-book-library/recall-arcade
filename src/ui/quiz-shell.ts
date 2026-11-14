@@ -55,8 +55,8 @@ export function titleCase(text: string): string {
   if (TITLE_EXCEPTIONS[text]) return TITLE_EXCEPTIONS[text];
   let atStart = true; // first word, or the first after a colon
   const parts = text.split(/(\s+)/);
-  // The last real word (not a "(33)" count) also keeps its capital: "Famous For", "All the Way In (33)".
-  const lastWord = parts.map((t) => /[A-Za-z]/.test(t)).lastIndexOf(true);
+  // The last real word (a number counts, but not a "(33)" count) also keeps its capital: "Famous For", "All the Way In (33)".
+  const lastWord = parts.map((t) => /[A-Za-z0-9]/.test(t) && !/^\(\d+\)$/.test(t)).lastIndexOf(true);
   return parts
     .map((tok, idx) => {
       if (!tok || /^\s+$/.test(tok)) return tok;
@@ -249,6 +249,24 @@ export function typeClickSwitch(o: {
     "div",
     { class: "qswitchrow" },
     h("div", { class: "qseg", role: "radiogroup", "aria-label": "How to play" }, choice("type", o.typeLabel ?? "⌨ Type the name"), choice("click", o.clickLabel ?? "🖱 Click the answer")),
+  );
+}
+
+/**
+ * A centred segmented control for choosing one of a few things on the setup page (a range of years: Since 2000,
+ * All years). Equal in look to the type/click switch; wraps onto two lines on a phone. `label` is for screen readers.
+ */
+export function segmented(o: { label: string; items: { id: string; text: string }[]; value: string; onPick: (id: string) => void }): HTMLElement {
+  return h(
+    "div",
+    { class: "qswitchrow" },
+    h(
+      "div",
+      { class: "qseg wrap", role: "radiogroup", "aria-label": o.label },
+      ...o.items.map((it) =>
+        h("button", { type: "button", role: "radio", class: it.id === o.value ? "on" : "", "aria-checked": String(it.id === o.value), onclick: () => it.id !== o.value && o.onPick(it.id) }, it.text),
+      ),
+    ),
   );
 }
 

@@ -2,6 +2,8 @@ import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { loadPicturesFor } from "../data/pictures";
 import { h } from "./dom";
+import { quizHeader, quizRow, quizRows, levelStatesFor, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
 import { scale } from "./timeline";
 import "./eras.css";
 import "./bornwhen.css";
@@ -78,8 +80,15 @@ export function renderBornWhen(root: HTMLElement, deck: Deck, rounds: BornRound[
   root.replaceChildren(
     h(
       "main",
-      { class: "play" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)),
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks: "You see a name and what they are known for. Drag the marker to the year they were born.",
+        rules: [
+          "Up to 100 points each. Within a year is full marks.",
+          h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t))),
+        ],
+      }),
       setup,
       game,
       results$,
@@ -89,38 +98,34 @@ export function renderBornWhen(root: HTMLElement, deck: Deck, rounds: BornRound[
   const poolOf = (r: BornRound) => deck.items.filter(r.filter);
 
   function renderSetup() {
-    const pool = poolOf(current);
-    const best = bestFor(deck.id, current.id);
     setup.replaceChildren(
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": "Choose a round" },
-        ...rounds.map((r) =>
-          h(
-            "button",
-            {
-              type: "button",
-              class: r.id === current.id ? "chip on" : "chip",
-              "aria-pressed": String(r.id === current.id),
-              onclick: () => {
-                current = r;
-                renderSetup();
-              },
+      quizRows(
+        ...rounds.map((r, i) => {
+          const pool = poolOf(r);
+          const best = bestFor(deck.id, r.id);
+          const states = levelStatesFor(deck.id, r.id);
+          const desc = `${Math.min(ROUND, pool.length)} at a time from ${pool.length}.`;
+          return quizRow({
+            badge: states.medium === "done" ? "done" : r.starter ? "star" : i + 1,
+            name: r.label,
+            desc: best ? `${desc} Best: ${best.score}/${best.total}.` : desc,
+            levels: states,
+            selected: "medium",
+            current: r.id === current.id,
+            onPick: () => {
+              current = r;
+              renderSetup();
             },
-            r.starter ? `★ ${r.label}` : r.label,
-          ),
-        ),
-      ),
-      h(
-        "div",
-        { class: "setup-row" },
-        h(
-          "p",
-          { class: "muted tl-how" },
-          `You see a name and what they are known for. Drag the marker to the year they were born. ${Math.min(ROUND, pool.length)} at a time from ${pool.length}, up to 100 points each. Within a year is full marks.`,
-        ),
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-        h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
+            onLevel: () => {
+              current = r;
+              renderSetup();
+            },
+            onStart: () => {
+              current = r;
+              start();
+            },
+          });
+        }),
       ),
     );
   }

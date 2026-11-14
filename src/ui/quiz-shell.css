@@ -70,6 +70,7 @@
 /* ---------- type or click (rule 8) and option toggles ---------- */
 .qswitchrow { display: flex; justify-content: center; }
 .qseg { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--panel); }
+.qseg.wrap { flex-wrap: wrap; justify-content: center; border-radius: 18px; }
 .qseg button { font: inherit; border: 0; background: transparent; cursor: pointer; padding: 6px 18px; font-weight: 700; font-size: 0.9rem; color: var(--muted); }
 .qseg button.on { background: var(--s-strong); color: var(--s-on-strong); }
 .qopts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
@@ -136,3 +137,8 @@
 /* the level lines in the Rules pop-over */
 .qpop-levels { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
 .qpop-levels p { font-size: 0.9rem; color: var(--muted); }
+
+/* a segmented control with four choices (the Sport year ranges) stacks as two by two on a phone, never three and a lonely one */
+@media (max-width: 820px) {
+  .qseg.wrap:has(button:nth-child(4)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+}

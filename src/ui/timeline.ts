@@ -1,6 +1,8 @@
 import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
+import { quizHeader, quizRow, quizRows, sectionLabel, chips, levelStatesFor, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
 import type { Period } from "../decks/periods";
 import { periodYears } from "../decks/periods";
 import "./eras.css";
@@ -105,7 +107,6 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
   const yearOf = (i: Item) => Math.round((fromOf(i) + toOf(i)) / 2);
   const span = (i: Item) => (fromOf(i) === toOf(i) ? yearText(fromOf(i)) : `${yearText(fromOf(i))} – ${yearText(toOf(i))}`);
 
-  const title = h("h1", { class: "play-title" }, deck.title);
   const setup = h("div", { class: "setup" });
   const game = h("div", { class: "tl-game" });
   game.hidden = true;
@@ -115,8 +116,16 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
   root.replaceChildren(
     h(
       "main",
-      { class: "play" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), title),
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks: text.how,
+        rules: [
+          "Up to 100 points each for being close. Where an event belongs to a period, landing anywhere inside that period always earns at least 70.",
+          h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t))),
+        ],
+        back: deck.back,
+      }),
       setup,
       game,
       results$,
@@ -140,37 +149,40 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
   }
 
   function renderSetup() {
-    const pool = poolOf(era);
-    const best = bestFor(deck.id, era.id);
+    // Each era is a row (★ on the starter), with the deck's headings between groups. Medium only: there are no hints to take away.
     setup.replaceChildren(
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": "Choose an era" },
-        ...eras.flatMap((e, n) => [
-          ...(e.heading && e.heading !== eras[n - 1]?.heading ? [h("p", { class: "chip-heading" }, e.heading)] : []),
-          h(
-            "button",
-            {
-              type: "button",
-              class: e.id === era.id ? "chip on" : "chip",
-              "aria-pressed": String(e.id === era.id),
-              onclick: () => {
+      quizRows(
+        ...eras.flatMap((e, n) => {
+          const pool = poolOf(e);
+          const best = bestFor(deck.id, e.id);
+          const states = levelStatesFor(deck.id, e.id);
+          const desc = `${Math.min(ROUND, pool.length)} at a time from ${pool.length}.`;
+          return [
+            ...(e.heading && e.heading !== eras[n - 1]?.heading ? [sectionLabel(e.heading)] : []),
+            quizRow({
+              badge: states.medium === "done" ? "done" : e.starter ? "star" : n + 1,
+              name: e.label,
+              desc: best ? `${desc} Best: ${best.score}/${best.total}.` : desc,
+              levels: states,
+              selected: "medium",
+              current: e.id === era.id,
+              onPick: () => {
                 era = e;
                 renderSetup();
               },
-            },
-            e.starter ? `★ ${e.label}` : e.label,
-          ),
-        ]),
+              onLevel: () => {
+                era = e;
+                renderSetup();
+              },
+              onStart: () => {
+                era = e;
+                start();
+              },
+            }),
+          ];
+        }),
       ),
-      h(
-        "div",
-        { class: "setup-row" },
-        h("p", { class: "muted tl-how" }, `${text.how} ${Math.min(ROUND, pool.length)} at a time from ${pool.length}, up to 100 points each for being close.${pool.some((i) => i.data!.period) ? " Landing inside the right period always earns at least 70." : ""}`),
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-        h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
-      ),
-      ...(deck.related ? [h("a", { class: "btn ghost related", href: deck.related.href }, deck.related.label)] : []),
+      ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
   }
 

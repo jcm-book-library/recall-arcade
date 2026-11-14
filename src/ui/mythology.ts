@@ -6,13 +6,16 @@
 // Addresses: "#myths" is the hub; "#myths/type/greek" plays the typed game at that round;
 // "#mythwho/greek" opens a choice game at a round (see ui/choice.ts).
 import type { Deck } from "../engine/types";
-import { bestFor, gamesFor, savePrefs } from "../engine/storage";
+import { bestFor, gamesFor, loadPrefs, savePrefs } from "../engine/storage";
+import { resolveLevels, LEVELS } from "../engine/levels";
+import type { Level } from "../engine/types";
 import { loadPicturesFor, type Picture } from "../data/pictures";
 import { mythDeck } from "../decks/text-decks";
 import { CULTURES, type Culture } from "../decks/myth-data";
 import { GODS, GOD_BY_ID, type God } from "../decks/mythology";
 import { renderPlay } from "./play";
 import { h } from "./dom";
+import { quizHeader, topicTabs, quizRow, quizRows, sectionLabel, challengeCards, chips, levelStatesFor, subjectClass, type LevelStates } from "./quiz-shell";
 import "./mythology.css";
 
 const TAB_KEY = "myth-hub:tab";
@@ -20,15 +23,6 @@ const MET_KEY = "myth-hub:met";
 
 /** The typed round to open for each culture (Roman asks for the Roman names). */
 const TYPED: Record<Culture, string> = { greek: "greek", roman: "pairs", egypt: "egypt", norse: "norse" };
-
-interface Step {
-  title: string;
-  text: string;
-  href?: string;
-  done: boolean;
-  /** For "Meet the gods", which opens the cards here instead of going to a game. */
-  cards?: boolean;
-}
 
 const store = {
   get(key: string): string | null {
@@ -58,26 +52,38 @@ const metSet = (): string[] => {
 const roundDone = (deck: string, round: string) => !!bestFor(deck, round);
 const anyGame = (deck: string) => gamesFor(deck).length > 0;
 
-function specials(c: Culture): Step[] {
-  const heads: Step = { title: "Animal heads", text: "Which Egyptian god has the head of a jackal, an ibis or a ram?", href: "#mythsymbols/heads", done: roundDone("mythsymbols", "heads") };
-  const days: Step = { title: "Days of the week", text: "Tuesday to Friday are named after Norse gods. Saturday is Roman.", href: "#mythsymbols/days", done: roundDone("mythsymbols", "days") };
-  if (c === "greek" || c === "roman")
-    return [
-      { title: "Same job, two names", text: "See the Greek god, then type the Roman one.", href: "#myths/type/pairstarter", done: roundDone("myths", "pairstarter") },
-      { title: "Greek & Roman Pairs", text: "A memory game. Flip cards to match each Greek god with the Roman god.", href: "#mythpairs", done: anyGame("mythpairs") },
-    ];
-  if (c === "egypt")
-    return [heads, { title: "The journey to the afterlife", text: "Put the steps in order, from mummification to the Field of Reeds.", href: "#afterlife", done: anyGame("afterlife") }];
-  return [{ title: "The Nine Realms", text: "Label Yggdrasil, the world tree, with its nine realms.", href: "#realms", done: anyGame("realms") }, days];
+/** A row or card on the hub: where it goes, and (for the typed game) which levels it has. */
+interface Thing {
+  key: string;
+  name: string;
+  desc: string;
+  href: string;
+  /** For rounds of the typed game: the round id, so Easy and Medium can be picked and ticks shown. */
+  typed?: string;
+  /** Other games: the deck and round whose saved score gives the tick. */
+  score?: { deck: string; round: string };
+  /** Any game saved under this deck gives the tick. */
+  anyGame?: string;
 }
 
-function steps(c: Culture): Step[] {
-  const label = CULTURES.find((x) => x.id === c)!.label;
+function specials(c: Culture): Thing[] {
+  const heads: Thing = { key: "heads", name: "Animal Heads", desc: "Which Egyptian god has the head of a jackal, an ibis or a ram?", href: "#mythsymbols/heads", score: { deck: "mythsymbols", round: "heads" } };
+  const days: Thing = { key: "days", name: "Days of the Week", desc: "Tuesday to Friday are named after Norse gods. Saturday is Roman.", href: "#mythsymbols/days", score: { deck: "mythsymbols", round: "days" } };
+  if (c === "greek" || c === "roman")
+    return [
+      { key: "pairstarter", name: "Same Job, Two Names", desc: "See the Greek god, then type the Roman one.", href: "#myths/type/pairstarter", typed: "pairstarter" },
+      { key: "mythpairs", name: "Greek & Roman Pairs", desc: "A memory game. Flip cards to match each Greek god with the Roman god.", href: "#mythpairs", anyGame: "mythpairs" },
+    ];
+  if (c === "egypt")
+    return [heads, { key: "afterlife", name: "The Journey to the Afterlife", desc: "Put the steps in order, from mummification to the Field of Reeds.", href: "#afterlife", anyGame: "afterlife" }];
+  return [{ key: "realms", name: "The Nine Realms", desc: "Label Yggdrasil, the world tree, with its nine realms.", href: "#realms", anyGame: "realms" }, days];
+}
+
+function steps(c: Culture): Thing[] {
   return [
-    { title: "Meet the gods", text: `Study the ${label} gods: their pictures, jobs, symbols and animals.`, cards: true, done: metSet().includes(c) },
-    { title: "Who's who", text: "Read what a god rules, then pick their name from four.", href: `#mythwho/${c}`, done: roundDone("mythwho", c) },
-    { title: "Symbols and sacred animals", text: "An owl, a thunderbolt, a raven. Which god does it belong to?", href: `#mythsymbols/${c}`, done: roundDone("mythsymbols", c) },
-    { title: "Type the name", text: c === "roman" ? "See the Greek god and type the Roman name." : "Read a clue and type the name. No choices this time.", href: `#myths/type/${TYPED[c]}`, done: roundDone("myths", TYPED[c]) },
+    { key: "who", name: "Who's Who", desc: "Read what a god rules, then pick their name from four.", href: `#mythwho/${c}`, score: { deck: "mythwho", round: c } },
+    { key: "symbols", name: "Symbols and Sacred Animals", desc: "An owl, a thunderbolt, a raven. Which god does it belong to?", href: `#mythsymbols/${c}`, score: { deck: "mythsymbols", round: c } },
+    { key: "type", name: "Type the Name", desc: c === "roman" ? "See the Greek god and type the Roman name." : "Read a clue and type the name. No choices this time.", href: `#myths/type/${TYPED[c]}`, typed: TYPED[c] },
   ];
 }
 
@@ -87,6 +93,12 @@ const MORE: { round: string; label: string }[] = [
   { round: "dreaming", label: "Aboriginal Dreaming" },
 ];
 
+/** The levels the typed game offers (Easy studies first; Hard only if it has something to take away). */
+const typedLevels = (): Level[] => {
+  const r = resolveLevels(mythDeck, false);
+  return LEVELS.filter((l) => r[l]);
+};
+
 export function renderMythology(root: HTMLElement, deck: Deck): () => void {
   const parts = location.hash.replace(/^#/, "").split("/");
   if (parts[1] === "type") return renderTyped(root, parts[2]);
@@ -94,87 +106,108 @@ export function renderMythology(root: HTMLElement, deck: Deck): () => void {
   let culture: Culture = CULTURES.some((c) => c.id === store.get(TAB_KEY)) ? (store.get(TAB_KEY) as Culture) : "greek";
   let showCards = false;
   let alive = true;
+  /** The level picked on each row of the typed game (kept in the same preference the typed screen reads). */
+  const picked: Record<string, Level> = {};
+  for (const [id, l] of Object.entries(loadPrefs(mythDeck.id).levels ?? {})) if (LEVELS.includes(l as Level)) picked[id] = l as Level;
 
-  const tabs = h("div", { class: "mh-tabs", role: "tablist", "aria-label": "Culture" });
-  const panel = h("div", { class: "mh-panel", role: "tabpanel" });
-  const tabButtons = new Map<Culture, HTMLButtonElement>();
+  const page = h("div", { class: "mh-page" });
 
-  for (const c of CULTURES) {
-    const b = h(
-      "button",
-      {
-        type: "button",
-        class: "mh-tab",
-        role: "tab",
-        id: `mh-tab-${c.id}`,
-        "aria-controls": "mh-panel",
-        onclick: () => select(c.id),
-        onkeydown: (e: Event) => {
-          const k = (e as KeyboardEvent).key;
-          const at = CULTURES.findIndex((x) => x.id === culture);
-          const to = k === "ArrowRight" ? at + 1 : k === "ArrowLeft" ? at - 1 : k === "Home" ? 0 : k === "End" ? CULTURES.length - 1 : -1;
-          if (to < 0) return;
-          e.preventDefault();
-          const next = CULTURES[(to + CULTURES.length) % CULTURES.length].id;
-          select(next);
-          tabButtons.get(next)!.focus();
-        },
-      },
-      c.label,
-    );
-    tabButtons.set(c.id, b);
-    tabs.append(b);
+  /** The saved-score ticks for a thing, and the levels it offers (Medium alone, except the typed game). */
+  function statesOf(t: Thing): LevelStates {
+    if (t.typed) return levelStatesFor(mythDeck.id, t.typed, typedLevels());
+    const done = t.score ? roundDone(t.score.deck, t.score.round) : anyGame(t.anyGame!);
+    return { easy: "none", medium: done ? "done" : "available", hard: "none" };
   }
-  panel.id = "mh-panel";
+  const levelOf = (t: Thing): Level => (t.typed && picked[t.typed] && typedLevels().includes(picked[t.typed]) ? picked[t.typed] : "medium");
 
-  function select(c: Culture) {
-    culture = c;
-    showCards = false;
-    store.set(TAB_KEY, c);
-    draw();
+  function go(t: Thing) {
+    if (t.typed) {
+      // The typed game remembers the level picked on a round's row; set it, then open the round.
+      const prefs = loadPrefs(mythDeck.id);
+      savePrefs(mythDeck.id, { ...prefs, variant: t.typed, options: {}, levels: { ...(prefs.levels ?? {}), [t.typed]: levelOf(t) } });
+    }
+    location.hash = t.href;
   }
+
+  const rowOf = (t: Thing, n: number) => {
+    const states = statesOf(t);
+    return quizRow({
+      badge: states.medium === "done" || states.easy === "done" ? "done" : n === 1 ? "star" : n,
+      name: t.name,
+      desc: t.desc,
+      levels: states,
+      selected: levelOf(t),
+      onLevel: t.typed
+        ? (l) => {
+            picked[t.typed!] = l;
+            draw();
+          }
+        : undefined,
+      onStart: () => go(t),
+    });
+  };
 
   function draw() {
-    for (const [c, b] of tabButtons) {
-      b.setAttribute("aria-selected", String(c === culture));
-      b.tabIndex = c === culture ? 0 : -1;
-    }
-    panel.setAttribute("aria-labelledby", `mh-tab-${culture}`);
     const info = CULTURES.find((c) => c.id === culture)!;
+    const met = metSet().includes(culture);
     const cardsHost = h("div", { class: "mh-cards-host" });
-    const ladder = h(
-      "ol",
-      { class: "mh-ladder" },
-      ...steps(culture).map((s, n) => {
-        const mark = h("span", { class: s.done ? "mh-num done" : "mh-num", "aria-hidden": "true" }, s.done ? "✓" : String(n + 1));
-        const body = h("span", { class: "mh-step-body" }, h("strong", {}, s.title), h("span", { class: "mh-text" }, s.text), s.done ? h("span", { class: "mh-done" }, s.cards ? "Done" : "Played") : null);
-        const go = s.cards
-          ? h("button", { type: "button", class: "btn primary mh-go", "aria-expanded": String(showCards), onclick: () => {
-              showCards = !showCards;
-              if (showCards && !metSet().includes(culture)) store.set(MET_KEY, JSON.stringify([...metSet(), culture]));
-              draw();
-            } }, showCards ? "Hide" : "Look ▸")
-          : h("a", { class: "btn primary mh-go", href: s.href! }, "Play ▸");
-        return h("li", { class: s.done ? "mh-step done" : "mh-step" }, mark, body, go);
+    const learn = quizRow({
+      badge: "learn",
+      name: "Meet the Gods",
+      desc: `Learn it first: study the ${info.label} gods, with their pictures, jobs, symbols and animals.`,
+      levels: { easy: met ? "done" : "available", medium: "none", hard: "none" },
+      selected: "easy",
+      onStart: () => {
+        showCards = !showCards;
+        if (showCards && !metSet().includes(culture)) store.set(MET_KEY, JSON.stringify([...metSet(), culture]));
+        draw();
+      },
+      startLabel: showCards ? "Hide" : "Look ▸",
+    });
+    const cards = challengeCards(
+      specials(culture).map((t) => {
+        const states = statesOf(t);
+        return {
+          name: t.name,
+          done: states.medium === "done" || states.easy === "done",
+          levels: states,
+          selected: levelOf(t),
+          onLevel: t.typed
+            ? (l: Level) => {
+                picked[t.typed!] = l;
+                draw();
+              }
+            : undefined,
+          desc: t.desc,
+          onStart: () => go(t),
+        };
       }),
     );
-    panel.replaceChildren(
-      h("p", { class: "muted mh-blurb" }, info.blurb),
-      ladder,
+    page.replaceChildren(
+      topicTabs({
+        tabs: CULTURES.map((c) => ({ id: c.id, label: c.label })),
+        active: culture,
+        note: info.blurb,
+        onPick: (id) => {
+          culture = id as Culture;
+          showCards = false;
+          store.set(TAB_KEY, culture);
+          draw();
+        },
+      }),
+      quizRows(learn, ...steps(culture).map((t, i) => rowOf(t, i + 1))),
       ...(showCards ? [cardsHost] : []),
-      h("h2", { class: "mh-sub" }, "Special challenges"),
-      h(
-        "ul",
-        { class: "mh-specials" },
-        ...specials(culture).map((s) =>
-          h("li", {}, h("a", { class: s.done ? "mh-special done" : "mh-special", href: s.href! }, h("strong", {}, s.done ? `✓ ${s.title}` : s.title), h("span", { class: "mh-text" }, s.text))),
-        ),
-      ),
+      sectionLabel("Special Challenges"),
+      cards,
+      chips(
+        MORE.map((m) => ({ label: `${roundDone("myths", m.round) ? "✓ " : ""}${m.label}`, href: `#myths/type/${m.round}` })),
+        "More Cultures",
+      )!,
     );
     if (showCards) drawCards(cardsHost, culture);
   }
 
-  function drawCards(host: HTMLElement, c: Culture) {
+function drawCards(host: HTMLElement, c: Culture) {
     const gods = GODS[c];
     const grid = h("div", { class: "mh-cards" });
     const slots = new Map<string, HTMLElement>();
@@ -206,18 +239,13 @@ export function renderMythology(root: HTMLElement, deck: Deck): () => void {
   root.replaceChildren(
     h(
       "main",
-      { class: "play mh" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, "Mythology")),
-      h("p", { class: "muted mh-intro" }, "Pick a culture. Climb the steps from looking, to choosing, to typing."),
-      tabs,
-      panel,
-      h(
-        "section",
-        { class: "mh-more", "aria-label": "More cultures" },
-        h("h2", { class: "mh-sub" }, "More cultures"),
-        h("div", { class: "mh-more-row" }, ...MORE.map((m) => h("a", { class: roundDone("myths", m.round) ? "chip mh-chip done" : "chip mh-chip", href: `#myths/type/${m.round}` }, `${roundDone("myths", m.round) ? "✓ " : ""}${m.label}`))),
-        h("p", { class: "muted mh-tip" }, deck.tip ?? ""),
-      ),
+      { class: `play mh quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks: "Pick a culture. Climb the steps from looking, to choosing, to typing.",
+        rules: deck.tip ? [deck.tip] : [],
+      }),
+      page,
       h("p", { class: "muted mh-credit" }, "Pictures come from Wikipedia and are freely licensed. The photographer is credited under each one."),
     ),
   );
@@ -268,7 +296,7 @@ function showPicture(slot: HTMLElement, pic: Picture, g: God) {
 
 /** The typed game, opened at the round chosen on the hub. Its back link returns to the hub. */
 function renderTyped(root: HTMLElement, round: string | undefined): () => void {
-  if (round && mythDeck.variants.some((v) => v.id === round)) savePrefs(mythDeck.id, { variant: round, options: {} });
+  if (round && mythDeck.variants.some((v) => v.id === round)) savePrefs(mythDeck.id, { ...loadPrefs(mythDeck.id), variant: round, options: {} });
   const typed: Deck = { ...mythDeck, screen: undefined, back: { href: "#myths", label: "◂ Mythology" } };
   const stop = renderPlay(root, typed);
   return () => stop?.();

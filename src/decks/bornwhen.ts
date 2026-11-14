@@ -25,6 +25,7 @@ export const bornWhenDeck: Deck = {
   title: "Born When?",
   subject: "History",
   hidden: true,
+  back: { href: "#people", label: "Back to Who Lived When?" },
   blurb: "A living person appears. Guess the year they were born.",
   noun: "people",
   items,
