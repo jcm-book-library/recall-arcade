@@ -55,6 +55,11 @@ Medium plays exactly as the quizzes did before the standard, so it keeps the exi
 Easy and Hard save under their own keys. Nothing earned before the standard is lost.
 
 ## The arcade games (to follow)
+- **All game information goes INSIDE the game screen** (owner, 14 Nov 2026). Players' eyes stay on the
+  play area, so stamps, flags, gates, hearts, time and so on are drawn as a HUD (status bar) inside the
+  game picture, like classic games. Nothing important sits outside it. If something must sit outside, the
+  frame around the screen is styled as part of the screen. This applies to the island (stamps, flags,
+  gates, free roam, a passport button) and every arcade game.
 - An ⓘ "How to play" pop-up next to the title, instead of key hints on the game screen.
 - Only Pause shows on screen, and Esc pauses every game.
 - Easy, Medium and Hard can always be picked, with no "Preview" label.
