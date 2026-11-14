@@ -24,8 +24,36 @@ export interface Variant {
   sample?: number;
   /** Marks the small starter round for the Easy track. */
   starter?: boolean;
-  /** A small heading shown above this round's button, and the ones after it, on the setup screen. */
+  /** A small heading shown above this round's row, and the ones after it, on the setup screen. */
   heading?: string;
+  /** One line describing the round on its row. If left out, the row says how many things are in it. */
+  note?: string;
+}
+
+/** The three difficulty levels every quiz page offers (see docs/quiz-standard.md, rule 6). */
+export type Level = "easy" | "medium" | "hard";
+
+/**
+ * How one level differs from the standard recipe. The standard recipe is:
+ *   Easy   = study the board first, then play with hints on.
+ *   Medium = exactly how the quiz always played (hints available). Keeps the old best-score keys.
+ *   Hard   = hints off.
+ * A tweak adds to that. Nothing here is needed for a quiz to work: leave `levels` out to get the recipe.
+ */
+export interface LevelTweak {
+  /** Options forced on or off at this level (Countries Hard turns "territories" on). */
+  options?: Record<string, boolean>;
+  /** Click games: wrong clicks allowed before the answer is shown (3 normally, 1 on Hard). */
+  guesses?: number;
+  /** One line about what is different, shown in the Rules pop-over. */
+  note?: string;
+}
+
+export interface DeckLevels {
+  /** `false` = this level isn't built for this quiz: it shows dashed and can't be picked. */
+  easy?: false | LevelTweak;
+  medium?: false | LevelTweak;
+  hard?: false | LevelTweak;
 }
 
 export interface DeckOption {
@@ -128,6 +156,12 @@ export interface Deck {
    * Only for games that are hard to start cold (Inner Space, The Scale of Things...).
    */
   learn?: () => Node;
-  /** A short tip shown under the board, e.g. how to zoom. */
+  /** A short tip shown under the board, e.g. how to zoom. Also shown in the ⓘ Rules pop-over. */
   tip?: string;
+  /** One line on how the quiz works, shown under the title. If left out, it is worked out from `mode`. */
+  how?: string;
+  /** The board has a Hint button (the zoom boards do). Makes Hard ("no hints") a real level. */
+  hasHints?: boolean;
+  /** Changes to the Easy / Medium / Hard recipe for this quiz. See LevelTweak. */
+  levels?: DeckLevels;
 }

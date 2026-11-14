@@ -13,6 +13,7 @@ const { chromium } = await import(pw);
 const browser = await chromium.launch({ executablePath: chromePath });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 const problems = [];
+let withShell = 0;
 page.on("pageerror", (e) => problems.push(`page error: ${e.message}`));
 await page.route("https://en.wikipedia.org/w/api.php*", (r) => r.fulfill({ json: { query: { pages: [] } } }));
 await page.route("https://raw.githubusercontent.com/**", (r) => r.fulfill({ json: { type: "FeatureCollection", features: [] } }));
@@ -25,10 +26,20 @@ for (const id of ids) {
   await page.goto(base);
   await page.goto(`${base}#${id}`);
   await page.waitForTimeout(900);
+  // The shared quiz page (ui/quiz-shell.ts) has a header and rows; quizzes with their own screen may not yet.
+  if (await page.$(".qhead")) {
+    withShell++;
+    if ((await page.$$(".qrow")).length < 1) problems.push(`${id}: quiz header but no rows`);
+    if (!(await page.$(".qnavbtn[href]"))) problems.push(`${id}: no Back link`);
+  }
+  // The first "Start ▸" is the first round's row. Some start buttons nudge for a moment, so force the click if it never settles.
   const start = await page.$("text=Start ▸");
-  // Some start buttons nudge for a moment, so force the click if it never settles.
   if (start) await start.click({ timeout: 3000 }).catch(() => start.click({ force: true }));
   await page.waitForTimeout(400);
+  // A first-time round can open "study the board" first: carry on to the game.
+  const studyGo = await page.$("text=Got it");
+  if (studyGo && (await studyGo.isVisible())) await studyGo.click({ force: true, timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(200);
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   if (width > 392) problems.push(`${id}: sideways scroll (${width}px)`);
   const giveUp = await page.$("text=Give up");
@@ -46,6 +57,6 @@ for (const id of ["pong", "labyrinth", "flyover", "brawl", "hero", "island", "li
   }
   if ((await page.evaluate(() => document.documentElement.scrollWidth)) > 392) problems.push(`${id}: sideways scroll`);
 }
-console.log(`${ids.length} game cards + arcade pages checked.`, problems.length ? problems : "No problems.");
+console.log(`${ids.length} game cards + arcade pages checked (${withShell} on the shared quiz page).`, problems.length ? problems : "No problems.");
 await browser.close();
 process.exit(problems.length ? 1 : 0);

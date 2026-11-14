@@ -1,6 +1,8 @@
 import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
+import { quizHeader, chips, roundRows, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
 
 export interface ChoiceRound {
   id: string;
@@ -59,8 +61,13 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
   root.replaceChildren(
     h(
       "main",
-      { class: "play" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: spec.back?.href ?? "#" }, spec.back?.label ?? "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)),
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      quizHeader({
+        deck,
+        howItWorks: "Click an answer, or press its number key.",
+        rules: [...(deck.tip ? [deck.tip] : []), h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t)))],
+        back: spec.back,
+      }),
       setup,
       game,
       results,
@@ -68,36 +75,30 @@ export function renderChoice(root: HTMLElement, deck: Deck, spec: ChoiceSpec) {
   );
 
   function renderSetup() {
-    const pool = deck.items.filter(round.filter);
-    const best = bestFor(deck.id, round.id);
     setup.replaceChildren(
-      h(
-        "div",
-        { class: "chips", role: "group", "aria-label": "Choose a round" },
-        ...spec.rounds.map((r) =>
-          h(
-            "button",
-            {
-              type: "button",
-              class: r.id === round.id ? "chip on" : "chip",
-              "aria-pressed": String(r.id === round.id),
-              onclick: () => {
-                round = r;
-                renderSetup();
-              },
-            },
-            r.starter ? `★ ${r.label}` : r.label,
-          ),
-        ),
-      ),
-      h(
-        "div",
-        { class: "setup-row" },
-        h("p", { class: "muted tl-how" }, `${round.note ? `${round.note} ` : ""}${Math.min(round.count ?? pool.length, pool.length)} questions from ${pool.length}. Click an answer, or press its number key.`),
-        h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-        h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
-      ),
+      roundRows({
+        deckId: deck.id,
+        rounds: spec.rounds.map((r) => {
+          const pool = deck.items.filter(r.filter);
+          const best = bestFor(deck.id, r.id);
+          const text = `${r.note ? `${r.note} ` : ""}${Math.min(r.count ?? pool.length, pool.length)} questions from ${pool.length}.`;
+          return { id: r.id, label: r.label, starter: r.starter, desc: best ? `${text} Best: ${best.score}/${best.total}.` : text };
+        }),
+        current: round.id,
+        levelOf: () => "medium",
+        onLevel: (id) => pick(id),
+        onPick: (id) => pick(id),
+        onStart: (id) => {
+          pick(id, false);
+          start();
+        },
+      }),
+      ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
+  }
+  function pick(id: string, redraw = true) {
+    round = spec.rounds.find((r) => r.id === id) ?? round;
+    if (redraw) renderSetup();
   }
 
   function start() {

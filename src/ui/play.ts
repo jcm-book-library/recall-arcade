@@ -1,8 +1,10 @@
-import type { Board, Deck, Item, Variant } from "../engine/types";
+import type { Board, Deck, Item, Level, Variant } from "../engine/types";
 import { Matcher } from "../engine/matcher";
 import { bestFor, gamesFor, loadPrefs, recordGame, savePrefs, weakSpots } from "../engine/storage";
 import { currentTrack } from "../engine/progress";
+import { LEVELS, doneLevels, levelNotes, levelSuffix, resolveLevels, type ResolvedLevel } from "../engine/levels";
 import { formatTime, h } from "./dom";
+import { chips, lockTime, subjectClass, optionToggles, quizHeader, quizRow, quizRows, sectionLabel, titleCase, typeClickSwitch, type LevelStates } from "./quiz-shell";
 
 type Phase = "setup" | "study" | "playing" | "over";
 
@@ -33,10 +35,15 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   const prefs = loadPrefs(deck.id);
   let variant: Variant = deck.variants.find((v) => v.id === prefs.variant) ?? deck.variants[0];
   let minutes = prefs.minutes ?? variant.minutes;
-  const options: Record<string, boolean> = Object.fromEntries(
-    deck.options.map((o) => [o.id, prefs.options?.[o.id] ?? o.default]),
-  );
-  const remember = () => savePrefs(deck.id, { variant: variant.id, minutes, options });
+  // What the player ticked, and the options a round really uses: the level can switch some on (Countries Hard
+  // adds the territories). `options` is what the board and the best-score key see; `chosen` is what is saved.
+  const chosen: Record<string, boolean> = Object.fromEntries(deck.options.map((o) => [o.id, prefs.options?.[o.id] ?? o.default]));
+  const options: Record<string, boolean> = { ...chosen };
+  // The level picked on each round's row. Medium (today's way of playing) unless the player says otherwise.
+  const rowLevel: Record<string, Level> = {};
+  for (const [id, l] of Object.entries(prefs.levels ?? {})) if (LEVELS.includes(l as Level)) rowLevel[id] = l as Level;
+  const remember = () => savePrefs(deck.id, { variant: variant.id, minutes, options: chosen, levels: rowLevel });
+  let level: Level = "medium"; // the level of the round on screen
   let phase: Phase = "setup";
   let board: Board | null = null;
   let playing: Item[] = [];
@@ -50,6 +57,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   let noteTimer = 0;
   let clickMode = false;
   let promptMode = false;
+  let levels = resolveLevels(deck, false);
+  let rules: ResolvedLevel = levels.medium!; // what the level on screen means
   // Items no longer asked: named, or (click games) revealed after three wrong clicks.
   let revealed = new Set<string>();
   let wrongClicks = 0;
@@ -69,7 +78,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   }
 
   // ---------- layout ----------
-  const title = h("h1", { class: "play-title" }, deck.title);
+  const headerHost = h("div", { class: "quiz-head-host" });
   const setup = h("div", { class: "setup" });
   const timer = h("div", { class: "timer", "aria-live": "off" }, "--:--");
   const score = h("div", { class: "score" });
@@ -84,7 +93,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     "aria-label": "Your answer",
   });
   const giveUp = h("button", { class: "btn ghost", type: "button" }, "Give up");
-  const backBtn = h("button", { class: "btn ghost", type: "button", title: "Back to the last one you skipped (Shift+Tab)" }, "◂ Back");
+  const backBtn = h("button", { class: "btn ghost", type: "button", title: "Back to the last one you skipped (Shift+Tab)" }, "◂ Previous");
   const skipBtn = h("button", { class: "btn ghost", type: "button", title: "Skip for now (Tab key)" }, "Skip ▸");
   const hintBtn = h("button", { class: "btn ghost", type: "button", title: "First letters, then a list of names to place" }, "Hint");
   let hintLevel = 0;
@@ -116,8 +125,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   root.replaceChildren(
     h(
       "main",
-      { class: "play" },
-      h("div", { class: "play-top" }, h("a", { class: "back", href: deck.back?.href ?? "#" }, deck.back?.label ?? "◂ Arcade"), title),
+      { class: `play quiz ${subjectClass(deck.subject)}` },
+      headerHost,
       setup,
       studyBar,
       hud,
@@ -133,92 +142,192 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
 
   /** Some games can be played by typing or by clicking, set by an option. */
   function syncMode() {
+    // Levels first: a level can switch options on, and the type/click choice decides which levels exist.
+    const wantsClick = deck.mode === "click" || (!!deck.clickOption && chosen[deck.clickOption]);
+    levels = resolveLevels(deck, wantsClick);
+    if (!levels[level]) level = "medium";
+    rules = levels[level]!;
+    for (const o of deck.options) options[o.id] = o.id in rules.options ? rules.options[o.id] : chosen[o.id];
     clickMode = deck.mode === "click" || (!!deck.clickOption && options[deck.clickOption]);
     promptMode = deck.mode === "prompt" || clickMode;
     input.hidden = clickMode;
     backBtn.hidden = skipBtn.hidden = promptBox.hidden = !promptMode;
   }
 
-  // ---------- setup controls ----------
+  // ---------- setup: the shared quiz page (header, rows, levels) ----------
+  /** The options a round at this level would use (the level can switch some on). */
+  const optionsFor = (lv: Level): Record<string, boolean> => ({ ...chosen, ...(levels[lv]?.options ?? {}) });
+  /**
+   * The saved-score key. Medium keeps the key quizzes always had ("world", "world+territories");
+   * Easy and Hard add "+easy" / "+hard", so nothing earned earlier is lost or mixed up.
+   */
+  const keyFor = (v: Variant, lv: Level, opts: Record<string, boolean>) =>
+    [v.id, ...deck.options.filter((o) => opts[o.id] && !o.display).map((o) => o.id)].join("+") + levelSuffix(lv);
+  const bestKey = () => keyFor(variant, level, options);
+
+  function countFor(v: Variant, lv: Level): number {
+    let list = deck.items.filter(v.filter);
+    if (deck.applyOptions) list = deck.applyOptions(list, optionsFor(lv));
+    return list.length;
+  }
+
+  /** One line under the title. */
+  function howText(): string {
+    if (deck.how) return deck.how;
+    if (clickMode) {
+      const g = rules.guesses;
+      return `You're shown a name: click it on the board. After ${g} wrong ${g === 1 ? "click" : "clicks"} the answer is shown and you move on.`;
+    }
+    if (promptMode) return "You're shown one at a time. Type the answer and press Enter. Tab skips, and you can come back to it.";
+    return `Type ${deck.noun} in any order. Each one you name shows up on the board.`;
+  }
+
+  function renderHeader() {
+    const levelLines = h("div", { class: "qpop-levels" }, ...levelNotes(deck, clickMode).map((t) => h("p", {}, t)));
+    headerHost.replaceChildren(
+      quizHeader({
+        deck,
+        howItWorks: howText(),
+        rules: [...(deck.tip ? [deck.tip] : []), levelLines],
+        time: {
+          value: minutes,
+          choices: TIME_CHOICES,
+          onChange: (m) => {
+            minutes = m;
+            remember();
+          },
+        },
+      }),
+    );
+  }
+
+  /** Picks a row (and a level on it). The board below shows the row you last picked. */
+  function selectRow(v: Variant, lv: Level) {
+    if (v.id !== variant.id) minutes = v.minutes;
+    variant = v;
+    level = lv;
+    syncMode(); // checks the level exists here, and sets the options it forces
+    rowLevel[v.id] = level;
+    remember();
+  }
+
+  /** The board on screen is for this round and these options; if so, there's nothing to rebuild. */
+  let builtFor = "";
+  const wantBoard = () => `${variant.id}|${JSON.stringify(options)}|${clickMode}`;
+  async function ensureBoard() {
+    if (board && builtFor === wantBoard() && !variant.sample) return;
+    await buildBoard();
+  }
+
+  function statesFor(v: Variant): LevelStates {
+    const done = doneLevels(deck.id, v.id);
+    return Object.fromEntries(LEVELS.map((l) => [l, !levels[l] ? "none" : done.has(l) ? "done" : "available"])) as LevelStates;
+  }
+
   function renderSetup() {
     syncMode();
+    renderHeader();
+    const rows: (HTMLElement | null)[] = [];
+
+    // "Study the board" / "Learn it first": always the first row, dashed, Easy only.
+    if (levels.easy) {
+      rows.push(
+        quizRow({
+          badge: "learn",
+          name: deck.learn ? "Learn It First" : "Study the Board",
+          desc: deck.learn
+            ? `Read the guide and look over ${titleCase(variant.label)} with every name shown. No clock until you play.`
+            : `Every name in ${titleCase(variant.label)}, shown on the board. No clock until you play.`,
+          levels: { easy: "available", medium: "none", hard: "none" },
+          selected: "easy",
+          startLabel: "Look ▸",
+          onStart: async () => {
+            await ensureBoard();
+            study(false);
+          },
+        }),
+      );
+    }
+
     let lastHeading = "";
-    const variantChips = deck.variants.flatMap((v) => {
-      const title = v.heading && v.heading !== lastHeading ? [h("p", { class: "chip-heading" }, v.heading)] : [];
+    deck.variants.forEach((v, i) => {
+      if (v.heading && v.heading !== lastHeading) rows.push(sectionLabel(v.heading));
       lastHeading = v.heading ?? lastHeading;
-      return [...title, chip(v)];
+      const states = statesFor(v);
+      const picked = v.id === variant.id ? level : rowLevel[v.id] ?? "medium";
+      const lv: Level = levels[picked] ? picked : "medium";
+      const n = countFor(v, lv);
+      const best = bestFor(deck.id, keyFor(v, lv, optionsFor(lv)));
+      const count = v.note ?? (v.sample && n > v.sample ? `${v.sample} ${deck.noun}, picked at random from ${n}.` : `${n} ${deck.noun}.`);
+      const finished = LEVELS.filter((l) => levels[l]).every((l) => states[l] === "done");
+      rows.push(
+        quizRow({
+          badge: finished ? "done" : v.starter ? "star" : i + 1,
+          name: v.label,
+          desc: best ? `${count} Best: ${best.score}/${best.total} in ${formatTime(best.seconds)}.` : count,
+          levels: states,
+          selected: lv,
+          current: v.id === variant.id,
+          onPick: () => {
+            selectRow(v, lv);
+            renderSetup();
+            buildBoard();
+          },
+          onLevel: (l) => {
+            selectRow(v, l);
+            renderSetup();
+            ensureBoard();
+          },
+          onStart: async () => {
+            selectRow(v, lv);
+            renderHeader();
+            await ensureBoard();
+            if (rules.study) study(false);
+            else if (level === "medium") startOrStudy();
+            else start();
+          },
+        }),
+      );
     });
-    function chip(v: Variant) {
-      return h(
-        "button",
-        {
-          type: "button",
-          class: v.id === variant.id ? "chip on" : "chip",
-          "aria-pressed": String(v.id === variant.id),
-          onclick: () => {
-            variant = v;
-            minutes = v.minutes;
+
+    const toggles = optionToggles(
+      deck.options
+        .filter((o) => o.id !== deck.clickOption)
+        .map((o) => ({
+          id: o.id,
+          label: o.label,
+          hint: o.hint,
+          checked: options[o.id],
+          locked: o.id in rules.options,
+          onChange: (on: boolean) => {
+            chosen[o.id] = on;
             remember();
             renderSetup();
             buildBoard();
           },
-        },
-        v.starter ? `★ ${v.label}` : v.label,
-      );
-    }
-    const timeSelect = h(
-      "select",
-      {
-        id: "minutes",
-        "aria-label": "Time limit",
-        onchange: (e) => {
-          minutes = Number((e.target as HTMLSelectElement).value);
-          remember();
-        },
-      },
-      ...TIME_CHOICES.map((m) => {
-        const o = h("option", { value: String(m) }, m ? `${m} min` : "No limit");
-        o.selected = m === minutes;
-        return o;
-      }),
+        })),
     );
-    if (!TIME_CHOICES.includes(minutes)) minutes = variant.minutes;
-    const toggles = deck.options.map((o) => {
-      const box = h("input", {
-        type: "checkbox",
-        id: `opt-${o.id}`,
-        onchange: (e) => {
-          options[o.id] = (e.target as HTMLInputElement).checked;
-          remember();
-          renderSetup();
-          buildBoard();
-        },
-      });
-      box.checked = options[o.id];
-      return h("label", { class: "toggle", for: `opt-${o.id}`, title: o.hint }, box, h("span", {}, o.label));
-    });
-    const best = bestFor(deck.id, bestKey());
+    const clickOpt = deck.clickOption ? deck.options.find((o) => o.id === deck.clickOption) : undefined;
     setup.replaceChildren(
-      h("div", { class: "chips", role: "group", "aria-label": "Choose a round" }, ...variantChips),
-      h(
-        "div",
-        { class: "setup-row" },
-        ...toggles,
-        h("label", { class: "time-pick" }, "Time ", timeSelect),
-        h(
-          "span",
-          { class: "best" },
-          best ? `Best: ${best.score}/${best.total} in ${formatTime(best.seconds)}` : `${selectItems().length} to find`,
-        ),
-        h("button", { type: "button", class: "btn ghost", onclick: () => study(false) }, deck.learn ? "Learn it first" : "Study the board"),
-        h("button", { type: "button", class: "btn primary", onclick: startOrStudy }, "Start ▸"),
-      ),
-      ...(deck.related ? [h("a", { class: "btn ghost related", href: deck.related.href }, deck.related.label)] : []),
+      ...(clickOpt
+        ? [
+            typeClickSwitch({
+              value: chosen[clickOpt.id] ? "click" : "type",
+              clickLabel: `🖱 ${clickOpt.label.replace(/ instead$/i, "")}`,
+              onChange: (v) => {
+                chosen[clickOpt.id] = v === "click";
+                remember();
+                renderSetup();
+                buildBoard();
+              },
+            }),
+          ]
+        : []),
+      ...(toggles ? [toggles] : []),
+      quizRows(...rows),
+      ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
   }
-
-  const bestKey = () =>
-    [variant.id, ...deck.options.filter((o) => options[o.id] && !o.display).map((o) => o.id)].join("+");
 
   function selectItems(): Item[] {
     let list = deck.items.filter(variant.filter);
@@ -231,6 +340,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     const token = ++buildToken;
     board?.destroy();
     board = null;
+    builtFor = wantBoard();
     playing = selectItems();
     boardHost.replaceChildren(loading);
     const b = await deck.createBoard({ container: boardHost, deck, items: playing, variant, options });
@@ -311,7 +421,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
           h("button", { type: "button", class: "btn primary", onclick: () => { studyBar.hidden = true; start(); } }, "Got it, let's play ▸"),
           firstTime
             ? h("button", { type: "button", class: "btn ghost", onclick: () => { dismissStudy(deck.id); studyBar.hidden = true; start(); } }, "Don't show this again")
-            : h("button", { type: "button", class: "btn ghost", onclick: leave }, "◂ Back"),
+            : h("button", { type: "button", class: "btn ghost", onclick: leave }, "◂ Choose a round"),
         ),
       ),
     );
@@ -336,7 +446,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     }
     for (const i of playing) board.setState(i.id, "open");
     board.setExplore(false);
-    setHint(0);
+    setHint(rules.hints === "on" ? 1 : 0);
+    lockTime(headerHost, true);
     recent.replaceChildren();
     phase = "playing";
     setup.hidden = true;
@@ -356,7 +467,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   // ---------- help (any-order games whose board offers it) ----------
   function setHint(level: number) {
     hintLevel = level;
-    hintBtn.hidden = promptMode || !board?.hint;
+    hintBtn.hidden = promptMode || !board?.hint || rules.hints === "off";
     hintBtn.disabled = level >= 2;
     hintBtn.textContent = level === 0 ? "Hint" : level === 1 ? "More help" : "Hints on";
     board?.hint?.(level, (id) => {
@@ -430,13 +541,13 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
     if (phase !== "playing" || !current || closed(id)) return;
     if (deck.judgeClick ? deck.judgeClick(id, current) : id === current.id) return accept(current);
     wrongClicks++;
-    const left = 3 - wrongClicks;
+    const left = rules.guesses - wrongClicks;
     if (left > 0) {
       // Don't name what they clicked: that would give away a later answer.
       showNote(`Not that one. ${left} ${left === 1 ? "try" : "tries"} left.`);
       return;
     }
-    // Three strikes: show where it was and move on.
+    // Out of guesses: show where it was and move on.
     const answer = current;
     revealed.add(answer.id);
     board?.setState(answer.id, "missed");

@@ -93,6 +93,8 @@ export interface DeckPrefs {
   variant?: string;
   minutes?: number;
   options?: Record<string, boolean>;
+  /** The level last picked on each round's row, by round id ("easy" | "medium" | "hard"). */
+  levels?: Record<string, string>;
 }
 
 export function loadPrefs(deck: string): DeckPrefs {

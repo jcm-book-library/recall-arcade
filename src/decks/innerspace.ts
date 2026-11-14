@@ -29,6 +29,7 @@ const rank = (i: Item) => INNER_ORDER.indexOf((i.data as unknown as ZoomItem).st
 
 export const innerSpaceDeck: Deck = {
   id: "innerspace",
+  hasHints: true, // the board has a Hint button, so Hard (no hints) is a real level
   subject: "Science",
   title: "Inner Space",
   blurb: "Start with your skin. Clear a stage and the view zooms in: cells, the cell's insides, DNA, molecules, and down to a single atom.",

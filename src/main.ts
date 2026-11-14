@@ -41,6 +41,7 @@ import { renderFlyover } from "./arcade/flyover";
 import { renderBrawl } from "./arcade/brawl/game";
 import { GAME_ROUTE } from "./arcade/brawl/names";
 import { renderIsland } from "./arcade/island";
+import { noteArrival } from "./ui/quiz-shell";
 
 // Every game in the arcade, grouped by subject on the home page (up to six each).
 const DECKS: Deck[] = [
@@ -80,6 +81,8 @@ if (import.meta.env.DEV) {
 
 const root = document.getElementById("app")!;
 let cleanup: (() => void) | void;
+// The page we were on, so a quiz's "◂ Back" can go back to the island or to the list (see noteArrival).
+let lastId: string | null = null;
 
 function route() {
   cleanup?.();
@@ -89,6 +92,8 @@ function route() {
   // "#myths/type/greek" is the address "myths" plus extra detail that the game itself reads.
   const id = location.hash.replace(/^#/, "").split("/")[0];
   const deck = DECKS.find((d) => d.id === id);
+  if (lastId !== id) noteArrival(lastId, id);
+  lastId = id;
   if (id === "pong") cleanup = renderPong(root);
   else if (id === "labyrinth") cleanup = renderLabyrinth(root);
   else if (id === "hero") cleanup = renderHeroWorkshop(root);

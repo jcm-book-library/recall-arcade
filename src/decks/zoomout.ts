@@ -18,6 +18,7 @@ const DEPTH: Record<string, number> = { sky: 1, planets: 2, solar: 3, stars: 4, 
 
 export const zoomOutDeck: Deck = {
   id: "zoomout",
+  hasHints: true, // the board has a Hint button, so Hard (no hints) is a real level
   subject: "Science",
   title: "Infinity & Beyond",
   blurb: "Start with the night sky. Then clear a stage and the view zooms out: planets, the solar system, nearby stars, the Milky Way, then the galaxies next door.",

@@ -1,6 +1,9 @@
 import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { formatTime, h } from "./dom";
+import { quizHeader, chips, roundRows, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
+import type { Level } from "../engine/types";
 
 export interface HangmanRound {
   id: string;
@@ -62,7 +65,13 @@ const BALLOON = `<svg class="hm-balloon" viewBox="0 0 120 170" role="img" aria-h
 export function renderHangman(spec: HangmanSpec) {
   return (root: HTMLElement, deck: Deck) => {
     const perGame = spec.count ?? 10;
-    const hintsOn = spec.hints !== false;
+    const canHint = spec.hints !== false;
+    // Hard is "no hints". Medium (the way it always played) keeps the plain round id as its best-score key;
+    // Hard saves under "<round>+hard".
+    let hard = false;
+    const hardLevel: Record<string, Level> = {};
+    const hintsOn = () => canHint && !hard;
+    const scoreKey = () => round.id + (hard ? "+hard" : "");
     let round = spec.rounds[0];
     let words: Item[] = [];
     let index = 0;
@@ -86,8 +95,12 @@ export function renderHangman(spec: HangmanSpec) {
     root.replaceChildren(
       h(
         "main",
-        { class: "play" },
-        h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)),
+        { class: `play quiz ${subjectClass(deck.subject)}` },
+        quizHeader({
+          deck,
+          howItWorks: `Guess the letters, with up to ${LIVES} wrong guesses.${canHint ? ` Up to ${MAX_HINTS} hints per word, but each one costs a point.` : " No hints."}`,
+          rules: [...(deck.tip ? [deck.tip] : []), h("div", { class: "qpop-levels" }, ...levelNotesFor(canHint ? ["medium", "hard"] : ["medium"], "no hints at all.").map((t) => h("p", {}, t)))],
+        }),
         setup,
         game,
         results,
@@ -98,40 +111,35 @@ export function renderHangman(spec: HangmanSpec) {
     document.addEventListener("keydown", onKey);
 
     function renderSetup() {
-      const pool = deck.items.filter(round.filter);
-      const best = bestFor(deck.id, round.id);
       setup.replaceChildren(
-        h(
-          "div",
-          { class: "chips", role: "group", "aria-label": "Choose a round" },
-          ...spec.rounds.map((r) =>
-            h(
-              "button",
-              {
-                type: "button",
-                class: r.id === round.id ? "chip on" : "chip",
-                "aria-pressed": String(r.id === round.id),
-                onclick: () => {
-                  round = r;
-                  renderSetup();
-                },
-              },
-              r.starter ? `★ ${r.label}` : r.label,
-            ),
-          ),
-        ),
-        h(
-          "div",
-          { class: "setup-row" },
-          h(
-            "p",
-            { class: "muted tl-how" },
-            `${round.note ? `${round.note} ` : ""}${Math.min(perGame, uniqueWords(pool))} words from ${uniqueWords(pool)}. Guess the letters, with up to ${LIVES} wrong guesses.${hintsOn ? ` Up to ${MAX_HINTS} hints per word, but each one costs a point.` : " No hints."}`,
-          ),
-          h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total}` : ""),
-          h("button", { type: "button", class: "btn primary", onclick: start }, "Start ▸"),
-        ),
+        roundRows({
+          deckId: deck.id,
+          rounds: spec.rounds.map((r) => {
+            const pool = deck.items.filter(r.filter);
+            const best = bestFor(deck.id, r.id + (hardLevel[r.id] === "hard" ? "+hard" : ""));
+            const text = `${r.note ? `${r.note} ` : ""}${Math.min(perGame, uniqueWords(pool))} words from ${uniqueWords(pool)}.`;
+            return { id: r.id, label: r.label, starter: r.starter, desc: best ? `${text} Best: ${best.score}/${best.total}.` : text };
+          }),
+          current: round.id,
+          available: canHint ? ["medium", "hard"] : ["medium"],
+          levelOf: (id) => hardLevel[id] ?? "medium",
+          onLevel: (id, l) => {
+            hardLevel[id] = l;
+            pick(id);
+          },
+          onPick: (id) => pick(id),
+          onStart: (id, l) => {
+            pick(id, false);
+            hard = l === "hard";
+            start();
+          },
+        }),
+        ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
       );
+    }
+    function pick(id: string, redraw = true) {
+      round = spec.rounds.find((r) => r.id === id) ?? round;
+      if (redraw) renderSetup();
     }
 
     function start() {
@@ -166,7 +174,7 @@ export function renderHangman(spec: HangmanSpec) {
       // Spoken version of the blanks (the visual boxes are hidden from screen readers).
       const spoken = h("p", { class: "hm-sr", "aria-live": "polite", role: "status" });
       const hintBtn = h("button", { type: "button", class: "btn ghost hm-hint", onclick: useHint });
-      hintBtn.hidden = !hintsOn;
+      hintBtn.hidden = !hintsOn();
       const next = h("button", { type: "button", class: "btn primary" }, index + 1 < total ? "Next word ▸" : "See results ▸");
       next.hidden = true;
       next.addEventListener("click", advance);
@@ -313,9 +321,9 @@ export function renderHangman(spec: HangmanSpec) {
       const seconds = Math.round((Date.now() - startedAt) / 1000);
       const score = log.reduce((s, l) => s + l.points, 0);
       const total = words.length * FULL_MARKS;
-      const prev = bestFor(deck.id, round.id);
+      const prev = bestFor(deck.id, scoreKey());
       recordGame(
-        { deck: deck.id, variant: round.id, score, total, seconds, date: Date.now() },
+        { deck: deck.id, variant: scoreKey(), score, total, seconds, date: Date.now() },
         log.filter((l) => l.solved).map((l) => l.item.id),
         log.filter((l) => !l.solved).map((l) => l.item.id),
       );
@@ -328,7 +336,7 @@ export function renderHangman(spec: HangmanSpec) {
           h(
             "div",
             {},
-            h("p", { class: "verdict" }, score === total ? (hintsOn ? "Perfect game, no hints." : "Perfect game.") : `${solved} of ${log.length} words solved in ${formatTime(seconds)}.`),
+            h("p", { class: "verdict" }, score === total ? (hintsOn() ? "Perfect game, no hints." : "Perfect game.") : `${solved} of ${log.length} words solved in ${formatTime(seconds)}.`),
             h("p", { class: "muted" }, !prev || score / total > prev.score / prev.total ? "That's your best for this round." : `Your best is ${prev.score}/${prev.total}.`),
           ),
           h(
