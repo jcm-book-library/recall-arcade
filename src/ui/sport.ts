@@ -8,13 +8,20 @@
 //   more    "Who won more?"       two names, pick the one with more wins ("Who was faster?" for 100 m records).
 //   order   "In order"            five names, put them in the order they first won.
 //
-// Scores are saved under the variant "<list>-<mode>-<range>", for example "nrl-year-s2000".
-import type { Deck } from "../engine/types";
+// Two more ways to play are Fill the List ("listany" and "listorder", built in ui/fill-list.ts). Unlike the others
+// they have Easy, Medium and Hard, and a time limit.
+//
+// Scores are saved under the variant "<list>-<mode>-<range>", for example "nrl-year-s2000". Fill the List adds
+// "+easy" or "+hard" for those levels (Medium keeps the plain key), for example "f1-listany-s2000+easy".
+import type { Deck, Level } from "../engine/types";
 import { normalize } from "../engine/matcher";
+import { namesMatch, withinOne } from "../engine/names";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
-import { quizHeader, topicTabs, segmented, quizRow, quizRows, levelStatesFor, subjectClass } from "./quiz-shell";
-import { levelNotesFor } from "../engine/levels";
+import { quizHeader, topicTabs, segmented, quizRow, quizRows, levelStatesFor, subjectClass, sectionLabel, lockTime } from "./quiz-shell";
+import { LEVELS, levelSuffix } from "../engine/levels";
+import { runFillList, type FillResult } from "./fill-list";
+import { buildFillData, defaultFillMinutes, singular, FILL_TIME_CHOICES, type FillData } from "./sport-fill";
 import { SPORT_LISTS, type SportChamp, type SportList, type SportWin } from "../decks/sport-data";
 import { ENT_LISTS } from "../decks/entertainment-data";
 import {
@@ -49,26 +56,12 @@ function shuffle<T>(list: T[]): T[] {
   return a;
 }
 
-/** True when a and b are the same, or differ by one letter (insert, delete or change). */
-export function withinOne(a: string, b: string): boolean {
-  if (a === b) return true;
-  if (Math.abs(a.length - b.length) > 1) return false;
-  let i = 0;
-  while (i < a.length && i < b.length && a[i] === b[i]) i++;
-  if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);
-  return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
-}
+export { withinOne };
 
 /** Does the typed text name this champion? Case, accents and punctuation never matter; a single
  *  slip in a long name is forgiven. `loose` also allows a surname that other champions share. */
 export function champAccepts(c: SportChamp, text: string, loose: boolean): boolean {
-  const t = normalize(text);
-  if (!t) return false;
-  const names = loose ? [...c.accept, ...(c.loose ?? [])] : c.accept;
-  return names.some((n) => {
-    const m = normalize(n);
-    return m === t || (t.length >= 7 && m.length >= 7 && withinOne(t, m));
-  });
+  return namesMatch(loose ? [...c.accept, ...(c.loose ?? [])] : c.accept, text);
 }
 
 const sentence = (names: string[]) =>
@@ -109,6 +102,11 @@ export function renderSport(root: HTMLElement, deck: Deck) {
   let listId = listIds[0];
   let mode: ModeId = "year";
   const liveMode = () => mode;
+  const isFillList = (m: ModeId) => m === "listany" || m === "listorder";
+  /** The level picked on each Fill the List row (Medium unless the player says otherwise). */
+  const fillLevel: Partial<Record<ModeId, Level>> = {};
+  /** The time limit the player chose for Fill the List (null: use the default for the size of the list). */
+  let pickedMinutes: number | null = null;
   let rangeId = LIST_CONFIG[listId].ranges[0].id;
   let startedAt = 0;
   let cleanups: (() => void)[] = [];
@@ -129,13 +127,44 @@ export function renderSport(root: HTMLElement, deck: Deck) {
       results,
     ),
   );
-  headerHost.replaceChildren(
-    quizHeader({
-      deck,
-      howItWorks: listIds.length > 1 ? "Pick a list, a range of years and a way to play." : "Pick a range of years and a way to play.",
-      rules: [h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t)))],
-    }),
-  );
+  /** The header. The ⏱ time limit shows only while a Fill the List row is the picked one (it is the only way to play with a clock). */
+  function renderHead() {
+    headerHost.replaceChildren(
+      quizHeader({
+        deck,
+        howItWorks: listIds.length > 1 ? "Pick a list, a range of years and a way to play." : "Pick a range of years and a way to play.",
+        rules: [
+          h(
+            "div",
+            { class: "qpop-levels" },
+            h("p", {}, "Fill the List shows the whole list with the answers blank. Type a name and every row it belongs to fills in (Any Order), or fill it row by row (In Order, where Tab skips)."),
+            h("p", {}, "Easy: the first letter of each answer is shown. Medium: a Hint button (free, and the results count how many you used). Hard: no hints."),
+            h("p", {}, "The other ways to play are Medium only. The ⏱ time limit is for Fill the List."),
+          ),
+        ],
+        time: isFillList(mode)
+          ? {
+              value: fillMinutes(),
+              choices: FILL_TIME_CHOICES,
+              onChange: (m) => {
+                pickedMinutes = m;
+              },
+            }
+          : undefined,
+      }),
+    );
+  }
+  /** The time limit in minutes for the picked Fill the List row. */
+  function fillMinutes(): number {
+    if (pickedMinutes !== null) return pickedMinutes;
+    return defaultFillMinutes(fillData(), mode === "listorder");
+  }
+  let fillCache: { key: string; data: FillData } | null = null;
+  function fillData(): FillData {
+    const key = `${listId}|${rangeId}`;
+    if (fillCache?.key !== key) fillCache = { key, data: buildFillData(listId, LISTS[listId], cfgOf(), rangeOf()) };
+    return fillCache.data;
+  }
 
   const cfgOf = () => LIST_CONFIG[listId];
   const rangeOf = () => cfgOf().ranges.find((r) => r.id === rangeId) ?? cfgOf().ranges[0];
@@ -183,6 +212,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
     const mode = which ?? liveMode();
     const c = context();
     const bigger = "There are not enough results in this range for this way of playing. Pick a bigger range.";
+    if (isFillList(mode)) return fillData().rows.filter((r) => !r.off).length >= 3 ? null : bigger;
     if (mode === "year") return c.wins.length >= 3 ? null : bigger;
     if (mode === "fill") return [...counts(c.wins).values()].some((n) => n >= 2) ? null : bigger;
     if (mode === "decade") return blocksOf(c).length ? null : bigger;
@@ -199,38 +229,47 @@ export function renderSport(root: HTMLElement, deck: Deck) {
   // ---------- setup: the shared quiz page ----------
   // Topic tabs = the lists. A range of years is a small switch under them. Each way to play is a row.
   // Only Medium exists (there are no hints to add or take away), so Easy and Hard stay dashed.
+  function pickRow(m: ModeId, redraw = true) {
+    // The time limit belongs to a way of playing on a list, so changing either goes back to the default for its size.
+    if (m !== mode) pickedMinutes = null;
+    mode = m;
+    if (redraw) renderSetup();
+  }
   function renderSetup(focusAfter?: string) {
     const cfg = cfgOf();
     if (!cfg.modes.includes(mode)) mode = cfg.modes[0];
     if (!cfg.ranges.some((r) => r.id === rangeId)) rangeId = cfg.ranges[0].id;
-    const rows = cfg.modes.map((m, i) => {
+    const rows: Node[] = [];
+    cfg.modes.forEach((m, i) => {
+      if (m === "listany") rows.push(sectionLabel("Fill the List"));
       const why = problem(m);
-      const key = `${listId}-${m}-${rangeId}`;
-      const best = bestFor(deck.id, key);
-      const text = why ?? modeNote(m);
-      const states = levelStatesFor(deck.id, key);
+      const fill = isFillList(m);
+      const lv: Level = fill ? fillLevel[m] ?? "medium" : "medium";
+      const roundKey = `${listId}-${m}-${rangeId}`;
+      const best = bestFor(deck.id, roundKey + levelSuffix(lv));
+      const note = fill ? fillNote(m) : modeNote(m);
+      const text = why ?? note;
+      // Fill the List has all three levels. The other ways to play are Medium only.
+      const states = levelStatesFor(deck.id, roundKey, fill ? LEVELS : ["medium"]);
       const row = quizRow({
-        badge: states.medium === "done" ? "done" : m === "year" ? "star" : i + 1,
+        badge: states.medium === "done" && !fill ? "done" : m === "year" ? "star" : i + 1,
         name: modeLabel(m),
         desc: best ? `${text} Best: ${best.score}/${best.total}.` : text,
         levels: states,
-        selected: "medium",
+        selected: lv,
         current: m === mode,
-        onPick: () => {
-          mode = m;
-          renderSetup();
-        },
-        onLevel: () => {
-          mode = m;
-          renderSetup();
+        onPick: () => pickRow(m),
+        onLevel: (l) => {
+          if (fill) fillLevel[m] = l;
+          pickRow(m);
         },
         onStart: () => {
-          mode = m;
+          pickRow(m);
           start();
         },
       });
       if (why !== null) row.querySelector<HTMLButtonElement>(".qgo")!.disabled = true;
-      return row;
+      rows.push(row);
     });
     setup.replaceChildren(
       ...(listIds.length > 1
@@ -241,6 +280,7 @@ export function renderSport(root: HTMLElement, deck: Deck) {
               note: cfg.about,
               onPick: (id) => {
                 listId = id;
+                pickedMinutes = null;
                 renderSetup("list");
               },
             }),
@@ -252,15 +292,24 @@ export function renderSport(root: HTMLElement, deck: Deck) {
         value: rangeId,
         onPick: (id) => {
           rangeId = id;
+          pickedMinutes = null;
           renderSetup("range");
         },
       }),
       quizRows(...rows),
     );
+    renderHead();
     if (focusAfter) {
       const sel = focusAfter === "list" ? ".qtab.on" : ".qseg button.on";
       setup.querySelector<HTMLElement>(sel)?.focus();
     }
+  }
+
+  /** The line under a Fill the List row: what it is, and how long the clock is. */
+  function fillNote(m: ModeId): string {
+    const own = cfgOf().notes?.[m];
+    const mins = m === mode && pickedMinutes !== null ? pickedMinutes : defaultFillMinutes(fillData(), m === "listorder");
+    return `${own ?? MODE_INFO[m].note} Clock: ${mins ? `${mins} min` : "no limit"}.`;
   }
 
   const modeLabel = (m: ModeId) => (listId === "sprint" && m === "more" ? "Who was faster?" : MODE_INFO[m].label);
@@ -295,11 +344,54 @@ export function renderSport(root: HTMLElement, deck: Deck) {
     game.hidden = false;
     startedAt = Date.now();
     const c = context();
-    if (mode === "year") runYear(c);
+    lockTime(headerHost, isFillList(mode));
+    if (isFillList(mode)) runFillRound(c);
+    else if (mode === "year") runYear(c);
     else if (mode === "fill") runFill(c);
     else if (mode === "decade") runDecade(c);
     else if (mode === "more") runMore(c);
     else runOrder(c);
+  }
+
+  /** Fill the List (ui/fill-list.ts): this screen supplies the rows, the level and the time, and saves the score. */
+  function runFillRound(c: Ctx) {
+    const order = mode === "listorder";
+    const level: Level = fillLevel[mode] ?? "medium";
+    const data = fillData();
+    const variant = `${listId}-${mode}-${rangeId}${levelSuffix(level)}`;
+    const minutes = fillMinutes();
+    const noun = c.cfg.count;
+    const stop = runFillList(game, {
+      mode: order ? "order" : "any",
+      level,
+      heading: `${LIST_CONFIG[listId].chip} · ${c.range.label} · ${level[0].toUpperCase()}${level.slice(1)}`,
+      keyHeading: listId === "sprint" ? "Date" : c.cfg.period,
+      whoWord: c.cfg.who,
+      nounOne: singular(noun),
+      nounMany: noun,
+      rangePhrase: c.range.phrase,
+      minutes,
+      rows: data.rows,
+      outside: data.outside,
+      champs: data.champs,
+      save: (r: FillResult) => {
+        const prev = bestFor(deck.id, variant);
+        recordGame({ deck: deck.id, variant, score: r.score, total: r.total, seconds: r.seconds, date: Date.now() }, r.found, r.missed);
+        const share = r.total ? r.score / r.total : 0;
+        const beaten = !prev || share > prev.score / prev.total || (share === prev.score / prev.total && r.seconds < prev.seconds);
+        return { best: beaten ? "That's your best for this round." : `Your best is ${prev!.score}/${prev!.total}.` };
+      },
+      onAgain: start,
+      onSetup: () => {
+        clearGame();
+        game.hidden = true;
+        setup.hidden = false;
+        lockTime(headerHost, false);
+        renderSetup();
+        setup.querySelector<HTMLElement>(".qrow.current .qgo")?.focus();
+      },
+    });
+    cleanups.push(stop);
   }
 
   function finish(f: Finish) {

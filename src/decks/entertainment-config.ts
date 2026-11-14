@@ -13,7 +13,7 @@ const OSCAR_ABOUT =
   "The year is the year of the ceremony. The film is from the year before. The first six ceremonies covered two years.";
 
 const oscarPeople = (id: string, chip: string, award: string, who: string): ListConfig => ({
-  id, chip, modes: ["year", "fill", "decade", "more", "order"], ranges: OSCAR_YEARS,
+  id, chip, modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"], ranges: OSCAR_YEARS,
   period: "Year", who, whoPlural: `${who}s`,
   ask: (y) => `Who won ${award} at the ${y} Oscars?`,
   more: `Who won ${award} more often?`, verb: "won", count: `${award} Oscars`, firstWord: "first win", block: 10,
@@ -23,7 +23,7 @@ const oscarPeople = (id: string, chip: string, award: string, who: string): List
 
 export const ENT_LIST_CONFIG: Record<string, ListConfig> = {
   oscar_picture: {
-    id: "oscar_picture", chip: "Best Picture", modes: ["year", "decade"], ranges: OSCAR_YEARS,
+    id: "oscar_picture", chip: "Best Picture", modes: ["year", "decade", "listany", "listorder"], ranges: OSCAR_YEARS,
     period: "Year", who: "film", whoPlural: "films",
     ask: (y) => `Which film won Best Picture at the ${y} Oscars?`,
     more: "", verb: "won", count: "Best Picture Oscars", firstWord: "win", block: 10,
@@ -34,7 +34,7 @@ export const ENT_LIST_CONFIG: Record<string, ListConfig> = {
   oscar_actress: oscarPeople("oscar_actress", "Best Actress", "Best Actress", "actress"),
   oscar_director: oscarPeople("oscar_director", "Best Director", "Best Director", "director"),
   logie: {
-    id: "logie", chip: "Gold Logies", modes: ["year", "fill", "decade", "more", "order"],
+    id: "logie", chip: "Gold Logies", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(2000), between(1980, 1999), before(1980), ALL],
     period: "Year", who: "person", whoPlural: "people",
     ask: (y) => `Who won the Gold Logie in ${y}?`,
@@ -43,23 +43,27 @@ export const ENT_LIST_CONFIG: Record<string, ListConfig> = {
     blockAsk: (span) => `Who won the Gold Logie in ${span}?`,
   },
   h100: {
-    id: "h100", chip: "Hottest 100 number ones", modes: ["year", "decade"],
+    id: "h100", chip: "Hottest 100 number ones", modes: ["year", "decade", "listany", "listorder"],
     ranges: [since(2010), between(2000, 2009), before(2000), ALL],
     period: "Year", who: "song", whoPlural: "songs",
     ask: (y) => `Which song was number one in the Hottest 100 for ${y}?`,
     more: "", verb: "won", count: "number ones", firstWord: "first win", block: 10,
     about: "Triple J's yearly countdown, voted by listeners. Type the song, not the band. The band shows after you answer.",
     blockAsk: (span) => `Which songs were number one in ${span}?`,
+    notes: {
+      listany: "Type a song or its artist and every number one it fits fills in. The other one shows beside it.",
+      listorder: "Fill each year's number one, newest first. The song or the artist both count.",
+    },
   },
   h100x: {
-    id: "h100x", chip: "All-time and special countdowns", modes: ["year", "fill"], ranges: [ALL],
+    id: "h100x", chip: "All-time and special countdowns", modes: ["year", "fill", "listany", "listorder"], ranges: [ALL],
     period: "Year", who: "song", whoPlural: "songs",
     ask: (y) => `Which song was number one in the special countdown of ${y}?`,
     more: "", verb: "won", count: "special countdowns", firstWord: "first win", block: 10,
     about: "A small list of all-time, decade and album countdowns. One of them counted albums, and the answer is an album.",
   },
   mf: {
-    id: "mf", chip: "Miles Franklin", modes: ["year", "decade"],
+    id: "mf", chip: "Miles Franklin", modes: ["year", "decade", "listany", "listorder"],
     ranges: [since(2000), between(1980, 1999), before(1980), ALL],
     period: "Year", who: "book", whoPlural: "books",
     ask: (y) => `Which book won the Miles Franklin Award in ${y}?`,

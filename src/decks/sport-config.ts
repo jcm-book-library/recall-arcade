@@ -3,7 +3,9 @@
 
 import { ENT_DECK_LISTS, ENT_LIST_CONFIG } from "./entertainment-config";
 
-export type ModeId = "year" | "fill" | "decade" | "more" | "order";
+// "listany" and "listorder" are Fill the List (ui/fill-list.ts). They are new ids, so the older "fill"
+// (Fill in their years) keeps its saved scores: "<list>-listany-<range>" and "<list>-listorder-<range>".
+export type ModeId = "year" | "fill" | "decade" | "more" | "order" | "listany" | "listorder";
 
 export interface SportRange {
   id: string;
@@ -54,7 +56,7 @@ const before = (y: number) => r(`b${y}`, `Before ${y}`, 0, y - 1, `before ${y}`)
 
 const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
   nrl: {
-    id: "nrl", chip: "NRL premiers", modes: ["year", "fill", "decade", "more", "order"],
+    id: "nrl", chip: "NRL premiers", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(2000), between(1970, 1999), before(1970), ALL(0)],
     period: "Year", who: "club", whoPlural: "clubs",
     ask: (y) => `Who won the NRL premiership in ${y}?`,
@@ -62,7 +64,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "Premiers of the Sydney competition and, since 1998, the NRL. Years go back to 1908.",
   },
   afl: {
-    id: "afl", chip: "AFL premiers", modes: ["year", "fill", "decade", "more", "order"],
+    id: "afl", chip: "AFL premiers", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(2000), between(1970, 1999), before(1970), ALL(0)],
     period: "Year", who: "club", whoPlural: "clubs",
     ask: (y) => `Who won the AFL premiership in ${y}?`,
@@ -70,7 +72,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "Premiers of the VFL and then the AFL (the league changed its name in 1990). Years go back to 1897.",
   },
   epl: {
-    id: "epl", chip: "English champions", modes: ["year", "fill", "decade", "more", "order"],
+    id: "epl", chip: "English champions", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(1993), between(1950, 1992), before(1950), ALL(0)],
     period: "Season", who: "club", whoPlural: "clubs",
     ask: (s) => `Who were the English champions in ${s}?`,
@@ -78,7 +80,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "Champions of England's top division. It was called the Premier League from 1993. There was no season during the wars.",
   },
   cl: {
-    id: "cl", chip: "Champions League", modes: ["year", "fill", "decade", "more", "order"],
+    id: "cl", chip: "Champions League", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(2000), between(1980, 1999), before(1980), ALL(0)],
     period: "Season", who: "club", whoPlural: "clubs",
     ask: (s) => `Who won the Champions League (European Cup) in ${s}?`,
@@ -86,7 +88,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "The European Cup began in 1955–56. It became the Champions League in 1992–93.",
   },
   wc: {
-    id: "wc", chip: "World Cup", modes: ["year", "fill", "decade", "more", "order"],
+    id: "wc", chip: "World Cup", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(1990), between(1950, 1989), before(1950), ALL(0)],
     period: "Year", who: "country", whoPlural: "countries",
     ask: (y) => `Who won the men's World Cup in ${y}?`,
@@ -94,7 +96,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "Winners of the men's FIFA World Cup. There was no tournament in 1942 or 1946.",
   },
   f1: {
-    id: "f1", chip: "F1 world champions", modes: ["year", "fill", "decade", "more", "order"],
+    id: "f1", chip: "F1 world champions", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(2000), between(1980, 1999), before(1980), ALL(0)],
     period: "Year", who: "driver", whoPlural: "drivers",
     ask: (y) => `Who was the Formula 1 world champion in ${y}?`,
@@ -102,7 +104,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "Drivers' world champions since the championship began in 1950.",
   },
   bathurst: {
-    id: "bathurst", chip: "Bathurst 1000", modes: ["year", "fill", "decade", "more", "order"],
+    id: "bathurst", chip: "Bathurst 1000", modes: ["year", "fill", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(2000), between(1980, 1999), before(1980), ALL(0)],
     period: "Year", who: "driver", whoPlural: "drivers",
     ask: (y) => `Who won the Bathurst 1000 in ${y}? Name either driver.`,
@@ -110,7 +112,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "Each car has two or three drivers. Name any one of them and you are right. 1960 to 1962 were held at Phillip Island.",
   },
   olympics: {
-    id: "olympics", chip: "Olympic hosts", modes: ["year", "decade", "more", "order"],
+    id: "olympics", chip: "Olympic hosts", modes: ["year", "decade", "more", "order", "listany", "listorder"],
     ranges: [since(1980), between(1920, 1979), before(1920), ALL(0)],
     period: "Year", who: "city", whoPlural: "cities",
     ask: (y) => `Which city hosted the Olympic Games in ${y}?`,
@@ -118,7 +120,7 @@ const SPORT_LIST_CONFIG: Record<string, ListConfig> = {
     about: "Summer Games from 1896. Years with no Games are shown as cancelled and never asked. 1956 had two hosts, and either one is right.",
   },
   sprint: {
-    id: "sprint", chip: "100 m records", modes: ["year", "more", "order"],
+    id: "sprint", chip: "100 m records", modes: ["year", "more", "order", "listany", "listorder"],
     ranges: [since(1980), between(1950, 1979), before(1950), ALL(0)],
     period: "Record", who: "runner", whoPlural: "runners",
     ask: (l) => l,
@@ -146,5 +148,7 @@ export const MODE_INFO: Record<ModeId, { label: string; note: string }> = {
   fill: { label: "Fill in their years", note: "A champion appears. Tap every year they won. A right tap scores, a wrong tap loses a point." },
   decade: { label: "Decade blocks", note: "A block of years appears. Type winners in any order, and each name fills every year it won." },
   more: { label: "Who won more?", note: "Two names appear. Pick the one with more wins. 10 questions." },
+  listany: { label: "Fill the List: Any Order", note: "The whole list is shown, newest first. Type a name and every row it belongs to fills in at once." },
+  listorder: { label: "Fill the List: In Order", note: "Fill the list row by row from the newest. Tab skips a row and you can come back to it." },
   order: { label: "In order", note: "Five names appear. Put them in the order they first won. Drag, tap or use the keyboard." },
 };
