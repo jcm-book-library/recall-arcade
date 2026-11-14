@@ -57,6 +57,11 @@ export interface FillRow {
   hint?: string;
   /** A row with no answer ("Cancelled", "Stripped", "Not held"): shown dimmed, never counted. */
   off?: string;
+  /**
+   * Rows that share a group are interchangeable In Order: two events in 1969, two periods with the same span. When
+   * the highlighted row is one of them, naming any other unfilled row of its group fills that row instead.
+   */
+  group?: string;
 }
 
 export interface FillResult {
@@ -88,6 +93,14 @@ export interface FillOptions {
   rows: FillRow[];
   outside?: FillRow[];
   champs: FillChamp[];
+  /**
+   * For answers that are long phrases (Big Moments): decides which champions a typed text names, instead of the
+   * accepted-names lists. `ids` are exact matches; `loose` also fit but so do other champions (accepted In Order,
+   * where the row is known, and refused in Any Order).
+   */
+  matchChamps?: (text: string) => { ids: string[]; loose: string[] };
+  /** What to tell the player when a name fits more than one row in Any Order. Default: "Type the full name." */
+  moreHint?: string;
   /** Called once when the round ends. Records the score and says how it compares with the best. */
   save: (r: FillResult) => { best: string };
   onAgain: () => void;
@@ -290,7 +303,14 @@ export function runFillList(host: HTMLElement, o: FillOptions): () => void {
 
   // ---------- matching ----------
   /** The name that `text` matches for this row, or null. `loose` also allows shared surnames. */
+  let matchCache: { text: string; res: { ids: string[]; loose: string[] } } | null = null;
   function nameFor(r: FillRow, text: string, loose: boolean): string | null {
+    if (o.matchChamps) {
+      if (matchCache?.text !== text) matchCache = { text, res: o.matchChamps(text) };
+      const { ids, loose: lo } = matchCache.res;
+      for (const id of r.who) if (ids.includes(id) || (loose && lo.includes(id))) return champs.get(id)?.name ?? r.shown;
+      return null;
+    }
     for (const id of r.who) {
       const c = champs.get(id);
       if (c && namesMatch(loose ? [...c.accept, ...(c.loose ?? [])] : c.accept, text)) return c.name;
@@ -330,7 +350,7 @@ export function runFillList(host: HTMLElement, o: FillOptions): () => void {
     } else {
       const looseOnly = askIdx.some((i) => nameFor(rows[i], text, true));
       const outside = (o.outside ?? []).map((r) => nameFor(r, text, false)).find(Boolean);
-      if (looseOnly) say(`More than one ${o.whoWord} fits that. Type the full name.`, "ok");
+      if (looseOnly) say(`More than one ${o.whoWord} fits that. ${o.moreHint ?? "Type the full name."}`, "ok");
       else if (outside) say(`${outside} is on the full list, but not ${o.rangePhrase}.`, "ok");
       else say(`“${text}” isn't in this list.`, "bad");
       nope();
@@ -401,16 +421,34 @@ export function runFillList(host: HTMLElement, o: FillOptions): () => void {
   function submitOrder() {
     const text = input.value.trim();
     if (!normalize(text) || cur < 0) return;
-    const r = rows[cur];
-    const n = nameFor(r, text, true);
+    let r = rows[cur];
+    let n = nameFor(r, text, true);
+    // Rows in the same group are interchangeable: the answer may belong to another unfilled row of the group.
+    if (!n && r.group) {
+      for (const i of askIdx) {
+        const x = rows[i];
+        if (x === r || x.group !== r.group || filled.has(x.id)) continue;
+        n = nameFor(x, text, true);
+        if (n) {
+          r = x;
+          break;
+        }
+      }
+    }
     if (n) {
+      const was = rows[cur];
       input.value = "";
       skipped.delete(r.id);
+      if (r !== was) showUpTo(Math.max(reached, rows.indexOf(r)));
       fillRow(r, "hit");
       updateCount();
       say(`${r.key}: ${r.shown}`, "good");
       if (filled.size === total) {
         timers.push(window.setTimeout(() => end(false), 900));
+        return;
+      }
+      if (r !== was) {
+        setCurrent(cur, true);
         return;
       }
       const fresh = askIdx.find((i) => i > reached);

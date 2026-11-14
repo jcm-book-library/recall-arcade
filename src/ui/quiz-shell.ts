@@ -131,6 +131,32 @@ export interface QuizHeaderOptions {
 
 const timeText = (m: number) => (m ? `${m} min` : "No limit");
 
+/** The ⏱ time limit: a small select inside a label. */
+function timeControl(time: NonNullable<QuizHeaderOptions["time"]>): HTMLElement {
+  const choices = [...new Set([...time.choices, time.value])].sort((a, b) => (a || 1e9) - (b || 1e9));
+  const select = h(
+    "select",
+    {
+      "aria-label": "Time limit",
+      onchange: (e) => time.onChange(Number((e.target as HTMLSelectElement).value)),
+    },
+    ...choices.map((m) => {
+      const opt = h("option", { value: String(m) }, timeText(m));
+      opt.selected = m === time.value;
+      return opt;
+    }),
+  );
+  return h("label", { class: "qtool qtime" }, h("span", { "aria-hidden": "true" }, "⏱ "), select);
+}
+
+/** Shows, changes or removes the ⏱ time limit on a header that is already on the page (null removes it). */
+export function setHeaderTime(header: HTMLElement, time: QuizHeaderOptions["time"] | null) {
+  const tools = header.querySelector(".qtools");
+  if (!tools) return;
+  tools.querySelector(".qtime")?.remove();
+  if (time) tools.append(timeControl(time));
+}
+
 /** Rule 1: ◂ Back and ⌂ Island on the left, subject and title in the middle, ⓘ Rules and ⏱ time on the right. */
 export function quizHeader(o: QuizHeaderOptions): HTMLElement {
   const back = quizBack(o.deck, o.back);
@@ -173,22 +199,7 @@ export function quizHeader(o: QuizHeaderOptions): HTMLElement {
   });
 
   const tools = h("div", { class: "qtools" }, rulesBtn);
-  if (o.time) {
-    const choices = [...new Set([...o.time.choices, o.time.value])].sort((a, b) => (a || 1e9) - (b || 1e9));
-    const select = h(
-      "select",
-      {
-        "aria-label": "Time limit",
-        onchange: (e) => o.time!.onChange(Number((e.target as HTMLSelectElement).value)),
-      },
-      ...choices.map((m) => {
-        const opt = h("option", { value: String(m) }, timeText(m));
-        opt.selected = m === o.time!.value;
-        return opt;
-      }),
-    );
-    tools.append(h("label", { class: "qtool qtime" }, h("span", { "aria-hidden": "true" }, "⏱ "), select));
-  }
+  if (o.time) tools.append(timeControl(o.time));
 
   head.append(
     // The two side columns are equal widths (see the CSS), which keeps the title and the line under it exactly centred.

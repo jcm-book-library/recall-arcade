@@ -74,12 +74,40 @@ if its results need a different detail line, add a case in `sport-fill.ts` (`bui
 - In Order shows only the rows reached so far; Tab and Shift+Tab move between the skipped rows and the next new
   one, wrapping round, and a click returns to a skipped row.
 
-**What wave 3b needs** (Box Office, Leaders, Eras, Big Moments, Who Lived When): write a function like
-`buildFillData` for each, returning `rows` and `champs`. The engine needs nothing new for lists where one name
-answers one row or many rows. Two things it does not do yet: Box Office's "a film drops into its rank" (rows are
-ranks with the film as the answer, so it should work as plain rows, with `key` the rank), and rows that are spans
-of time (Eras), which would use `key` for the span. Hide the Sport-only parts by building a different screen, and
-call `runFillList` from it with its own `save`.
+## Fill the List: wave 3b (14 Nov 2026)
+Now also on **Box Office, Leaders & Changemakers, Eras & Dynasties, Big Moments and Who Lived When?**, as a "Fill the List"
+section (a range switch and the two rows) under each quiz's own rows. Same rules as 3a (Easy first letters, Medium free
+Hint, Hard none, ⏱ time limit, Tab skips). Saved under new keys only: `<round>-listany` / `<round>-listorder`, plus
+`+easy` / `+hard` (for example `au-listany+easy`, `films-listorder`, `modern-listorder`). Existing keys are untouched.
+
+**Files:** `src/ui/fill-quiz.ts` (the page section: rows, range switch, level, time, save; any page can use it),
+`src/ui/fill-sources.ts` (rows for Leaders, Eras, Big Moments, People), `src/ui/boxoffice.ts` (its own rows),
+`src/decks/name-forms.ts` (people's short names), `src/decks/period-aliases.ts`, `src/engine/event-match.ts` and
+`src/decks/history-aliases.ts` (Big Moments). Wiring: `Deck.fillList` (standard page, `play.ts`), `TimelineText.fill`
+(`timeline.ts`), `entFrame(..., withFill)` (Entertainment pages), and `eras.ts`.
+
+**Per quiz**
+- **Box Office:** rows are ranks, #1 at the top; key `#1`; answer the film or franchise (the data's `accept` short forms);
+  detail "2019 · US$2.94 bn". Range = the Films / Franchises tab (top 50 / top 20).
+- **Leaders:** one row per term, newest first (later start, then later end), key the years as the deck writes them
+  ("2022–", "27 BC–AD 14"). A person with two terms fills both rows. Detail: "31st Prime Minister", or the role and
+  country. Rounds are the deck's own. Short names (surname) count when unique in the round, else are loose.
+- **Eras:** one row per period, latest start first, key the span ("c. 1955–1975", "27 BC–AD 476", "1970–"); detail "Era or
+  dynasty" / "War or movement". Ranges: All of History, Ancient and Medieval, 1300 to Today. Aliases are generated
+  (drop dynasty / empire / period / era / age when no other period shares the short form) plus a hand list.
+- **Big Moments:** one row per event, newest first, key the year; ranges are the four main eras (the "Inside a period"
+  rounds are not included). Matching: see `event-match.ts` (key words, synonyms folded, the event's own words plus a
+  hand alias list plus its year; words that fit several events ask for more in Any Order). Events in one year show
+  "N events" and are interchangeable In Order.
+- **Who Lived When?:** people by birth, latest first, key the lifespan; detail "who they were". Surnames count when unique
+  in the round.
+
+**Engine additions (generic):** `FillRow.group` (rows interchangeable In Order), `FillOptions.matchChamps` and `moreHint`
+(a custom matcher for phrase answers), and the typo allowance in `names.ts` never forgives a different number.
+`quiz-shell.ts` gained `setHeaderTime`.
+
+**Adding it to another quiz:** build a `FillSource` (rounds, each with `build()` returning rows and champs), call
+`createFillSection`, put `...fill.nodes(n)` in the setup page and `fill.unpick()` in the page's own row handlers.
 
 ## Later (wave 4)
 Merge the duplicate "Put in order" and "Place on a timeline" versions into one shared engine each, then
