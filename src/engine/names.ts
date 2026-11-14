@@ -12,12 +12,16 @@ export function withinOne(a: string, b: string): boolean {
   return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
 }
 
-/** Does `text` match any of `names`? One slip is allowed when both are 7 or more letters long. */
+/**
+ * Does `text` match any of `names`? One slip is allowed when both are 7 or more letters long, but never in a
+ * number: "Zootopia" is not "Zootopia 2", and "Apollo 11" is not "Apollo 12".
+ */
 export function namesMatch(names: string[], text: string): boolean {
   const t = normalize(text);
   if (!t) return false;
   return names.some((n) => {
     const m = normalize(n);
-    return m === t || (t.length >= 7 && m.length >= 7 && withinOne(t, m));
+    if (m === t) return true;
+    return t.length >= 7 && m.length >= 7 && t.replace(/\D/g, "") === m.replace(/\D/g, "") && withinOne(t, m);
   });
 }

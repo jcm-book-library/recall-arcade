@@ -1,4 +1,6 @@
 // The core building blocks every game shares.
+import type { FillSource } from "../ui/fill-quiz";
+
 // A "deck" is a set of things to learn; a "board" is how they are drawn.
 
 export interface Item {
@@ -164,4 +166,6 @@ export interface Deck {
   hasHints?: boolean;
   /** Changes to the Easy / Medium / Hard recipe for this quiz. See LevelTweak. */
   levels?: DeckLevels;
+  /** Adds the two Fill the List rows to this quiz's setup page (ui/fill-quiz.ts). Used by the standard page (play.ts). */
+  fillList?: FillSource;
 }

@@ -1,6 +1,7 @@
 import type { Deck } from "../engine/types";
 import { renderTimeline, type Era } from "../ui/timeline";
 import { EVENT_ITEMS, PERIODS, type Period } from "./periods";
+import { momentsFill } from "../ui/fill-sources";
 
 const BASE_ERAS: Era[] = [
   {
@@ -85,5 +86,6 @@ export const historyDeck: Deck = {
     renderTimeline(root, deck, ERAS, {
       ask: "When did this happen?",
       how: "Drag the marker to the year you think each event happened.",
+      fill: momentsFill(deck, ERAS),
     }),
 };

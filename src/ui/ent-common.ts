@@ -5,6 +5,7 @@ import { h } from "./dom";
 import type { Deck } from "../engine/types";
 import { bestFor } from "../engine/storage";
 import { levelNotesFor } from "../engine/levels";
+import { fillRules } from "./fill-quiz";
 import { quizHeader, quizRow, quizRows, levelStatesFor, subjectClass } from "./quiz-shell";
 
 export function shuffle<T>(list: T[]): T[] {
@@ -41,28 +42,29 @@ export interface Chip {
  * The page for an Entertainment screen: the shared quiz header (rule 1) over the three panels
  * (setup, the game, the results). Returns the panels.
  */
-export function entFrame(root: HTMLElement, deck: Deck, howItWorks: string, back?: { href: string; label?: string }) {
+export function entFrame(root: HTMLElement, deck: Deck, howItWorks: string, back?: { href: string; label?: string }, withFill = false) {
   const setup = h("div", { class: "setup sp-setup" });
   const game = h("div", { class: "sp-game" });
   game.hidden = true;
   const results = h("div", { class: "results" });
   results.hidden = true;
+  const header = quizHeader({
+    deck,
+    howItWorks,
+    rules: [h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t))), ...(withFill ? [fillRules()] : [])],
+    back,
+  });
   root.replaceChildren(
     h(
       "main",
       { class: `play quiz ${subjectClass(deck.subject)}` },
-      quizHeader({
-        deck,
-        howItWorks,
-        rules: [h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t)))],
-        back,
-      }),
+      header,
       setup,
       game,
       results,
     ),
   );
-  return { setup, game, results };
+  return { header, setup, game, results };
 }
 
 export interface WayRow {

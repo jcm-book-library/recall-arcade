@@ -8,6 +8,8 @@
 import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
+import { createFillSection, fillRules } from "./fill-quiz";
+import { erasFill } from "./fill-sources";
 import { quizHeader, quizRow, quizRows, chips, levelStatesFor, subjectClass } from "./quiz-shell";
 import { levelNotesFor } from "../engine/levels";
 import { scale } from "./timeline";
@@ -141,23 +143,21 @@ export function renderEras(root: HTMLElement, deck: Deck) {
   game.hidden = true;
   const results = h("div", { class: "results" });
   results.hidden = true;
-  root.replaceChildren(
-    h(
-      "main",
-      { class: `play quiz ${subjectClass(deck.subject)}` },
-      quizHeader({
-        deck,
-        howItWorks: "Put eras in order, place them on a timeline, or say which era a moment belongs to.",
-        rules: [
-          "Rounds are short, and every round ends with the true dates, so the list sinks in.",
-          h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium", "hard"], "7 cards to put in order instead of 5 (Eras in Order only).").map((t) => h("p", {}, t))),
-        ],
-      }),
-      setup,
-      game,
-      results,
-    ),
-  );
+  const header = quizHeader({
+    deck,
+    howItWorks: "Put eras in order, place them on a timeline, or say which era a moment belongs to.",
+    rules: [
+      "Rounds are short, and every round ends with the true dates, so the list sinks in.",
+      h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium", "hard"], "7 cards to put in order instead of 5 (Eras in Order only).").map((t) => h("p", {}, t))),
+      fillRules(),
+    ],
+  });
+  root.replaceChildren(h("main", { class: `play quiz ${subjectClass(deck.subject)}` }, header, setup, game, results));
+  const fillGame = h("div", { class: "fl-host" });
+  fillGame.hidden = true;
+  game.after(fillGame);
+  // Fill the List (ui/fill-quiz.ts, rows built in ui/fill-sources.ts)
+  const fill = createFillSection({ deck, source: erasFill(deck), setup, game: fillGame, hide: [results], redraw: () => renderSetup(), header });
 
   const periods = deck.items.map(periodOf);
   const whichPool = EVENT_ITEMS.filter((e) => e.data!.period);
@@ -201,17 +201,20 @@ export function renderEras(root: HTMLElement, deck: Deck) {
         desc: best ? `${text} Best: ${best.score}/${best.total}.` : text,
         levels: states,
         selected: isOrder && hard ? "hard" : "medium",
-        current: r.id === roundId,
+        current: r.id === roundId && !fill.picked(),
         onPick: () => {
+          fill.unpick();
           roundId = r.id;
           renderSetup();
         },
         onLevel: (l) => {
+          fill.unpick();
           roundId = r.id;
           if (isOrder) hard = l === "hard";
           renderSetup();
         },
         onStart: () => {
+          fill.unpick();
           roundId = r.id;
           start();
         },
@@ -234,6 +237,7 @@ export function renderEras(root: HTMLElement, deck: Deck) {
           ]
         : []),
       quizRows(...rows),
+      ...fill.nodes(ROUNDS.length + 1),
       ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
   }
@@ -1002,5 +1006,8 @@ export function renderEras(root: HTMLElement, deck: Deck) {
   }
 
   renderSetup();
-  return () => document.removeEventListener("keydown", onKey);
+  return () => {
+    fill.stop();
+    document.removeEventListener("keydown", onKey);
+  };
 }

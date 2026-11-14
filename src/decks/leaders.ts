@@ -15,6 +15,7 @@
 // Cleveland (22nd and 24th) and Trump (45th and 47th) are one person each.
 import type { Deck, Item, Variant } from "../engine/types";
 import { createLeaderBoard } from "../boards/leaderBoard";
+import { leadersFill } from "../ui/fill-sources";
 import { ORIGINAL_ROUNDS, NEW_LEADERS } from "./leaders-data";
 
 /** The original 104 lines: name | clue | other accepted answers | old list (au, uk or us). */
@@ -129,12 +130,15 @@ const originals: Item[] = ORIGINAL_TABLE.split("\n").map((line, i) => {
   const [name, clue, aliases, oldList] = line.split("|");
   // UK lines only had their years; say what the job was.
   const text = oldList === "uk" ? `Prime Minister · ${clue.trim()}` : clue.trim();
+  // Which office and country, for Fill the List's detail column (ui/fill-sources.ts).
+  const office = oldList === "us" ? "President" : "Prime Minister";
+  const country = oldList === "au" ? "Australia" : oldList === "uk" ? "UK" : "US";
   return {
     id: `pm${i}`,
     name: name.trim(),
     aliases: aliases ? aliases.split(";").map((a) => a.trim()).filter(Boolean) : [],
     tags: [roundOf[i]],
-    data: { clue: text },
+    data: { clue: text, office, country },
   };
 });
 
@@ -206,3 +210,6 @@ export const pmDeck: Deck = {
       portraits: !options.noportraits,
     }),
 };
+
+// Fill the List (ui/fill-quiz.ts): the rounds are the deck's own, so it is wired up once the deck exists.
+pmDeck.fillList = leadersFill(pmDeck);

@@ -12,6 +12,7 @@ import { h } from "./dom";
 import { BOX_AS_OF, BOX_FILMS, BOX_FRANCHISES } from "../decks/entertainment-data";
 import { billions, entFrame, wayRows, matchesAny, orderPuzzle, resultsPanel, shuffle, type OrderCard, type RoundResult } from "./ent-common";
 import { topicTabs } from "./quiz-shell";
+import { createFillSection, leadLetter, type FillBuild, type FillSource } from "./fill-quiz";
 import "./sport.css";
 import "./entertainment.css";
 
@@ -48,7 +49,8 @@ export function renderBoxOffice(root: HTMLElement, deck: Deck) {
   let list: ListId = "films";
   let startedAt = 0;
 
-  const { setup, game, results } = entFrame(root, deck, "Pick the film or franchise that made more money, or put them in order.");
+  const { header, setup, game, results } = entFrame(root, deck, "Pick the film or franchise that made more money, or put them in order.", undefined, true);
+  const fill = createFillSection({ deck, source: boxFill(() => list), setup, game, hide: [results], redraw: () => renderSetup(), header });
 
   // The Top 10 is only about films, whichever list tab is showing.
   const listFor = (m: Mode) => (m === "top10" ? "films" : list);
@@ -72,17 +74,20 @@ export function renderBoxOffice(root: HTMLElement, deck: Deck) {
       }),
       wayRows({
         deckId: deck.id,
-        current: mode,
+        current: fill.picked() ? "" : mode,
         ways: MODES.map((m) => ({ id: m.id, name: m.label, desc: m.id === "top10" ? `${m.note} (Always films.)` : m.note, key: `${m.id}-${listFor(m.id)}` })),
         onPick: (id) => {
+          fill.unpick();
           mode = id as Mode;
           renderSetup();
         },
         onStart: (id) => {
+          fill.unpick();
           mode = id as Mode;
           start();
         },
       }),
+      ...fill.nodes(MODES.length + 1),
     );
   }
 
@@ -341,5 +346,37 @@ export function renderBoxOffice(root: HTMLElement, deck: Deck) {
   }
 
   renderSetup();
-  return () => {};
+  return () => fill.stop();
+}
+
+// ---------- Fill the List ----------
+// Rows are ranks, #1 at the top (a ranking has no "newest first"). The answer is the film (or franchise), accepted
+// under its short forms (the data's `accept` list: "Endgame"); the detail is the year (or film count) and the gross.
+const bn = (n: number) => `US$${(n / 1e9).toFixed(2)} bn`;
+
+function boxBuild(entries: Entry[], noun: [string, string], top: number): FillBuild {
+  const ranked = [...entries].sort((a, b) => b.gross - a.gross);
+  return {
+    rows: ranked.map((e, i) => ({ id: e.id, key: `#${i + 1}`, who: [e.id], shown: e.name, detail: `${e.sub} · ${bn(e.gross)}`, hint: leadLetter(e.name) })),
+    outside: [],
+    champs: ranked.map((e) => ({ id: e.id, name: e.name, accept: e.accept })),
+    keyHeading: "Rank",
+    whoWord: noun[0],
+    nounOne: noun[0],
+    nounMany: noun[1],
+    rangePhrase: `in the top ${top}`,
+  };
+}
+
+function boxFill(listNow: () => ListId): FillSource {
+  const rounds = {
+    films: { id: "films", label: "Top 50 Films", build: () => boxBuild(FILMS, ["film", "films"], FILMS.length) },
+    franchises: { id: "franchises", label: "Top 20 Franchises", build: () => boxBuild(FRANCHISES, ["franchise", "franchises"], FRANCHISES.length) },
+  };
+  return {
+    name: "Box Office",
+    rounds: () => [rounds[listNow()]],
+    anyNote: "Every rank is shown blank. Type a film and it drops into its rank.",
+    orderNote: "Fill the ranks one at a time, #1 first. Tab skips.",
+  };
 }

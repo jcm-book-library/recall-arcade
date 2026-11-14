@@ -1,6 +1,7 @@
 import type { Deck, Item } from "../engine/types";
 import { renderTimeline, type Era } from "../ui/timeline";
 import { PEOPLE_TABLE } from "./people-data";
+import { peopleFill } from "../ui/fill-sources";
 
 const ERAS: Era[] = [
   { id: "famous", label: "Famous Faces", starter: true, breaks: [-500, 1, 1000, 1500, 1800, 2025], ticks: [-500, 1, 1000, 1500, 1800, 2025] },
@@ -44,5 +45,6 @@ export const peopleDeck: Deck = {
     renderTimeline(root, deck, ERAS, {
       ask: "When did they live?",
       how: "Drag the marker to any year in their lifetime. Close still scores.",
+      fill: peopleFill(deck, ERAS),
     }),
 };

@@ -3,6 +3,7 @@ import { bestFor, recordGame } from "../engine/storage";
 import { h } from "./dom";
 import { quizHeader, quizRow, quizRows, sectionLabel, chips, levelStatesFor, subjectClass } from "./quiz-shell";
 import { levelNotesFor } from "../engine/levels";
+import { createFillSection, fillRules, type FillSource } from "./fill-quiz";
 import type { Period } from "../decks/periods";
 import { periodYears } from "../decks/periods";
 import "./eras.css";
@@ -91,6 +92,8 @@ export interface TimelineText {
   top?: string;
   /** Optional: the label of the "Change era" button on the results screen. */
   again?: string;
+  /** Optional: adds the two Fill the List rows to the setup screen (ui/fill-quiz.ts). */
+  fill?: FillSource;
 }
 
 export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text: TimelineText) {
@@ -113,24 +116,21 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
   const results$ = h("div", { class: "results" });
   results$.hidden = true;
 
-  root.replaceChildren(
-    h(
-      "main",
-      { class: `play quiz ${subjectClass(deck.subject)}` },
-      quizHeader({
-        deck,
-        howItWorks: text.how,
-        rules: [
-          "Up to 100 points each for being close. Where an event belongs to a period, landing anywhere inside that period always earns at least 70.",
-          h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t))),
-        ],
-        back: deck.back,
-      }),
-      setup,
-      game,
-      results$,
-    ),
-  );
+  const header = quizHeader({
+    deck,
+    howItWorks: text.how,
+    rules: [
+      "Up to 100 points each for being close. Where an event belongs to a period, landing anywhere inside that period always earns at least 70.",
+      h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t))),
+      ...(text.fill ? [fillRules()] : []),
+    ],
+    back: deck.back,
+  });
+  root.replaceChildren(h("main", { class: `play quiz ${subjectClass(deck.subject)}` }, header, setup, game, results$));
+  const fillGame = h("div", { class: "fl-host" });
+  fillGame.hidden = true;
+  game.after(fillGame);
+  const fill = text.fill ? createFillSection({ deck, source: text.fill, setup, game: fillGame, hide: [results$], redraw: () => renderSetup(), header }) : null;
 
   const poolOf = (e: Era) => deck.items.filter((i) => (e.filter ? e.filter(i) : e.id === "all" || i.tags.includes(e.id)));
 
@@ -165,16 +165,19 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
               desc: best ? `${desc} Best: ${best.score}/${best.total}.` : desc,
               levels: states,
               selected: "medium",
-              current: e.id === era.id,
+              current: e.id === era.id && !fill?.picked(),
               onPick: () => {
+                fill?.unpick();
                 era = e;
                 renderSetup();
               },
               onLevel: () => {
+                fill?.unpick();
                 era = e;
                 renderSetup();
               },
               onStart: () => {
+                fill?.unpick();
                 era = e;
                 start();
               },
@@ -182,6 +185,7 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
           ];
         }),
       ),
+      ...(fill ? fill.nodes(eras.length + 1) : []),
       ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
   }
@@ -413,5 +417,5 @@ export function renderTimeline(root: HTMLElement, deck: Deck, eras: Era[], text:
   }
 
   renderSetup();
-  return () => {};
+  return () => fill?.stop();
 }

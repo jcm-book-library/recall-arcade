@@ -4,6 +4,7 @@ import { bestFor, gamesFor, loadPrefs, recordGame, savePrefs, weakSpots } from "
 import { currentTrack } from "../engine/progress";
 import { LEVELS, doneLevels, levelNotes, levelSuffix, resolveLevels, type ResolvedLevel } from "../engine/levels";
 import { formatTime, h } from "./dom";
+import { createFillSection, fillRules } from "./fill-quiz";
 import { chips, lockTime, subjectClass, optionToggles, quizHeader, quizRow, quizRows, sectionLabel, titleCase, typeClickSwitch, type LevelStates } from "./quiz-shell";
 
 type Phase = "setup" | "study" | "playing" | "over";
@@ -122,22 +123,21 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   const recent = h("ol", { class: "recent", "aria-label": "Recently named" });
   const side = h("aside", { class: "side" }, h("h3", {}, "Progress"), groups, h("h3", {}, "Just named"), recent);
 
+  const playBody = h(
+    "div",
+    { class: "play-body" },
+    h("div", { class: "board-wrap" }, boardHost, deck.tip ? h("p", { class: "tip" }, deck.tip) : null),
+    side,
+  );
+  // Fill the List (ui/fill-quiz.ts), for the quizzes that have it: two more rows on the setup page, played in place of the board.
+  const fillGame = h("div", { class: "fl-host" });
+  fillGame.hidden = true;
+  const fill = deck.fillList
+    ? createFillSection({ deck, source: deck.fillList, setup, game: fillGame, hide: [playBody, results], redraw: () => renderSetup(), lockOnly: headerHost })
+    : null;
+
   root.replaceChildren(
-    h(
-      "main",
-      { class: `play quiz ${subjectClass(deck.subject)}` },
-      headerHost,
-      setup,
-      studyBar,
-      hud,
-      results,
-      h(
-        "div",
-        { class: "play-body" },
-        h("div", { class: "board-wrap" }, boardHost, deck.tip ? h("p", { class: "tip" }, deck.tip) : null),
-        side,
-      ),
-    ),
+    h("main", { class: `play quiz ${subjectClass(deck.subject)}` }, headerHost, setup, studyBar, hud, results, fillGame, playBody),
   );
 
   /** Some games can be played by typing or by clicking, set by an option. */
@@ -188,8 +188,8 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
       quizHeader({
         deck,
         howItWorks: howText(),
-        rules: [...(deck.tip ? [deck.tip] : []), levelLines],
-        time: {
+        rules: [...(deck.tip ? [deck.tip] : []), levelLines, ...(fill ? [fillRules()] : [])],
+        time: (fill?.picked() ? fill.timeOption() : null) ?? {
           value: minutes,
           choices: TIME_CHOICES,
           onChange: (m) => {
@@ -242,6 +242,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
           selected: "easy",
           startLabel: "Look ▸",
           onStart: async () => {
+            fill?.unpick();
             await ensureBoard();
             study(false);
           },
@@ -267,18 +268,21 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
           desc: best ? `${count} Best: ${best.score}/${best.total} in ${formatTime(best.seconds)}.` : count,
           levels: states,
           selected: lv,
-          current: v.id === variant.id,
+          current: v.id === variant.id && !fill?.picked(),
           onPick: () => {
+            fill?.unpick();
             selectRow(v, lv);
             renderSetup();
             buildBoard();
           },
           onLevel: (l) => {
+            fill?.unpick();
             selectRow(v, l);
             renderSetup();
             ensureBoard();
           },
           onStart: async () => {
+            fill?.unpick();
             selectRow(v, lv);
             renderHeader();
             await ensureBoard();
@@ -325,6 +329,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
         : []),
       ...(toggles ? [toggles] : []),
       quizRows(...rows),
+      ...(fill ? fill.nodes(deck.variants.length + 1) : []),
       ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
     );
   }
@@ -781,6 +786,7 @@ export function renderPlay(root: HTMLElement, deck: Deck) {
   buildBoard();
 
   return () => {
+    fill?.stop();
     document.removeEventListener("keydown", clickKeys);
     clearInterval(ticker);
     clearTimeout(pending);
