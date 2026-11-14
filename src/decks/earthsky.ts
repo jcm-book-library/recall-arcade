@@ -32,6 +32,7 @@ const count = (n: number) => items.filter((i) => rank(i) <= n).length;
 
 export const earthSkyDeck: Deck = {
   id: "earthsky",
+  hasHints: true, // the board has a Hint button, so Hard (no hints) is a real level
   subject: "Science",
   title: "Earth & Sky",
   blurb: "Start at the centre of the Earth and travel up: the plates, a volcano, the rock cycle, the water cycle, the clouds, and the weather.",

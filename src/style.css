@@ -92,6 +92,9 @@ button, input, select { font: inherit; color: inherit; }
 .subject { display: grid; gap: 12px; }
 .subject-head { display: flex; align-items: baseline; gap: 12px; border-bottom: 2px solid var(--line); padding-bottom: 6px; }
 .subject-head h2 { margin: 0; font: 400 1.05rem var(--font-pixel); letter-spacing: 0.04em; }
+/* each subject's heading wears its colour (the tokens come from the subject class, see ui/quiz-shell.css) */
+.subject.subj .subject-head { border-bottom-color: var(--s-strong); }
+.subject.subj .subject-head h2 { color: var(--s-strong); }
 .subject-count { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .soon-card { border-style: dashed; box-shadow: none; background: transparent; }
 .soon-card:hover { transform: none; box-shadow: none; border-color: var(--line); }

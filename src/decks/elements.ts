@@ -111,6 +111,8 @@ export const elementsDeck: Deck = {
     { id: "54", label: "First 54", minutes: 7, filter: (i) => z(i) <= 54 },
     { id: "all", label: "All 118", minutes: 12, filter: () => true },
   ],
+  // Easy shows each element's symbol on its square.
+  levels: { easy: { options: { symbols: true }, note: "Shows each element's symbol." } },
   options: [
     { id: "symbols", label: "Show symbols", hint: "Easier: each square shows its symbol (Fe, Na...)", default: false },
   ],

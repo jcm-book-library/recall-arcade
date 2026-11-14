@@ -1,6 +1,7 @@
 import type { Deck } from "../engine/types";
 import { gamesFor } from "../engine/storage";
 import { h } from "./dom";
+import { subjectClass, titleCase } from "./quiz-shell";
 import { GAME_BLURB, GAME_NAME, GAME_ROUTE } from "../arcade/brawl/names";
 import { ARCADE_OPENS_AT, CHALLENGES, SUBJECT_NAMES, challengeDone, clearedSubjects, rememberTrack, trackFor } from "../engine/progress";
 
@@ -35,7 +36,7 @@ function card(deck: Deck) {
     "a",
     { class: "card", href: `#${deck.id}` },
     h("span", { class: "card-kicker" }, `${deck.items.length} ${deck.noun}`),
-    h("h2", {}, deck.title),
+    h("h2", {}, titleCase(deck.title)),
     h("p", {}, deck.blurb),
     challengeLine(deck),
     h(
@@ -69,7 +70,7 @@ function arcadeCard(game: (typeof ARCADE_GAMES)[number], cleared: number) {
     "a",
     { class: `card${open ? "" : " locked-card"}`, href: `#${game.id}` },
     h("span", { class: "card-kicker" }, open ? game.kicker ?? "Arcade game" : `🔒 Opens after challenges in ${need} subjects`),
-    h("h2", {}, game.title),
+    h("h2", {}, titleCase(game.title)),
     h("p", {}, game.blurb),
     open ? null : h("span", { class: "card-challenge" }, `${left} more ${left === 1 ? "subject" : "subjects"} to go. You can still have a go.`),
     h("span", { class: "card-foot card-foot-end" }, h("span", { class: "card-go" }, open ? "Play ▸" : "Preview ▸")),
@@ -84,7 +85,7 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
     const built = decks.filter((d) => d.subject === s.name && !d.hidden);
     return h(
       "section",
-      { class: "subject", "aria-label": s.name },
+      { class: `subject ${subjectClass(s.name)}`, "aria-label": s.name },
       h(
         "div",
         { class: "subject-head" },
@@ -138,7 +139,7 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
       ...sections,
       h(
         "section",
-        { class: "subject", "aria-label": "The Arcade" },
+        { class: `subject ${subjectClass("The Arcade")}`, "aria-label": "The Arcade" },
         h(
           "div",
           { class: "subject-head" },

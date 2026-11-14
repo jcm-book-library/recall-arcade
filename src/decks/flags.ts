@@ -31,6 +31,7 @@ export const flagsDeck: Deck = {
   placeholder: "Which country is this?",
   items,
   variants: countriesDeck.variants.map((v) => ({ ...v, minutes: v.id === "world" ? 15 : v.minutes })),
+  levels: { hard: { options: { territories: true }, note: "Adds the territories." } },
   options: [{ ...countriesDeck.options[0], hint: "Adds flags of territories such as Greenland, Puerto Rico and Hong Kong" }],
   applyOptions: countriesDeck.applyOptions,
   progressGroups: REGIONS,

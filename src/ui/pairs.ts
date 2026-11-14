@@ -5,6 +5,8 @@ import type { Deck, Item } from "../engine/types";
 import { bestFor, recordGame } from "../engine/storage";
 import { loadPictures, type Picture } from "../data/pictures";
 import { formatTime, h } from "./dom";
+import { quizHeader, chips, roundRows, subjectClass } from "./quiz-shell";
+import { levelNotesFor } from "../engine/levels";
 
 type PictureSet = Parameters<typeof loadPictures>[0];
 
@@ -118,8 +120,12 @@ export function renderPairs(spec: PairsSpec) {
     root.replaceChildren(
       h(
         "main",
-        { class: "play" },
-        h("div", { class: "play-top" }, h("a", { class: "back", href: "#" }, "◂ Arcade"), h("h1", { class: "play-title" }, deck.title)),
+        { class: `play quiz ${subjectClass(deck.subject)}` },
+        quizHeader({
+          deck,
+          howItWorks: spec.how,
+          rules: [...(deck.tip ? [deck.tip] : []), h("div", { class: "qpop-levels" }, ...levelNotesFor(["medium"]).map((t) => h("p", {}, t)))],
+        }),
         setup,
         game,
         results,
@@ -134,48 +140,42 @@ export function renderPairs(spec: PairsSpec) {
     const boardCount = () => Math.max(1, Math.min(spec.boards ?? 4, Math.floor(poolOf().length / pairsPerBoard())));
 
     function renderSetup() {
-      const pool = poolOf();
-      const best = bestFor(deck.id, round.id);
-      const size = memory
-        ? `${pairsPerBoard()} pairs${pool.length > pairsPerBoard() ? ` from ${pool.length}` : ""}.`
-        : `${boardCount()} rounds of ${pairsPerBoard()} pairs, picked from ${pool.length}.`;
-      const startBtn = h("button", { type: "button", class: "btn primary" }, "Start ▸");
-      startBtn.addEventListener("click", () => begin(startBtn));
       setup.replaceChildren(
-        h(
-          "div",
-          { class: "chips", role: "group", "aria-label": "Choose a round" },
-          ...spec.rounds.map((r) =>
-            h(
-              "button",
-              {
-                type: "button",
-                class: r.id === round.id ? "chip on" : "chip",
-                "aria-pressed": String(r.id === round.id),
-                onclick: () => {
-                  round = r;
-                  renderSetup();
-                },
-              },
-              r.starter ? `★ ${r.label}` : r.label,
-            ),
-          ),
-        ),
-        h(
-          "div",
-          { class: "setup-row" },
-          h("p", { class: "muted tl-how" }, `${spec.how} ${size}${round.note ? ` ${round.note}` : ""}`),
-          h("span", { class: "best" }, best ? `Best: ${best.score}/${best.total} in ${formatTime(best.seconds)}` : ""),
-          startBtn,
-        ),
+        roundRows({
+          deckId: deck.id,
+          rounds: spec.rounds.map((r) => {
+            const pool = deck.items.filter(r.filter);
+            const per = Math.min(r.pairs ?? spec.pairs ?? (memory ? 8 : 6), pool.length);
+            const boards = Math.max(1, Math.min(spec.boards ?? 4, Math.floor(pool.length / per)));
+            const size = memory ? `${per} pairs${pool.length > per ? ` from ${pool.length}` : ""}.` : `${boards} rounds of ${per} pairs, picked from ${pool.length}.`;
+            const best = bestFor(deck.id, r.id);
+            const text = `${size}${r.note ? ` ${r.note}` : ""}`;
+            return { id: r.id, label: r.label, starter: r.starter, desc: best ? `${text} Best: ${best.score}/${best.total} in ${formatTime(best.seconds)}.` : text };
+          }),
+          current: round.id,
+          levelOf: () => "medium",
+          onLevel: (id) => pick(id),
+          onPick: (id) => pick(id),
+          onStart: (id) => {
+            pick(id, false);
+            void begin(document.activeElement instanceof HTMLButtonElement ? document.activeElement : null);
+          },
+        }),
+        ...(deck.related ? [chips([{ label: deck.related.label, href: deck.related.href }])!] : []),
       );
+    }
+    function pick(id: string, redraw = true) {
+      round = spec.rounds.find((r) => r.id === id) ?? round;
+      if (redraw) renderSetup();
     }
 
     /** Start, waiting a moment for the pictures if they haven't arrived. */
-    async function begin(btn: HTMLButtonElement) {
+    async function begin(btn: HTMLButtonElement | null) {
       if (!picsDone) {
-        btn.disabled = true;
-        btn.textContent = "Loading pictures…";
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Loading pictures…";
+        }
         await Promise.race([picsLoading, new Promise((r) => later(() => r(null), 5000))]);
         if (!alive) return;
       }

@@ -1,0 +1,138 @@
+/* THE SHARED QUIZ PAGE: the look in docs/quiz-standard-mockup.html. Used by quiz-shell.ts.
+   Everything here starts with "q" (or "subj") so it can't clash with the rest of the site. */
+
+/* ---------- subject colour (rule 2) ----------
+   Each subject sets two colours (--tint and --deep) on the element that carries the class.
+   Light mode: a pale tint background with deep text. Dark mode: the reverse.
+   The four --s-* tokens are what the page uses. They are defined on the SAME element as the subject class
+   (not on :root): a variable that says var(--tint) only finds --tint on the element that defines it,
+   so defining --s-bg on :root would see no tint at all. */
+.subj { --s-bg: var(--tint); --s-ink: var(--deep); --s-strong: var(--deep); --s-on-strong: var(--tint); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .subj { --s-bg: var(--deep); --s-ink: var(--tint); --s-strong: var(--tint); --s-on-strong: var(--deep); }
+}
+:root[data-theme="dark"] .subj { --s-bg: var(--deep); --s-ink: var(--tint); --s-strong: var(--tint); --s-on-strong: var(--deep); }
+.subj-geo { --tint: #efe2d3; --deep: #6b4423; }
+.subj-sci { --tint: #dbe8fb; --deep: #1c4f9c; }
+.subj-his { --tint: #fde3cc; --deep: #9a4508; }
+.subj-tra { --tint: #f9d8d6; --deep: #a12a24; }
+.subj-nat { --tint: #dcefd6; --deep: #2f6b2a; }
+.subj-mus { --tint: #fadbe9; --deep: #a3306b; }
+.subj-spo { --tint: #fbf0bf; --deep: #7a6000; }
+.subj-ent { --tint: #d3efec; --deep: #146b66; }
+.subj-arc { --tint: #e6dcf7; --deep: #5a3496; }
+
+.quiz { display: grid; gap: 14px; }
+
+/* ---------- the header (rule 1) ---------- */
+.qhead {
+  position: relative;
+  background: var(--s-bg); color: var(--s-ink); border-radius: 10px; padding: 12px 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px 14px; align-items: center;
+}
+/* equal side columns keep the title (and the line under it) exactly centred */
+.qnav { display: flex; gap: 8px; justify-self: start; }
+.qnavbtn, .qtool {
+  font-family: var(--font-pixel); font-size: 0.75rem; line-height: 1.2; background: transparent; color: var(--s-ink);
+  border: 2px solid currentColor; border-radius: var(--r); padding: 6px 10px; cursor: pointer; white-space: nowrap; text-decoration: none;
+}
+.qtool { font-family: var(--font-body); font-size: 0.9rem; font-weight: 700; }
+.qnavbtn:hover, .qtool:hover { background: var(--s-strong); color: var(--s-on-strong); }
+.qtitle { font-size: clamp(1.35rem, 3.4vw, 1.7rem); font-weight: 700; margin: 0; text-align: center; line-height: 1.2; text-wrap: balance; max-width: 30ch; }
+.qtitle small { display: block; font-family: var(--font-pixel); font-size: 0.65rem; letter-spacing: 0.1em; opacity: 0.8; font-weight: 400; text-transform: uppercase; margin-bottom: 2px; }
+.qtools { display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+.qtime { display: inline-flex; align-items: center; }
+.qtime:hover { background: transparent; color: var(--s-ink); }
+.qtime select { background: transparent; border: 0; padding: 0; font: inherit; font-weight: 700; color: inherit; cursor: pointer; }
+.qtime select option { color: var(--ink); background: var(--panel); }
+.qtime select:disabled { opacity: 0.6; cursor: default; }
+.qhow { grid-column: 1 / -1; text-align: center; font-size: 0.95rem; margin: 0; opacity: 0.92; text-wrap: balance; }
+.qhead :focus-visible { outline-color: var(--s-strong); }
+
+/* the ⓘ Rules pop-over */
+.qpop {
+  position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; width: min(400px, 100%);
+  background: var(--panel); color: var(--ink); border: 2px solid var(--s-strong); border-radius: 10px; padding: 12px 14px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25); display: grid; gap: 8px; font-size: 0.95rem;
+}
+.qpop p { margin: 0; }
+.qpop-title { font: 0.75rem var(--font-pixel); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.qpop .qpop-close { justify-self: end; color: var(--ink); }
+.qpop .qpop-close:hover { background: var(--s-strong); color: var(--s-on-strong); }
+
+/* ---------- topics (rule 4) ---------- */
+.qtabs { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 8px; }
+.qtab { font: inherit; font-weight: 700; padding: 10px; border-radius: var(--r); border: 2px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.qtab:hover { border-color: var(--s-strong); }
+.qtab.on { background: var(--s-strong); color: var(--s-on-strong); border-color: var(--s-strong); }
+.qtabnote { text-align: center; color: var(--muted); margin: 6px 0 0; }
+
+/* ---------- type or click (rule 8) and option toggles ---------- */
+.qswitchrow { display: flex; justify-content: center; }
+.qseg { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--panel); }
+.qseg button { font: inherit; border: 0; background: transparent; cursor: pointer; padding: 6px 18px; font-weight: 700; font-size: 0.9rem; color: var(--muted); }
+.qseg button.on { background: var(--s-strong); color: var(--s-on-strong); }
+.qopts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.qopt { cursor: pointer; }
+.qopt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.qopt span { display: inline-block; font-weight: 700; font-size: 0.9rem; padding: 6px 14px; border-radius: 999px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); }
+.qopt span::before { content: "○ "; color: var(--muted); }
+.qopt input:checked + span { background: var(--s-bg); color: var(--s-ink); border-color: var(--s-strong); }
+.qopt input:checked + span::before { content: "● "; color: var(--s-strong); }
+.qopt input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.qopt.locked { cursor: default; }
+.qopt.locked span { opacity: 0.85; }
+
+/* ---------- rows (rule 5) ---------- */
+.qrows { display: grid; gap: 10px; }
+.qsection { font-family: var(--font-pixel); font-size: 0.8rem; letter-spacing: 0.08em; color: var(--muted); margin: 10px 0 0; text-transform: uppercase; text-align: center; }
+.qrows > .qsection { text-align: left; }
+.qrow { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.qrow.learn { border-style: dashed; }
+.qrow.current { border-color: var(--s-strong); }
+.qtext { cursor: pointer; }
+.qbadge { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-pixel); font-size: 0.8rem; border: 2px solid var(--ink); }
+.qbadge.star { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-size: 1rem; }
+.qbadge.done { background: var(--found); color: #fff; border-color: var(--found); }
+.qbadge.learn { border-style: dashed; font-size: 1rem; }
+.qname { font-weight: 700; margin: 0; }
+.qdesc { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+/* Easy / Medium / Hard: three equal buttons */
+.qdiff { display: grid; grid-template-columns: repeat(3, 74px); gap: 6px; }
+.qd { font: inherit; font-size: 0.8rem; font-weight: 700; text-align: center; padding: 6px 0; border-radius: var(--r); border: 2px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.qd:hover:not(:disabled) { border-color: var(--s-strong); }
+.qd.sel { border-color: var(--s-strong); background: var(--s-bg); color: var(--s-ink); }
+.qd.got::after { content: " ✓"; color: var(--found); }
+.qd.sel.got::after { color: inherit; }
+.qd.none { color: var(--muted); opacity: 0.6; border-style: dashed; cursor: default; background: transparent; }
+.qgo { font: inherit; font-weight: 700; background: var(--accent); color: var(--on-accent); border: 0; border-radius: var(--r); padding: 9px 16px; min-width: 92px; cursor: pointer; }
+.qgo:hover { filter: brightness(1.08); }
+
+/* ---------- special challenges and extras (rule 7) ---------- */
+.qcards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.qcard { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; align-content: space-between; }
+.qbottom { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.qextras { display: grid; gap: 8px; }
+.qchips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.qchip { font: inherit; font-weight: 700; padding: 6px 14px; border-radius: 999px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; cursor: pointer; }
+.qchip:hover { border-color: var(--s-strong); background: var(--s-bg); color: var(--s-ink); }
+
+/* ---------- a phone: everything stacks (rows: levels in a row of three under the name, Start full width) ---------- */
+@media (max-width: 820px) {
+  .qhead { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .qnav { justify-self: center; }
+  .qtools { justify-content: center; }
+  .qpop { left: 0; right: 0; width: auto; }
+  .qrow { grid-template-columns: 40px minmax(0, 1fr); gap: 10px 12px; }
+  .qdiff { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .qgo { grid-column: 1 / -1; }
+  .qcards { grid-template-columns: 1fr; }
+  .qbottom { display: grid; }
+  .qbottom .qdiff { grid-column: auto; }
+  .qtabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* the level lines in the Rules pop-over */
+.qpop-levels { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+.qpop-levels p { font-size: 0.9rem; color: var(--muted); }

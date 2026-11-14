@@ -11,6 +11,7 @@ import { BUILDINGS, HALL, MAP_H, MAP_W, SIGNS, STOPS, blocked, findTiles, gateOr
 import type { WalkState } from "./island-map";
 import { FLAG_COLOURS, TILE, drawSprite, makeFence, makeTileArt } from "./island-art";
 import type { Sprite, SpriteKind } from "./island-art";
+import { titleCase } from "../ui/quiz-shell";
 
 // THE ISLAND: the Overworld. A little top-down world that ties the whole arcade together, and
 // it is the front page of the site. It is a ROUTE: a gravel path makes one big loop round the
@@ -358,7 +359,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
         h(
           "a",
           { class: `isl-quiz${done ? " done" : ""}`, href: `#${d.id}` },
-          h("span", { class: "isl-quiz-name" }, d.title),
+          h("span", { class: "isl-quiz-name" }, titleCase(d.title)),
           c ? h("span", { class: "isl-quiz-challenge" }, done ? `✓ Challenge done: ${c.label}` : `Challenge: ${c.label}`) : null,
           h("span", { class: "isl-go", "aria-hidden": "true" }, "Play ▸"),
         ),
@@ -427,7 +428,7 @@ export function renderIsland(root: HTMLElement, decks: Deck[]): () => void {
         h(
           "a",
           { class: `isl-quiz${got ? " done" : ""}`, href: `#${g.id}`, "data-game": stampable ? g.id : false },
-          h("span", { class: "isl-quiz-name" }, g.title),
+          h("span", { class: "isl-quiz-name" }, titleCase(g.title)),
           h("span", { class: "isl-quiz-challenge" }, got ? `★ Stamp collected · ${g.blurb}` : g.blurb),
           h("span", { class: "isl-go", "aria-hidden": "true" }, "Play ▸"),
         ),
