@@ -1128,3 +1128,9 @@ a.btn { text-decoration: none; }
 .brawl-key.pressed { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); background: var(--found); color: #fff; }
 .brawl-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
 .brawl-howto { margin: 0; flex: 1 1 280px; font-size: 0.95rem; }
+
+/* Offline play: the status line on the list page (src/offline.ts). */
+.offline-status { margin: 0; max-width: 60ch; font-size: 0.95rem; color: var(--muted); border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.offline-status strong { color: var(--ink); }
+.offline-status[data-state="ready"] { border-left-color: var(--found); }
+.offline-status[data-state="saving"] { border-left-color: var(--accent); }

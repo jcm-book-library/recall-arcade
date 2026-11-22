@@ -43,6 +43,7 @@ Live site: https://jcm-book-library.github.io/recall-arcade/ · Repo: github.com
 | Space | `boards/zoomBoard.ts`, `decks/zoomout.ts`, `decks/zoomout-data.ts` | Infinity & Beyond (has a two-level Hint) |
 | Music | `src/music/` (note names, a Web Audio piano, the stave), `boards/pianoBoard.ts`, `decks/music.ts` | Keyboard, Treble, Bass, Rhythm, Keys & Symbols, Ear Training |
 | Arcade (real time) | `src/arcade/kit.ts` (shared loop, pixel art, saving), `pong.ts`, `labyrinth.ts` + `labyrinth-maps.ts` (check with `node scripts/check-labyrinth.mjs`), `flyover.ts` + `flyover-data.ts`, `docs/action-game-ideas.md`, `docs/arcade-art.md`, `public/arcade/` | Planet Pong, The Labyrinth, Flyover |
+| Offline play (the site saves itself on the device) | `src/offline-sw.js` (the service worker; built into `sw.js` by the `offline()` plugin in `vite.config.ts`, which fills in the file list and version), `src/offline.ts` (registers it; the status line on `#list`), `public/manifest.webmanifest`, `public/icons/` | Everything except the photo quizzes (Wikipedia) and Empires' historical maps |
 | Side-on platformer | `src/arcade/brawl/` (the level is `level1.ts`, the feel is `tuning.ts`; check with `node scripts/check-brawl.mjs`), notes in `docs/platformer-design.md` ("Built: level 1") | The Brawl (level 1, the stadium; levels 2 and 3 to come) |
 
 The arcade files are written to be read: their comments explain the game loop, fixed timestep, grid movement, collisions, scrolling and so on in plain English.
@@ -64,6 +65,7 @@ The arcade files are written to be read: their comments explain the game loop, f
 - **Free images only.** `pictures.ts` asks for free licences and shows credits. Check a licence before adding any diagram, and credit it on the page and in the README. CC BY and CC BY-SA need the author's name.
 - Historical maps (`aourednik/historical-basemaps`, GPL) are fetched at runtime, never copied into the repo.
 - **Testing.** Playwright with Chromium under `/opt/pw-browsers/` (the folder name changes with the version; find it with `ls -d /opt/pw-browsers/chromium*/chrome-linux*/chrome` and pass it to `sweep-games.mjs`), run against `npm run build` then `npx vite preview`. `node scripts/sweep-games.mjs` opens every game at phone width. Stop a preview server with `pkill -f "[v]ite preview"` in a separate command (otherwise it kills its own shell, exit 144).
+- **Offline play.** Only the built site registers the service worker (`npm run dev` never does), so a dev server always shows fresh edits. The built site answers from its saved copy first, so after a deploy a phone shows the new version from the *second* visit. Saved files are matched with `ignoreVary` (the server's `Vary` header otherwise stops script files matching when offline). Fonts come from `@fontsource` packages, not Google, so they work offline too. To test: build, `npx vite preview`, open `#list` until it says "Ready to play offline", then switch the browser offline and reload.
 - Screenshots belong in the scratchpad, never in the repo (`*.png` is in `.gitignore`).
 - Helpers (cheaper models) work in their own git worktree under `.claude/worktrees/` (ignored by git). A usage limit can stop one mid-job; its work is saved and it can be resumed.
 
@@ -73,4 +75,6 @@ The arcade files are written to be read: their comments explain the game loop, f
 - Review notes still to do: Cells & Life needs a "learn it first" guide (a general idea for every hard game); Units & Forces needs depth; Classifying Life needs to be more visual; Dinosaurs round format; Airports and Airlines could merge; Currencies widen; Landmarks more; Time Zones removed, idea kept (odd zones, differences); Big Moments and Who Lived When up to about 200 each; more leaders; Music: more challenges, public-domain tunes; Infinity & Beyond: real star charts and the "look up" first stage.
 - New subjects: Entertainment (books, film, games, TV, music), Maths for real life (Pythagoras, algebra, economics, statistics, maybe quantum), Arts & Culture.
 - Arcade: play-test Pong, Labyrinth and Flyover and iterate; the owner draws the pixel hero; the Overworld that links everything; a snake-style flight game over a map.
+- Offline step 2: a "Save photos for offline" button on each photo quiz (it would download that quiz's Wikipedia pictures into the cache in one go).
+- Arcade idea: the Horde Run (Brain Fog), in `docs/action-game-ideas.md` (level 6).
 - Later: the learning path in the roadmap (backend, domain, family sharing, the book-library project).

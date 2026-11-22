@@ -1,4 +1,10 @@
+// The fonts are part of the site (not loaded from Google), so they work offline too.
+import "@fontsource/atkinson-hyperlegible/400.css";
+import "@fontsource/atkinson-hyperlegible/700.css";
+import "@fontsource/silkscreen/400.css";
+import "@fontsource/noto-music/400.css";
 import "./style.css";
+import { startOffline } from "./offline";
 import type { Deck } from "./engine/types";
 import { countriesDeck } from "./decks/countries";
 import { flagsDeck } from "./decks/flags";
@@ -67,6 +73,8 @@ const DECKS: Deck[] = [
   // Hidden Mythology specials, reached from the Mythology page (#afterlife, #realms)
   afterlifeDeck, realmsDeck,
 ];
+
+startOffline();
 
 // While developing, catch two items in one game sharing an id (they'd count as one).
 if (import.meta.env.DEV) {
