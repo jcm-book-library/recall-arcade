@@ -111,6 +111,26 @@ Could also be a car chase.
 - **Cheaper fallback:** a top-down version that reuses the Dogfight's scrolling, with the
   chaser visible at the bottom of the screen.
 
+### 6. The Horde Run (idea, 22 Nov 2026; not built)
+The owner's idea, from the "crowd runner" games in phone ads. Seen from above and behind, your
+character runs forward, wearing down oncoming waves that each take a set number of hits (the number
+shows on them). Gates along the way change your side: more runners (+5, ×2), a faster or stronger
+throw. The fun is the numbers growing, so it's a good game for passing time.
+- **PG version (recommended): Brain Fog.** Your crowd fires facts (glowing sparks) at rolling fog
+  blobs, which shrink and clear when hit. Nobody is hurt, and it suits a game about remembering.
+  Other options talked about: a snowball fight against snowmen, a paint splat that brings colour
+  back, and a marching band blasting notes at storm clouds (ties in with Music).
+- **The twist: the gates are questions.** Two gates come up, for example "Capital of Peru?" with
+  **Lima ×2** on one side and **Quito −5** on the other. Knowing the answer grows your crowd. The
+  questions come from the existing decks, so every subject feeds it.
+- **Care points:** reading while dodging is hard, so the run slows as gates come up, and questions
+  stay short (or are pictures and flags). Easy / Medium / Hard set the speed and how hard the
+  questions are, as in the quiz standard.
+- **Where it fits:** a stand-alone arcade game on `src/arcade/kit.ts`. Its view from behind is the
+  same fake 3D (things grow as they come closer) as The Chase, so whichever is built first gives the
+  other its engine. A build about the size of The Brawl's level 1.
+- **Must be our own:** our own name, look, art and levels, not a copy of any of the ad games.
+
 ## Open questions for later
 - How the learning games and the action levels connect (unlocks? the action levels as
   rewards? a hub world?).

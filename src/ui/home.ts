@@ -4,6 +4,7 @@ import { h } from "./dom";
 import { subjectClass, titleCase } from "./quiz-shell";
 import { GAME_BLURB, GAME_NAME, GAME_ROUTE } from "../arcade/brawl/names";
 import { ARCADE_OPENS_AT, CHALLENGES, SUBJECT_NAMES, challengeDone, clearedSubjects, rememberTrack, trackFor } from "../engine/progress";
+import { offlineStatus } from "../offline";
 
 // The subjects, about six quizzes each. Planned ones would show as "coming".
 const SUBJECTS: { name: string; planned: string[] }[] = [
@@ -123,6 +124,7 @@ export function renderHome(root: HTMLElement, decks: Deck[]) {
         { class: "home-head" },
         h("h1", { class: "logo" }, "Recall", h("span", {}, "Arcade")),
         h("p", { class: "lede" }, "Short timed rounds you play again and again until it sticks. ★ marks the easy starter round in each game."),
+        offlineStatus(),
       ),
       h(
         "a",
