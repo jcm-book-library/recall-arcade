@@ -63,7 +63,7 @@ async function safeLoad(set: PictureSet, container: HTMLElement) {
   } catch {
     const warn = document.createElement("p");
     warn.className = "note";
-    warn.textContent = "Couldn't reach Wikipedia for the photos. Check your connection and reload.";
+    warn.textContent = navigator.onLine ? "Couldn't reach Wikipedia for the photos. Check your connection and reload." : "You're offline, and the photos come from Wikipedia, so this quiz needs a connection. The arcade and the other quizzes still work.";
     container.append(warn);
     return new Map<string, Picture>();
   }
@@ -137,7 +137,7 @@ function pictureDeck(cfg: {
       } catch {
         const warn = document.createElement("p");
         warn.className = "note";
-        warn.textContent = "Couldn't reach Wikipedia for the photos. Check your connection and reload.";
+        warn.textContent = navigator.onLine ? "Couldn't reach Wikipedia for the photos. Check your connection and reload." : "You're offline, and the photos come from Wikipedia, so this quiz needs a connection. The arcade and the other quizzes still work.";
         container.append(warn);
       }
       loaded.set(cfg.set, pics);

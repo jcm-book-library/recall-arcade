@@ -3,7 +3,7 @@
 Read this first in a new session. Then `CLAUDE.md` (it points at the house rules), `README.md` (what each game is) and the design note for whatever you're about to touch (list below). The live site is the truth for what exists; the tables in `docs/roadmap.md` lag behind.
 
 Live site: https://jcm-book-library.github.io/recall-arcade/ · Repo: github.com/jcm-book-library/recall-arcade
-Last rewritten: 17 Nov 2026.
+Last rewritten: 17 Nov 2026 (offline play folded in 26 Nov).
 
 ## Where we are (17 Nov 2026)
 - **Eight subjects, 47 quizzes on the home page**, plus linked extras (below). Geography, Science, History, Travel & Transport, Nature & Animals, Music, Sport, Entertainment.
@@ -11,6 +11,7 @@ Last rewritten: 17 Nov 2026.
 - **The arcade:** Planet Pong, The Labyrinth, Flyover, The Brawl (level 1, the stadium), plus the Hero Workshop (`#hero`).
 - **Every quiz is on the shared quiz page** (`src/ui/quiz-shell.ts`, rules in `docs/quiz-standard.md`): the same header, subject colours, and rows of rounds, each with Easy / Medium / Hard and its own Start.
 - **Progress** (`src/engine/progress.ts`): each quiz has one Easy challenge. Clearing challenges clears subjects, which opens the arcade and sets the track. Nothing is locked behind skill. Everything is saved in the browser (`learning-arcade:v1`). There's no backend.
+- **Offline play** (22 Nov): after the first visit the site saves itself on the device and works with no connection, except the photo quizzes (Wikipedia) and Empires' historical maps. It can be added to a phone's home screen.
 - All open PRs from the last sessions are merged. `main` builds and passes every check (see "Checks" below).
 
 ## What changed recently
@@ -20,6 +21,7 @@ Last rewritten: 17 Nov 2026.
   - A **Pick from six** way to play: the name is shown, you pick its shape from six, three tries. It's on the shared quiz page as "🖱 Pick from six" next to "⌨ Type the name".
   - **Neighbours** is off the home page, linked from Countries, with its id and scores kept.
   - Data: OpenStreetMap via Overture Maps (see Gotchas). Re-checked on 17 Nov after the quiz-page rebuild: every Pick-from-six question shows exactly six shapes, including the right one.
+- **Offline play (22 Nov, another session):** a service worker, an app manifest and icons, fonts bundled instead of Google Fonts, a status line on `#list`, and a clear message on photo quizzes when offline.
 - **Done in other sessions since 2 Nov** (details in their design notes):
   - the island and its route, stadium, theatre, flags and stamp book;
   - The Brawl level 1, the Hero Workshop and Bluebottle the starter hero;
@@ -91,6 +93,7 @@ Last rewritten: 17 Nov 2026.
 | Multiple choice, pairs, hangman | `ui/choice.ts`, `ui/pairs.ts`, `ui/hangman.ts` | Classifying Life, Ear Training, Famous For, Greek & Roman Pairs, Baby Animals |
 | Music | `src/music/`, `boards/pianoBoard.ts`, `decks/music.ts` | the six Music quizzes |
 | Island | `src/arcade/island.ts`, `island-map.ts`, `island-art.ts`, `stamps.ts` | home page |
+| Offline play | `src/offline-sw.js` (the service worker; built into `sw.js` by the `offline()` plugin in `vite.config.ts`, which fills in the file list and version), `src/offline.ts` (registers it; the status line on `#list`), `public/manifest.webmanifest`, `public/icons/` | everything except the photo quizzes and Empires' historical maps |
 | Arcade | `src/arcade/kit.ts` (shared loop), `pong.ts`, `labyrinth*.ts`, `flyover*.ts`, `brawl/`, `hero-*.ts` | the arcade games |
 
 The arcade files are written to be read: their comments explain the game loop, fixed timestep, collisions and scrolling in plain English.
@@ -124,6 +127,7 @@ The arcade files are written to be read: their comments explain the game loop, f
 - **Two boards at once:** if a round is changed while data is still loading, an older board can briefly sit in the same container. Find your own elements from what you created, not with `container.querySelector`. This bit City Shapes once.
 - **Time limits** must be one of the page's choices (2, 4, 6, 10, 15, 20 minutes, or none), or the selector shows the wrong time.
 - **Big data files** (City Shapes about 2 MB, maps, organs) are imported with `import()` so they don't slow the home page. Keep it that way.
+- **Offline play.** Only the built site registers the service worker (`npm run dev` never does), so a dev server always shows fresh edits. The built site answers from its saved copy first, so after a deploy a phone shows the new version from the *second* visit. Saved files are matched with `ignoreVary` (the server's `Vary` header otherwise stops script files matching when offline). Fonts come from `@fontsource` packages, so they work offline. To test: build, `npx vite preview`, open `#list` until it says "Ready to play offline", then switch the browser offline and reload.
 - Screenshots go in the scratchpad, never the repo (`*.png` is ignored, except `docs/learning/img`).
 - Helpers (cheaper models) work in their own git worktree under `.claude/worktrees/` (ignored by git).
 
@@ -133,7 +137,9 @@ The arcade files are written to be read: their comments explain the game loop, f
 3. **Animals line-up** (`docs/animals-design.md`): six quizzes. The questions in that note need the owner's answers first.
 4. **The Brawl levels 2 and 3** (the road, the movie studio), and the arcade HUD rule applied to the island and every arcade game.
 5. **City Shapes, more cities.** Add a line to `CITIES` or `STREETS` in `scripts/build-cities.py`, run it for that city, then add the item in `src/decks/city-shapes.ts`. Check the look with a contact sheet before committing.
-6. Older open items: Human Body (male reproductive, blood vessels, glands, muscles); Tail Fins photos; Currencies, Landmarks and Units depth; Time Zones rework; Maths and Arts & Culture subjects; backend and family sharing (the learning path in the roadmap).
+6. **Offline step 2:** a "Save photos for offline" button on each photo quiz (downloads that quiz's Wikipedia pictures into the saved copy in one go).
+7. **Arcade idea:** the Horde Run (Brain Fog), level 6 in `docs/action-game-ideas.md`.
+8. Older open items: Human Body (male reproductive, blood vessels, glands, muscles); Tail Fins photos; Currencies, Landmarks and Units depth; Time Zones rework; Maths and Arts & Culture subjects; backend and family sharing (the learning path in the roadmap).
 
 ## Open questions for the owner
 - City Shapes: which cities next? Should Pick from six offer more than six (a 9-shape Hard version)?
