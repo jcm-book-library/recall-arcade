@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 108" width="400" height="432">
+  <title>Bluebottle (BB), front view, hi-res</title>
+  <desc>Vector redraw of Bluebottle from Recall Arcade, as used in the Claude status widget. Light from the top left, dark teal outline. Animated: bob, ear sway, arm wave, pupil glance.</desc>
+  <defs>
+    <path id="ear-left-shape"  d="M 30,22 C 16,24 8,38 8,56 C 8,68 10,80 16,82 C 23,84 26,74 25,64 C 24,50 28,36 38,28 Z"/>
+    <path id="ear-right-shape" d="M 70,22 C 84,24 92,38 92,56 C 92,68 90,80 84,82 C 77,84 74,74 75,64 C 76,50 72,36 62,28 Z"/>
+    <clipPath id="tip-left"><rect x="0" y="62" width="30" height="38"/></clipPath>
+    <clipPath id="tip-shade-left"><rect x="18" y="62" width="12" height="38"/></clipPath>
+    <clipPath id="tip-right"><rect x="70" y="62" width="30" height="38"/></clipPath>
+    <clipPath id="tip-shade-right"><rect x="84" y="62" width="16" height="38"/></clipPath>
+    <clipPath id="head-clip"><ellipse cx="50" cy="40" rx="35" ry="32"/></clipPath>
+    <clipPath id="body-clip"><ellipse cx="50" cy="82" rx="19" ry="14"/></clipPath>
+  </defs>
+
+  <g id="bluebottle">
+    <!-- Gentle bob: 3 units up and back. -->
+    <animateTransform attributeName="transform" type="translate" values="0 0; 0 -3; 0 0" dur="1.6s" repeatCount="indefinite"
+                      calcMode="spline" keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"/>
+
+    <!-- Ears: behind everything; sway around where they meet the head (secondary motion). -->
+    <g id="ear-left">
+      <animateTransform attributeName="transform" type="rotate" values="-2 32 24; 5 32 24; -2 32 24" dur="2.6s" repeatCount="indefinite"
+                        calcMode="spline" keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"/>
+      <use xlink:href="#ear-left-shape" fill="#00856b"/>
+      <use xlink:href="#ear-left-shape" fill="#41e8c6" clip-path="url(#tip-left)"/>
+      <use xlink:href="#ear-left-shape" fill="#27ad93" clip-path="url(#tip-shade-left)"/>
+      <use xlink:href="#ear-left-shape" fill="none" stroke="#084845" stroke-width="2.5" stroke-linejoin="round"/>
+    </g>
+    <g id="ear-right">
+      <animateTransform attributeName="transform" type="rotate" values="2 68 24; -5 68 24; 2 68 24" dur="2.6s" repeatCount="indefinite"
+                        calcMode="spline" keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"/>
+      <use xlink:href="#ear-right-shape" fill="#00856b"/>
+      <use xlink:href="#ear-right-shape" fill="#41e8c6" clip-path="url(#tip-right)"/>
+      <use xlink:href="#ear-right-shape" fill="#27ad93" clip-path="url(#tip-shade-right)"/>
+      <use xlink:href="#ear-right-shape" fill="none" stroke="#084845" stroke-width="2.5" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Stumpy legs, rounded ends, no toes. -->
+    <rect id="leg-left"  x="36" y="88" width="13" height="15" rx="6" fill="#006351" stroke="#084845" stroke-width="2.5"/>
+    <rect id="leg-right" x="51" y="88" width="13" height="15" rx="6" fill="#006351" stroke="#084845" stroke-width="2.5"/>
+
+    <!-- Small body: base, lower-right shade crescent, pale aqua belly patch, outline. -->
+    <ellipse cx="50" cy="82" rx="19" ry="14" fill="#00856b"/>
+    <path clip-path="url(#body-clip)" fill="#006351" fill-rule="evenodd"
+          d="M 31,82 a 19,14 0 1,0 38,0 a 19,14 0 1,0 -38,0 Z M 28,79 a 19,14 0 1,0 38,0 a 19,14 0 1,0 -38,0 Z"/>
+    <ellipse cx="50" cy="84" rx="9" ry="4" fill="#7fffe1"/>
+    <ellipse cx="50" cy="82" rx="19" ry="14" fill="none" stroke="#084845" stroke-width="2.5"/>
+
+    <!-- Big round head: base, lower-right shade, upper-left highlight, outline. -->
+    <ellipse cx="50" cy="40" rx="35" ry="32" fill="#00856b"/>
+    <path clip-path="url(#head-clip)" fill="#006351" fill-rule="evenodd"
+          d="M 15,40 a 35,32 0 1,0 70,0 a 35,32 0 1,0 -70,0 Z M 11,36 a 35,32 0 1,0 70,0 a 35,32 0 1,0 -70,0 Z"/>
+    <path clip-path="url(#head-clip)" fill="#2fe2bf" fill-rule="evenodd"
+          d="M 15,40 a 35,32 0 1,0 70,0 a 35,32 0 1,0 -70,0 Z M 18,43 a 35,32 0 1,0 70,0 a 35,32 0 1,0 -70,0 Z"/>
+    <ellipse cx="50" cy="40" rx="35" ry="32" fill="none" stroke="#084845" stroke-width="3"/>
+
+    <!-- Blush either side of the eye, and the small "w" smile. -->
+    <ellipse cx="22" cy="53.5" rx="6" ry="3.5" fill="#ff8fb0"/>
+    <ellipse cx="78" cy="53.5" rx="6" ry="3.5" fill="#ff8fb0"/>
+    <path d="M 43,63 Q 46.5,67.5 50,63 Q 53.5,67.5 57,63" fill="none" stroke="#084845" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- One huge eye, open at the top (no lid). -->
+    <circle cx="50" cy="38" r="21" fill="#ffffff" stroke="#084845" stroke-width="2.5"/>
+    <g id="pupil">
+      <!-- He has no lid, so instead of blinking he glances (toward his speech bubble in the widget). -->
+      <animateTransform attributeName="transform" type="translate" values="0 0; 0 0; -3.5 0; -3.5 0; 0 0; 0 0"
+                        keyTimes="0; 0.467; 0.517; 0.767; 0.817; 1" dur="6s" repeatCount="indefinite"/>
+      <circle cx="50" cy="42" r="9.5" fill="#0e1238"/>
+      <circle cx="46.5" cy="38.5" r="4" fill="#ffffff"/>
+    </g>
+
+    <!-- Stumpy arms, rounded ends, no fingers: one waving (pivot at the shoulder), one resting. -->
+    <rect id="arm-waving" x="25" y="60" width="11" height="20" rx="5.5" fill="#00856b" stroke="#084845" stroke-width="2.5" transform="rotate(-35 30.5 80)">
+      <animateTransform attributeName="transform" type="rotate" values="-55 30.5 80; -15 30.5 80; -55 30.5 80" dur="0.64s" repeatCount="indefinite"/>
+    </rect>
+    <rect id="arm-resting" x="64" y="76" width="11" height="16" rx="5.5" fill="#006351" stroke="#084845" stroke-width="2.5" transform="rotate(-30 69.5 76)"/>
+  </g>
+</svg>

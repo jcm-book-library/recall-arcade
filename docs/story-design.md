@@ -191,3 +191,5 @@ Ideas this opens up:
 - **The name stays Bluebottle.** He still takes it off the damaged beach sign, without knowing what it means.
 - **The gag:** when he meets his human friend, the human says something like *"But you ain't blue?"*
 - **The human (the original starter hero) is his friend, not the thief.** The thief is someone else, still to be decided.
+
+**Bluebottle's art files (26 Nov 2026):** `docs/art/bluebottle/` holds his character spec (`bluebottle-spec.md`: look, palette, sprite sheets) and a smooth hi-res vector version (`bluebottle.svg`, animated, and `bluebottle-hi-res-spec.md`), first made for a desktop status widget. Not used by the game yet; there for any future bigger art (title screen, story scenes, a companion).
